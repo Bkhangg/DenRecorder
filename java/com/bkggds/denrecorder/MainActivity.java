@@ -10,7 +10,6 @@ import android.content.ContentUris;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Bitmap;
@@ -34,6 +33,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.PowerManager;
 import android.provider.MediaStore;
+import android.provider.Settings;
 import android.service.quicksettings.TileService;
 import android.util.DisplayMetrics;
 import android.util.LruCache;
@@ -66,6 +66,7 @@ public class MainActivity extends Activity {
 
     private static final int REQ_PROJECTION = 1001;
     private static final int REQ_PERMISSIONS = 1002;
+    private static final int REQ_WRITE_SETTINGS = 1003;
 
     // Shadcn-style palette (zinc scale).
     private static final int BG = Color.parseColor("#09090B");
@@ -189,7 +190,6 @@ public class MainActivity extends Activity {
         perfMode = prefs.getBoolean("perfMode", true);
         handler = new Handler(Looper.getMainLooper());
 
-        applyOrientation();
         buildUi();
         boolean openSettings = prefs.getBoolean("openSettingsNext", false);
         if (openSettings) prefs.edit().putBoolean("openSettingsNext", false).apply();
@@ -468,6 +468,8 @@ public class MainActivity extends Activity {
         divider(generalCard);
         orientationValueView = addRow(generalCard, R.drawable.ic_screen, R.string.row_orientation,
                 "", true, this::chooseOrientation);
+        divider(generalCard);
+        addHint(generalCard, R.string.hint_orientation);
 
         list.addView(sectionLabel(R.string.section_about), lp(MATCH, WRAP, 0, 22, 0, 0));
         LinearLayout aboutCard = card();
@@ -962,6 +964,14 @@ public class MainActivity extends Activity {
         View line = new View(this);
         line.setBackgroundColor(BORDER);
         parent.addView(line, lp(MATCH, 1, 0, 0, 0, 0));
+    }
+
+    /** A small muted line inside a card, under the row it belongs to. */
+    private void addHint(LinearLayout parent, int textRes) {
+        TextView view = label(getString(textRes), 12, FAINT, false);
+        view.setLineSpacing(dp(3), 1f);
+        view.setPadding(0, dp(10), 0, dp(12));
+        parent.addView(view, lp(MATCH, WRAP, 0, 0, 0, 0));
     }
 
     private TextView sectionLabel(int textRes) {
@@ -1545,6 +1555,11 @@ public class MainActivity extends Activity {
 
     // ---------- Screen orientation ----------
 
+    /**
+     * The rotation the screen is kept in while a recording runs. It is locked
+     * for the whole recording (the phone's own rotation setting is restored
+     * afterwards), so a finished video keeps one orientation.
+     */
     private void chooseOrientation() {
         final String[] values = {"auto", "portrait", "landscape"};
         final String[] names = {
@@ -1559,22 +1574,30 @@ public class MainActivity extends Activity {
         showChoices(getString(R.string.title_orientation), names, checked, which -> {
             orientation = values[which];
             prefs.edit().putString("orientation", orientation).apply();
-            applyOrientation();
             updateOrientationValue();
+            if (!"auto".equals(orientation) && !RotationLock.canWrite(this)) {
+                showCard(getString(R.string.orientation_permission_title),
+                        getString(R.string.orientation_permission_body),
+                        getString(R.string.orientation_permission_grant),
+                        this::requestRotationPermission,
+                        getString(R.string.orientation_permission_later), null);
+            }
         });
     }
 
-    /** Locks the app's own layout, not the recording. */
-    private void applyOrientation() {
+    /** Android needs this special grant before an app may change rotation. */
+    private void requestRotationPermission() {
         try {
-            if ("portrait".equals(orientation)) {
-                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-            } else if ("landscape".equals(orientation)) {
-                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-            } else {
-                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
+            startActivityForResult(new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS,
+                    Uri.parse("package:" + getPackageName())), REQ_WRITE_SETTINGS);
+        } catch (Exception e) {
+            try {
+                startActivityForResult(new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS),
+                        REQ_WRITE_SETTINGS);
+            } catch (Exception ignored) {
+                status(R.string.orientation_permission_unavailable, RED);
             }
-        } catch (Exception ignored) { }
+        }
     }
 
     private void updateOrientationValue() {
@@ -1703,6 +1726,21 @@ public class MainActivity extends Activity {
     }
 
     private void beginStart() {
+        // A locked orientation only works with the "modify system settings"
+        // grant; offer it here instead of silently recording unlocked.
+        if (!"auto".equals(orientation) && !RotationLock.canWrite(this)) {
+            showCard(getString(R.string.orientation_permission_title),
+                    getString(R.string.orientation_permission_body),
+                    getString(R.string.orientation_permission_grant),
+                    this::requestRotationPermission,
+                    getString(R.string.orientation_permission_skip),
+                    this::continueStart);
+            return;
+        }
+        continueStart();
+    }
+
+    private void continueStart() {
         List<String> needed = new ArrayList<>();
         // Before Android 10 "device audio" falls back to the microphone.
         boolean needsMic = audioSource == ScreenRecorder.AUDIO_MIC
@@ -1790,6 +1828,13 @@ public class MainActivity extends Activity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQ_WRITE_SETTINGS) {
+            updateOrientationValue();
+            status(RotationLock.canWrite(this)
+                    ? R.string.orientation_permission_on
+                    : R.string.orientation_permission_off, MUTED);
+            return;
+        }
         if (requestCode != REQ_PROJECTION) return;
         projectionRequested = false;
         if (resultCode != RESULT_OK || data == null) {

@@ -32,6 +32,16 @@
     <string name="orientation_auto">Automatic</string>
     <string name="orientation_portrait">Portrait</string>
     <string name="orientation_landscape">Landscape</string>
+    <string name="hint_orientation">The screen keeps this rotation while it records; your own rotation setting comes back when it stops.</string>
+    <string name="orientation_permission_title">Allow rotation lock</string>
+    <string name="orientation_permission_body">To keep the screen turned while it records, Android needs the \"Modify system settings\" permission for DenRecorder. Turn it on for DenRecorder, then come back.</string>
+    <string name="orientation_permission_grant">Open settings</string>
+    <string name="orientation_permission_later">Not now</string>
+    <string name="orientation_permission_skip">Record without lock</string>
+    <string name="orientation_permission_on">Rotation lock is ready</string>
+    <string name="orientation_permission_off">Rotation lock is off: allow \"Modify system settings\"</string>
+    <string name="orientation_permission_unavailable">Could not open that settings page</string>
+    <string name="toast_recording_started_locked">Recording started · %1$s locked</string>
     <string name="notification_starting">Starting…</string>
     <string name="toast_recording_started">Recording started</string>
     <string name="toast_recording_saved">Recording saved</string>

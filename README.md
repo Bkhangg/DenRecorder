@@ -20,7 +20,7 @@ DenRecorder records the whole screen (and the device audio, the microphone or no
 - **Game performance mode** — caps the recorder at 60 fps and runs the encoder in realtime priority, so a game next to it keeps its frame rate.
 - **Recordings screen** — recent/all lists with real thumbnails, tap to play, long-press to play, share or delete.
 - **Choose where videos go** — `Movies/Screen Recorder` by default, five presets or any custom folder.
-- **Screen orientation** — automatic, locked portrait or locked landscape, for the app itself.
+- **Recording rotation** — automatic, portrait or landscape: the screen is locked to that rotation for the whole recording (your phone's own rotation setting comes back afterwards), so the video never turns halfway through.
 - **Long recordings** — the notification uses the system chronometer (no wake-ups every second), storage is checked every 15 s, recording stops safely before the card fills up.
 - **Bilingual** — English and Vietnamese, English on first launch.
 - **Shadcn-style dark UI** with a floating bottom bar and short, subtle animations.
@@ -28,7 +28,7 @@ DenRecorder records the whole screen (and the device audio, the microphone or no
 
 ### Install
 
-1. Download `DenRecorder-1.0.0.apk` from the [Releases](../../releases) page.
+1. Download `DenRecorder-1.0.1.apk` from the [Releases](../../releases) page.
 2. Open it on the phone and allow installing apps from that source if asked.
 3. Open DenRecorder, allow the permissions it asks for, and optionally let it add the Quick Settings tile.
 
@@ -41,6 +41,7 @@ DenRecorder records the whole screen (and the device audio, the microphone or no
 | Notifications | the ongoing "recording" notification, Android 13+ |
 | Storage (Android 9 and older) | to write the MP4 into the folder you picked |
 | Ignore battery optimizations (optional) | keeps long recordings and the tile reliable |
+| Modify system settings (optional) | only if you pick a fixed recording rotation, so the screen can be locked while it records |
 
 ### Build from source
 
@@ -91,7 +92,7 @@ DenRecorder quay toàn bộ màn hình (kèm âm thanh thiết bị, micrô ho�
 - **Chế độ hiệu năng khi chơi game** — giới hạn 60 fps và ưu tiên thời gian thực cho bộ mã hóa, để game đang chạy bên cạnh vẫn mượt.
 - **Màn Bản ghi** — danh sách Gần đây/Tất cả kèm ảnh thu nhỏ thật của video, chạm để xem, giữ để xem/chia sẻ/xóa.
 - **Chọn thư mục lưu** — mặc định `Movies/Screen Recorder`, có 5 gợi ý sẵn hoặc tự nhập.
-- **Hướng màn hình** — tự động, khóa dọc hoặc khóa ngang cho giao diện ứng dụng.
+- **Hướng khi ghi hình** — tự động, dọc hoặc ngang: màn hình được khóa đúng hướng đó trong suốt lần quay (cài đặt xoay của máy được trả lại sau khi dừng), nên video không bị xoay giữa chừng.
 - **Quay dài** — thông báo dùng đồng hồ đếm của hệ thống (không đánh thức mỗi giây), kiểm tra dung lượng mỗi 15 giây và tự dừng trước khi đầy bộ nhớ.
 - **Song ngữ** — English và Tiếng Việt, lần đầu mở là tiếng Anh.
 - **Giao diện tối kiểu Shadcn** với thanh điều hướng nổi và animation nhẹ.
@@ -99,7 +100,7 @@ DenRecorder quay toàn bộ màn hình (kèm âm thanh thiết bị, micrô ho�
 
 ### Cài đặt
 
-1. Tải `DenRecorder-1.0.0.apk` ở mục [Releases](../../releases).
+1. Tải `DenRecorder-1.0.1.apk` ở mục [Releases](../../releases).
 2. Mở file trên điện thoại và cho phép cài đặt từ nguồn đó nếu được hỏi.
 3. Mở DenRecorder, cấp quyền khi được hỏi, có thể thêm nút vào Trung tâm điều khiển.
 
@@ -112,6 +113,7 @@ DenRecorder quay toàn bộ màn hình (kèm âm thanh thiết bị, micrô ho�
 | Thông báo | thông báo "đang quay", Android 13 trở lên |
 | Bộ nhớ (Android 9 trở xuống) | ghi file MP4 vào thư mục đã chọn |
 | Bỏ tối ưu pin (tùy chọn) | giúp quay dài và nút Trung tâm điều khiển ổn định |
+| Sửa cài đặt hệ thống (tùy chọn) | chỉ khi chọn khóa hướng ghi hình, để khóa màn hình trong lúc quay |
 
 ### Tự build
 

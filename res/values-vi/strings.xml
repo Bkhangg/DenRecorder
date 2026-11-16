@@ -32,6 +32,16 @@
     <string name="orientation_auto">Tự động</string>
     <string name="orientation_portrait">Dọc</string>
     <string name="orientation_landscape">Ngang</string>
+    <string name="hint_orientation">Màn hình giữ đúng hướng này trong lúc ghi; cài đặt xoay của máy được trả lại khi dừng.</string>
+    <string name="orientation_permission_title">Cho phép khóa hướng</string>
+    <string name="orientation_permission_body">Để giữ màn hình đúng hướng khi ghi, Android cần quyền \"Sửa cài đặt hệ thống\" cho DenRecorder. Bật quyền đó cho DenRecorder rồi quay lại.</string>
+    <string name="orientation_permission_grant">Mở cài đặt</string>
+    <string name="orientation_permission_later">Để sau</string>
+    <string name="orientation_permission_skip">Ghi không khóa</string>
+    <string name="orientation_permission_on">Đã sẵn sàng khóa hướng</string>
+    <string name="orientation_permission_off">Chưa khóa được: hãy bật \"Sửa cài đặt hệ thống\"</string>
+    <string name="orientation_permission_unavailable">Không mở được trang cài đặt đó</string>
+    <string name="toast_recording_started_locked">Đang ghi · đã khóa %1$s</string>
     <string name="notification_starting">Đang bắt đầu…</string>
     <string name="toast_recording_started">Đã bắt đầu quay</string>
     <string name="toast_recording_saved">Đã lưu bản ghi</string>

@@ -69,6 +69,7 @@ public class ScreenRecorder {
     private final int requestedFps;
     private final int requestedBitrate;
     private final String mime;
+    private final String orientation;   // "auto", "portrait" or "landscape"
     private String codecLabel = "AVC";
 
     private MediaCodec videoCodec;
@@ -106,12 +107,24 @@ public class ScreenRecorder {
     private long startNs;
 
     public ScreenRecorder(Context context, MediaProjection projection, int audioSource) {
-        this(context, projection, audioSource, 0, TARGET_FPS, VIDEO_BITRATE, CODEC_AVC);
+        this(context, projection, audioSource, 0, TARGET_FPS, VIDEO_BITRATE, CODEC_AVC, "auto");
     }
 
     public ScreenRecorder(Context context, MediaProjection projection, int audioSource,
                           int requestedWidth, int requestedFps, int requestedBitrate,
                           String mime) {
+        this(context, projection, audioSource, requestedWidth, requestedFps, requestedBitrate,
+                mime, "auto");
+    }
+
+    /**
+     * @param orientation "portrait" or "landscape" when the recording is locked
+     *                    to that rotation, "auto" to follow the display.
+     */
+    public ScreenRecorder(Context context, MediaProjection projection, int audioSource,
+                          int requestedWidth, int requestedFps, int requestedBitrate,
+                          String mime, String orientation) {
+        this.orientation = orientation == null ? "auto" : orientation;
         this.context = context;
         this.projection = projection;
         this.audioSource = audioSource;
@@ -146,8 +159,23 @@ public class ScreenRecorder {
         wm.getDefaultDisplay().getRealMetrics(dm);
         int dpi = dm.densityDpi;
 
+        // With a locked rotation the screen keeps one way round; measure the
+        // display that way even if the size is read a moment too early.
+        int nativeWidth = dm.widthPixels;
+        int nativeHeight = dm.heightPixels;
+        if (nativeWidth > 0 && nativeHeight > 0) {
+            boolean sideways = nativeWidth > nativeHeight;
+            if ("landscape".equals(orientation) && !sideways) {
+                nativeWidth = dm.heightPixels;
+                nativeHeight = dm.widthPixels;
+            } else if ("portrait".equals(orientation) && sideways) {
+                nativeWidth = dm.heightPixels;
+                nativeHeight = dm.widthPixels;
+            }
+        }
+
         createOutput();
-        prepareVideo(dm.widthPixels, dm.heightPixels);
+        prepareVideo(nativeWidth, nativeHeight);
         prepareAudio();
 
         startNs = System.nanoTime();

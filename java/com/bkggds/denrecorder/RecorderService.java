@@ -105,14 +105,24 @@ public class RecorderService extends Service {
     }
 
     private void begin(Intent intent) {
-        int resultCode = intent.getIntExtra(EXTRA_RESULT_CODE, Activity.RESULT_CANCELED);
-        Intent data;
+        final int resultCode = intent.getIntExtra(EXTRA_RESULT_CODE, Activity.RESULT_CANCELED);
+        Intent extra;
         if (Build.VERSION.SDK_INT >= 33) {
-            data = intent.getParcelableExtra(EXTRA_DATA, Intent.class);
+            extra = intent.getParcelableExtra(EXTRA_DATA, Intent.class);
         } else {
-            data = intent.getParcelableExtra(EXTRA_DATA);
+            extra = intent.getParcelableExtra(EXTRA_DATA);
         }
-        int audio = intent.getIntExtra(EXTRA_AUDIO, ScreenRecorder.AUDIO_NONE);
+        final Intent data = extra;
+        final int audio = intent.getIntExtra(EXTRA_AUDIO, ScreenRecorder.AUDIO_NONE);
+
+        final android.content.SharedPreferences prefs =
+                getSharedPreferences("settings", MODE_PRIVATE);
+
+        // Keep the screen turned the way the user picked, so the video keeps one
+        // orientation while it records. Their own rotation setting comes back
+        // as soon as the recording ends.
+        final String orientation = prefs.getString("orientation", "auto");
+        final boolean rotationLocked = RotationLock.apply(this, orientation);
 
         int type = ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION;
         if (audio == ScreenRecorder.AUDIO_MIC) {
@@ -123,6 +133,76 @@ public class RecorderService extends Service {
         } else {
             startForeground(NOTIF_ID, buildNotification(getString(R.string.notification_starting)));
         }
+
+        final Runnable capture = new Runnable() {
+            @Override
+            public void run() {
+                startCapture(resultCode, data, audio, prefs, orientation, rotationLocked);
+            }
+        };
+        if (rotationLocked) {
+            // Turning the display takes a moment; wait for it, so the whole
+            // video is recorded in the picked orientation.
+            awaitRotation(orientation, 30, capture);
+        } else {
+            handler.post(capture);
+        }
+    }
+
+    /** Runs {@code then} once the display is turned the way the user picked. */
+    private void awaitRotation(final String orientation, final int tries,
+                               final Runnable then) {
+        if (tries <= 0 || rotationMatches(orientation)) {
+            // The display reports the new rotation a moment before apps get the
+            // matching screen size, so give it a beat before measuring.
+            handler.postDelayed(then, 350);
+            return;
+        }
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                awaitRotation(orientation, tries - 1, then);
+            }
+        }, 100);
+    }
+
+    /**
+     * True when the display is turned the chosen way and reports the matching
+     * screen size, which is what the recording is measured from.
+     */
+    private boolean rotationMatches(String orientation) {
+        int rotation = displayRotation();
+        boolean sideways = rotation == android.view.Surface.ROTATION_90
+                || rotation == android.view.Surface.ROTATION_270;
+        if ("landscape".equals(orientation) ? !sideways : sideways) return false;
+        try {
+            android.util.DisplayMetrics metrics = new android.util.DisplayMetrics();
+            android.view.WindowManager windowManager =
+                    (android.view.WindowManager) getSystemService(WINDOW_SERVICE);
+            windowManager.getDefaultDisplay().getRealMetrics(metrics);
+            boolean sizeSideways = metrics.widthPixels > metrics.heightPixels;
+            return "landscape".equals(orientation) ? sizeSideways : !sizeSideways;
+        } catch (Exception e) {
+            return true;
+        }
+    }
+
+    private int displayRotation() {
+        try {
+            android.hardware.display.DisplayManager manager =
+                    (android.hardware.display.DisplayManager) getSystemService(DISPLAY_SERVICE);
+            android.view.Display display = manager == null ? null
+                    : manager.getDisplay(android.view.Display.DEFAULT_DISPLAY);
+            return display == null ? 0 : display.getRotation();
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
+    private void startCapture(final int resultCode, final Intent data, final int audio,
+                              final android.content.SharedPreferences prefs,
+                              final String orientation, final boolean rotationLocked) {
+        if (finishing) return;
 
         if (data == null) {
             lastError = getString(R.string.status_capture_denied);
@@ -167,8 +247,6 @@ public class RecorderService extends Service {
         handler.post(ticker);
 
         try {
-            android.content.SharedPreferences prefs =
-                    getSharedPreferences("settings", MODE_PRIVATE);
             int resWidth = prefs.getInt("resWidth", 0);
             int fps = prefs.getInt("fps", 60);
             if (prefs.getBoolean("perfMode", true) && fps > 60) {
@@ -179,11 +257,17 @@ public class RecorderService extends Service {
             String codec = prefs.getString("codec", "avc");
             recorder = new ScreenRecorder(getApplicationContext(), projection, audio,
                     resWidth, fps, bitrate,
-                    "hevc".equals(codec) ? ScreenRecorder.CODEC_HEVC : ScreenRecorder.CODEC_AVC);
+                    "hevc".equals(codec) ? ScreenRecorder.CODEC_HEVC : ScreenRecorder.CODEC_AVC,
+                    rotationLocked ? orientation : "auto");
             recorder.start();
             updateNotification();
             refreshTile();
-            toast(getString(R.string.toast_recording_started));
+            toast(rotationLocked
+                    ? getString(R.string.toast_recording_started_locked,
+                            getString("landscape".equals(orientation)
+                                    ? R.string.orientation_landscape
+                                    : R.string.orientation_portrait))
+                    : getString(R.string.toast_recording_started));
         } catch (Exception e) {
             Log.e(TAG, "Recording failed to start", e);
             lastError = "Recording failed: " + (e.getMessage() == null ? e.toString() : e.getMessage());
@@ -209,6 +293,9 @@ public class RecorderService extends Service {
                 } catch (Exception e) {
                     Log.w(TAG, "Error while stopping", e);
                 }
+
+                // The recording is closed: give the user their rotation back.
+                RotationLock.release(RecorderService.this);
 
                 Uri uri = active == null ? null : active.getOutputUri();
                 lastUri = uri;
@@ -251,6 +338,8 @@ public class RecorderService extends Service {
     public void onDestroy() {
         handler.removeCallbacks(ticker);
         isRecording = false;
+        // Safety net: never leave the screen locked after a killed service.
+        RotationLock.release(this);
         super.onDestroy();
     }
 
