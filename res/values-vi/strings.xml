@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">DenRecorder</string>
+
+    <string name="nav_record">Quay</string>
+    <string name="nav_recordings">Bản ghi</string>
+    <string name="nav_settings">Cài đặt</string>
+    <string name="settings_title">Cài đặt</string>
+
+    <string name="section_capture">CHẤT LƯỢNG QUAY</string>
+    <string name="section_audio">ÂM THANH</string>
+    <string name="section_general">CHUNG</string>
+    <string name="section_about">THÔNG TIN</string>
+
+    <string name="row_resolution">Độ phân giải</string>
+    <string name="row_quality">Chất lượng video</string>
+    <string name="row_fps">Tốc độ khung hình</string>
+    <string name="row_codec">Bộ mã hóa video</string>
+    <string name="row_audio">Nguồn âm thanh</string>
+    <string name="row_battery">Sử dụng pin</string>
+    <string name="row_tile">Nút quay nhanh</string>
+    <string name="row_language">Ngôn ngữ</string>
+    <string name="row_storage">Lưu vào</string>
+    <string name="row_version">Phiên bản</string>
+
+    <string name="row_orientation">Hướng màn hình</string>
+
+    <string name="row_performance">Hiệu năng khi chơi game</string>
+    <string name="performance_on">Mượt · giới hạn 60 fps</string>
+    <string name="performance_off">Tắt</string>
+    <string name="title_orientation">Hướng màn hình</string>
+    <string name="orientation_auto">Tự động</string>
+    <string name="orientation_portrait">Dọc</string>
+    <string name="orientation_landscape">Ngang</string>
+    <string name="notification_starting">Đang bắt đầu…</string>
+    <string name="toast_recording_started">Đã bắt đầu quay</string>
+    <string name="toast_recording_saved">Đã lưu bản ghi</string>
+    <string name="row_credit">Tác giả</string>
+
+    <string name="value_native">Gốc · %1$s</string>
+    <string name="value_scaled">%1$s</string>
+    <string name="value_class_size">%1$s · %2$s</string>
+    <string name="class_4k">4K</string>
+    <string name="class_2k">2K</string>
+    <string name="class_fhd">Full HD</string>
+    <string name="class_hd">HD</string>
+    <string name="class_sd">SD</string>
+    <string name="value_mbps">%1$d Mbps</string>
+    <string name="value_fps">%1$d fps</string>
+    <string name="value_codec_avc">H.264 AVC</string>
+    <string name="value_codec_hevc">H.265 HEVC</string>
+    <string name="value_tile_added">Đã thêm ✓</string>
+    <string name="value_tile_missing">Chưa thêm</string>
+    <string name="value_credit">Made with ♥ by BKggDs</string>
+    <string name="battery_on">Không hạn chế</string>
+    <string name="battery_off">Đang tối ưu · chạm để đổi</string>
+
+    <string name="audio_internal">Âm thanh thiết bị (nội bộ)</string>
+    <string name="audio_mic">Micrô</string>
+    <string name="audio_none">Không âm thanh</string>
+
+    <string name="start_recording">Bắt đầu quay</string>
+    <string name="stop_recording">Dừng quay</string>
+    <string name="hero_ready_title">Sẵn sàng quay</string>
+    <string name="hero_ready_body">Toàn bộ màn hình, kèm âm thanh.</string>
+    <string name="hero_recording_title">Đang quay</string>
+    <string name="status_ready">Sẵn sàng · lưu trong %1$s</string>
+    <string name="status_saving">Đang lưu video…</string>
+    <string name="status_stopping">Đang dừng…</string>
+    <string name="status_allow_capture">Cho phép quay màn hình để bắt đầu…</string>
+    <string name="status_capture_denied">Bạn đã từ chối quyền quay màn hình</string>
+    <string name="status_capture_unavailable">Thiết bị không hỗ trợ quay màn hình</string>
+    <string name="status_starting">Đang bắt đầu quay…</string>
+    <string name="status_start_failed">Không bắt đầu được: %1$s</string>
+    <string name="status_stop_first">Hãy dừng quay trước khi đổi chất lượng</string>
+    <string name="status_battery_already">Pin đã ở mức không hạn chế</string>
+    <string name="status_battery_manual">Mở Cài đặt › Ứng dụng › DenRecorder › Pin</string>
+    <string name="status_mic_denied">Không có quyền micrô — quay không âm thanh</string>
+    <string name="status_tile_added">Đã thêm nút vào Trung tâm điều khiển</string>
+    <string name="status_tile_failed">Thêm trong Trung tâm điều khiển › Sửa nút</string>
+    <string name="status_folder_changed">Video mới sẽ lưu vào %1$s</string>
+    <string name="hint_home">Độ phân giải, tốc độ khung hình (tới 120 fps), chất lượng và bộ mã hóa nằm trong Cài đặt. Thanh nổi bên dưới để chuyển giữa quay, bản ghi và cài đặt.</string>
+    <string name="hint_recordings">Bản ghi nằm trong %1$s. Chạm để xem, giữ để chia sẻ hoặc xóa.</string>
+
+    <string name="title_resolution">Độ phân giải</string>
+    <string name="title_quality">Chất lượng video</string>
+    <string name="title_fps">Tốc độ khung hình</string>
+    <string name="title_codec">Bộ mã hóa video</string>
+    <string name="title_audio">Nguồn âm thanh</string>
+    <string name="title_language">Ngôn ngữ</string>
+    <string name="title_folder">Lưu bản ghi vào</string>
+    <string name="folder_custom">Thư mục khác…</string>
+    <string name="folder_input_hint">Movies/My recordings</string>
+    <string name="folder_invalid">Nhập tên thư mục kiểu Movies/My recordings</string>
+
+    <string name="codec_avc_item">H.264 AVC (tương thích nhất)</string>
+    <string name="codec_hevc_item">H.265 HEVC (file nhỏ hơn)</string>
+    <string name="language_en">English</string>
+    <string name="language_vi">Tiếng Việt</string>
+
+    <string name="dialog_cancel">Hủy</string>
+    <string name="dialog_close">Đóng</string>
+    <string name="dialog_open">Mở</string>
+    <string name="dialog_ok">OK</string>
+    <string name="dialog_save">Lưu</string>
+    <string name="dialog_delete">Xóa</string>
+    <string name="saved_title">Đã lưu video</string>
+    <string name="saved_body">Video nằm trong %1$s và đã có trong thư viện ảnh.</string>
+    <string name="failed_title">Quay thất bại</string>
+
+    <string name="recordings_recent">Gần đây</string>
+    <string name="recordings_all">Tất cả</string>
+    <string name="recordings_empty">Chưa có bản ghi nào ở đây. Video bạn quay sẽ nằm trong thư mục này.</string>
+    <string name="recordings_count">%1$d video · %2$s</string>
+    <string name="recordings_count_all">%1$d video · %2$s</string>
+    <string name="recordings_action_title">Bản ghi này</string>
+    <string name="action_open">Xem</string>
+    <string name="action_share">Chia sẻ</string>
+    <string name="action_delete">Xóa</string>
+    <string name="delete_title">Xóa bản ghi này?</string>
+    <string name="delete_body">%1$s sẽ bị xóa khỏi máy và không khôi phục được.</string>
+
+    <string name="setup_battery_title">Sử dụng pin</string>
+    <string name="setup_battery_body">Đặt mức sử dụng pin thành “Không hạn chế” để việc quay tiếp tục chạy khi ở nền và nút Trung tâm điều khiển mở tức thì.</string>
+    <string name="setup_allow">Đặt không hạn chế</string>
+    <string name="setup_later">Để sau</string>
+    <string name="setup_tile_title">Nút quay nhanh</string>
+    <string name="setup_tile_body">Thêm nút DenRecorder vào Trung tâm điều khiển để bắt đầu và dừng quay chỉ với một chạm, không cần mở ứng dụng.</string>
+    <string name="setup_tile_add">Thêm nút</string>
+    <string name="setup_tile_skip">Bỏ qua</string>
+    <string name="setup_next">Tiếp tục</string>
+
+    <string name="notification_channel">Quay màn hình</string>
+    <string name="notification_title">Đang quay màn hình</string>
+    <string name="notification_stop">Dừng</string>
+    <string name="rec_stopped_space">Đã dừng quay — bộ nhớ gần đầy</string>
+    <string name="start_no_space">Không đủ dung lượng trống để quay</string>
+    <string name="tile_recording">Đang quay…</string>
+    <string name="tile_start_desc">Bắt đầu quay màn hình</string>
+    <string name="tile_stop_desc">Dừng quay màn hình</string>
+</resources>

@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">DenRecorder</string>
+
+    <string name="nav_record">Record</string>
+    <string name="nav_recordings">Recordings</string>
+    <string name="nav_settings">Settings</string>
+    <string name="settings_title">Settings</string>
+
+    <string name="section_capture">CAPTURE QUALITY</string>
+    <string name="section_audio">AUDIO</string>
+    <string name="section_general">GENERAL</string>
+    <string name="section_about">ABOUT</string>
+
+    <string name="row_resolution">Resolution</string>
+    <string name="row_quality">Video quality</string>
+    <string name="row_fps">Frame rate</string>
+    <string name="row_codec">Video codec</string>
+    <string name="row_audio">Audio source</string>
+    <string name="row_battery">Battery use</string>
+    <string name="row_tile">Quick Settings tile</string>
+    <string name="row_language">Language</string>
+    <string name="row_storage">Save to</string>
+    <string name="row_version">Version</string>
+
+    <string name="row_orientation">Screen orientation</string>
+
+    <string name="row_performance">Game performance</string>
+    <string name="performance_on">Smooth · 60 fps cap</string>
+    <string name="performance_off">Off</string>
+    <string name="title_orientation">Screen orientation</string>
+    <string name="orientation_auto">Automatic</string>
+    <string name="orientation_portrait">Portrait</string>
+    <string name="orientation_landscape">Landscape</string>
+    <string name="notification_starting">Starting…</string>
+    <string name="toast_recording_started">Recording started</string>
+    <string name="toast_recording_saved">Recording saved</string>
+    <string name="row_credit">Credit</string>
+
+    <string name="value_native">Native · %1$s</string>
+    <string name="value_scaled">%1$s</string>
+    <string name="value_class_size">%1$s · %2$s</string>
+    <string name="class_4k">4K</string>
+    <string name="class_2k">2K</string>
+    <string name="class_fhd">Full HD</string>
+    <string name="class_hd">HD</string>
+    <string name="class_sd">SD</string>
+    <string name="value_mbps">%1$d Mbps</string>
+    <string name="value_fps">%1$d fps</string>
+    <string name="value_codec_avc">H.264 AVC</string>
+    <string name="value_codec_hevc">H.265 HEVC</string>
+    <string name="value_tile_added">Added ✓</string>
+    <string name="value_tile_missing">Not added</string>
+    <string name="value_credit">Made with ♥ by BKggDs</string>
+    <string name="battery_on">Unrestricted</string>
+    <string name="battery_off">Optimized · tap to change</string>
+
+    <string name="audio_internal">Device audio (internal)</string>
+    <string name="audio_mic">Microphone</string>
+    <string name="audio_none">No audio</string>
+
+    <string name="start_recording">Start recording</string>
+    <string name="stop_recording">Stop recording</string>
+    <string name="hero_ready_title">Ready to record</string>
+    <string name="hero_ready_body">The whole screen, with sound.</string>
+    <string name="hero_recording_title">Recording</string>
+    <string name="status_ready">Ready · saved to %1$s</string>
+    <string name="status_saving">Saving video…</string>
+    <string name="status_stopping">Stopping…</string>
+    <string name="status_allow_capture">Allow screen capture to start…</string>
+    <string name="status_capture_denied">Screen capture permission denied</string>
+    <string name="status_capture_unavailable">Screen capture is not available on this device</string>
+    <string name="status_starting">Starting recording…</string>
+    <string name="status_start_failed">Could not start the recorder: %1$s</string>
+    <string name="status_stop_first">Stop the recording before changing quality</string>
+    <string name="status_battery_already">Battery use is already unrestricted</string>
+    <string name="status_battery_manual">Open Settings › Apps › DenRecorder › Battery</string>
+    <string name="status_mic_denied">Microphone permission denied — recording without audio</string>
+    <string name="status_tile_added">Tile added to Control Center</string>
+    <string name="status_tile_failed">Add it from Control Center › Edit tiles</string>
+    <string name="status_folder_changed">New recordings go to %1$s</string>
+    <string name="hint_home">Resolution, frame rate (up to 120 fps), quality and codec live in Settings. The floating bar below switches between recording, your videos and settings.</string>
+    <string name="hint_recordings">Recordings are in %1$s. Tap one to play it, hold it to share or delete.</string>
+
+    <string name="title_resolution">Resolution</string>
+    <string name="title_quality">Video quality</string>
+    <string name="title_fps">Frame rate</string>
+    <string name="title_codec">Video codec</string>
+    <string name="title_audio">Audio source</string>
+    <string name="title_language">Language</string>
+    <string name="title_folder">Save recordings to</string>
+    <string name="folder_custom">Custom folder…</string>
+    <string name="folder_input_hint">Movies/My recordings</string>
+    <string name="folder_invalid">Use a folder name like Movies/My recordings</string>
+
+    <string name="codec_avc_item">H.264 AVC (most compatible)</string>
+    <string name="codec_hevc_item">H.265 HEVC (smaller files)</string>
+    <string name="language_en">English</string>
+    <string name="language_vi">Tiếng Việt</string>
+
+    <string name="dialog_cancel">Cancel</string>
+    <string name="dialog_close">Close</string>
+    <string name="dialog_open">Open</string>
+    <string name="dialog_ok">OK</string>
+    <string name="dialog_save">Save</string>
+    <string name="dialog_delete">Delete</string>
+    <string name="saved_title">Recording saved</string>
+    <string name="saved_body">The video is in %1$s and now shows up in your gallery.</string>
+    <string name="failed_title">Recording failed</string>
+
+    <string name="recordings_recent">Recent</string>
+    <string name="recordings_all">All</string>
+    <string name="recordings_empty">No recordings here yet. Videos you record land in this folder.</string>
+    <string name="recordings_count">%1$d video(s) · %2$s</string>
+    <string name="recordings_count_all">%1$d video(s) · %2$s</string>
+    <string name="recordings_action_title">This recording</string>
+    <string name="action_open">Play</string>
+    <string name="action_share">Share</string>
+    <string name="action_delete">Delete</string>
+    <string name="delete_title">Delete this recording?</string>
+    <string name="delete_body">%1$s is removed from your phone for good.</string>
+
+    <string name="setup_battery_title">Battery use</string>
+    <string name="setup_battery_body">Set battery use to “Unrestricted” so recording keeps running in the background and the Control Center tile starts instantly.</string>
+    <string name="setup_allow">Set unrestricted</string>
+    <string name="setup_later">Not now</string>
+    <string name="setup_tile_title">Quick Settings tile</string>
+    <string name="setup_tile_body">Add a DenRecorder button to Control Center so you can start and stop recording with one tap, without opening the app.</string>
+    <string name="setup_tile_add">Add tile</string>
+    <string name="setup_tile_skip">Skip</string>
+    <string name="setup_next">Next</string>
+
+    <string name="notification_channel">Screen recording</string>
+    <string name="notification_title">Screen recording</string>
+    <string name="notification_stop">Stop</string>
+    <string name="rec_stopped_space">Recording stopped — storage is almost full</string>
+    <string name="start_no_space">Not enough free storage to record</string>
+    <string name="tile_recording">Recording…</string>
+    <string name="tile_start_desc">Start screen recording</string>
+    <string name="tile_stop_desc">Stop screen recording</string>
+</resources>
