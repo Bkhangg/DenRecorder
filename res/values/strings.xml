@@ -38,7 +38,7 @@
     <string name="row_orientation">Screen orientation</string>
 
     <string name="row_performance">Game performance</string>
-    <string name="performance_on">Smooth · 60 fps cap</string>
+    <string name="performance_on">Smooth · 60 fps · screen size</string>
     <string name="performance_off">Off</string>
     <string name="title_orientation">Screen orientation</string>
     <string name="orientation_auto">Automatic</string>
@@ -82,6 +82,20 @@
     <string name="draw_size_medium">Medium</string>
     <string name="draw_size_large">Large</string>
     <string name="draw_size_huge">Extra large</string>
+    <string name="row_draw_color">Drawing colour</string>
+    <string name="title_draw_color">Drawing colour</string>
+    <string name="draw_color_rose">Rose</string>
+    <string name="draw_color_red">Red</string>
+    <string name="draw_color_orange">Orange</string>
+    <string name="draw_color_amber">Amber</string>
+    <string name="draw_color_green">Green</string>
+    <string name="draw_color_teal">Teal</string>
+    <string name="draw_color_sky">Sky blue</string>
+    <string name="draw_color_blue">Blue</string>
+    <string name="draw_color_purple">Purple</string>
+    <string name="draw_color_pink">Pink</string>
+    <string name="draw_color_white">White</string>
+    <string name="draw_color_black">Black</string>
     <string name="select_recordings">Select</string>
     <string name="selected_count">%1$d selected</string>
     <string name="delete_selected">Delete (%1$d)</string>

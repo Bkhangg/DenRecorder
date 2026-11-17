@@ -147,9 +147,11 @@ public final class Island {
     /**
      * Adds the island template to an ongoing recording notification.
      *
-     * The island is a compact pill with the app icon and the timer; tapping it
-     * opens the expanded entry with the pause/resume and stop buttons that the
-     * notification already carries.
+     * The island is a compact pill with the app icon and a timer HyperOS counts
+     * by itself; tapping it opens the expanded entry with the pause/resume and
+     * stop buttons that the notification already carries.
+     *
+     * @param startedAt the moment the timer counts up from, in epoch milliseconds.
      */
     public static void apply(Context context, Notification notification, String state,
                              String time, long startedAt, boolean paused) {
@@ -215,7 +217,7 @@ public final class Island {
         JSONObject baseInfo = new JSONObject()
                 .put("type", 2)
                 .put("title", title)
-                .put("content", app + " · " + time)
+                .put("content", app)
                 .put("subTitle", "")
                 .put("extraTitle", "")
                 .put("specialTitle", "")
@@ -227,19 +229,19 @@ public final class Island {
                 .put("colorContent", "#333333")
                 .put("colorContentDark", "#cccccc");
 
-        // The compact summary is only the icon and the timer: no app name, so
-        // the pill stays as small as HyperOS allows.
+        // The compact summary is only the icon and the timer. HyperOS has a
+        // system chronometer (sameWidthDigitInfo with timerInfo), but it only
+        // ticks for focus notifications, not for an island an app posts itself:
+        // it stayed at 00:00 here, so the text is refreshed once a second.
         JSONObject islandArea = new JSONObject()
                 .put("imageTextInfoLeft", new JSONObject()
                         .put("type", 1)
-                        .put("picInfo", new JSONObject().put("type", 1).put("pic", PIC_SMALL)))
-                .put("imageTextInfoRight", new JSONObject()
-                        .put("type", 2)
-                        .put("textInfo", new JSONObject()
-                                .put("title", time)
-                                .put("content", "")
-                                .put("showHighlightColor", false)
-                                .put("narrowFont", true)));
+                        .put("picInfo", new JSONObject().put("type", 1).put("pic", PIC_SMALL)));
+        islandArea.put("sameWidthDigitInfo", new JSONObject()
+                .put("content", "")
+                .put("digit", time)
+                .put("showHighlightColor", false)
+                .put("turnAnim", false));
 
         boolean pulled = !forceVisible && onlyWhenPulled(context);
         JSONObject island = new JSONObject()

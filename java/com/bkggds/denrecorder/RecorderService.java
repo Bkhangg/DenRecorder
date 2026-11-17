@@ -92,18 +92,6 @@ public class RecorderService extends Service {
      * every second: the notification counts time by itself (chronometer), and
      * this ticker only checks that storage is not running out.
      */
-    private final Runnable ticker = new Runnable() {
-        @Override
-        public void run() {
-            if (!isRecording) return;
-            if (freeBytes() < LOW_SPACE_BYTES) {
-                stopRecording(getString(R.string.rec_stopped_space));
-                return;
-            }
-            handler.postDelayed(this, 15_000);
-        }
-    };
-
     /**
      * The island draws the time we send, not a chronometer, so it is refreshed
      * once a second while the beta feature is on. Nothing else in the app
@@ -116,6 +104,18 @@ public class RecorderService extends Service {
             if (!Island.enabled(RecorderService.this)) return;
             if (Island.allowed(RecorderService.this)) updateNotification();
             handler.postDelayed(this, 1_000);
+        }
+    };
+
+    private final Runnable ticker = new Runnable() {
+        @Override
+        public void run() {
+            if (!isRecording) return;
+            if (freeBytes() < LOW_SPACE_BYTES) {
+                stopRecording(getString(R.string.rec_stopped_space));
+                return;
+            }
+            handler.postDelayed(this, 15_000);
         }
     };
 
@@ -305,16 +305,20 @@ public class RecorderService extends Service {
         try {
             int resWidth = prefs.getInt("resWidth", 0);
             int fps = prefs.getInt("fps", 60);
-            if (prefs.getBoolean("perfMode", true) && fps > 60) {
+            boolean perfMode = prefs.getBoolean("perfMode", true);
+            if (perfMode && fps > 60) {
                 // Keep a game next to the recorder smooth: 60 fps is enough.
                 fps = 60;
             }
             int bitrate = prefs.getInt("bitrateMbps", 32) * 1_000_000;
             String codec = prefs.getString("codec", "avc");
+            // In performance mode the video never grows past the screen: an
+            // upscaled 4K frame costs the GPU the game needs.
+            boolean capToScreen = perfMode;
             recorder = new ScreenRecorder(getApplicationContext(), projection, audio,
                     resWidth, fps, bitrate,
                     "hevc".equals(codec) ? ScreenRecorder.CODEC_HEVC : ScreenRecorder.CODEC_AVC,
-                    rotationLocked ? orientation : "auto");
+                    rotationLocked ? orientation : "auto", capToScreen);
             recorder.start();
             updateNotification();
             refreshTile();
@@ -594,9 +598,12 @@ public class RecorderService extends Service {
             long elapsed = elapsedMs();
             String time = String.format(java.util.Locale.US, "%02d:%02d",
                     elapsed / 60000L, (elapsed / 1000L) % 60L);
+            // HyperOS counts the island timer up from this moment on its own,
+            // so paused time is simply left out of it.
+            long timerFrom = System.currentTimeMillis() - elapsed;
             Island.apply(this, notification,
                     getString(isPaused ? R.string.island_paused : R.string.island_recording),
-                    time, startedAt, isPaused);
+                    time, timerFrom, isPaused);
         }
         return notification;
     }

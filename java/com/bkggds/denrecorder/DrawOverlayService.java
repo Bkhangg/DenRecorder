@@ -44,7 +44,24 @@ public class DrawOverlayService extends Service {
     public static final int[] BUBBLE_DP = {44, 58, 74, 92};
     public static final int[] TOOL_DP = {42, 50, 60, 72};
 
-    private static final int INK = Color.parseColor("#F43F5E");
+    /** The ink colors the drawing tools can use, in the settings' order. */
+    public static final int[] PALETTE = {
+            Color.parseColor("#F43F5E"),   // rose
+            Color.parseColor("#EF4444"),   // red
+            Color.parseColor("#F97316"),   // orange
+            Color.parseColor("#FBBF24"),   // amber
+            Color.parseColor("#22C55E"),   // green
+            Color.parseColor("#14B8A6"),   // teal
+            Color.parseColor("#0EA5E9"),   // sky
+            Color.parseColor("#3B82F6"),   // blue
+            Color.parseColor("#A855F7"),   // purple
+            Color.parseColor("#EC4899"),   // pink
+            Color.parseColor("#FFFFFF"),   // white
+            Color.parseColor("#111111")    // black
+    };
+
+    public static final int DEFAULT_INK = PALETTE[0];
+    private static final int INK = DEFAULT_INK;
     private static final int PANEL = Color.parseColor("#EE111113");
     private static final int BORDER = Color.parseColor("#3F3F46");
     private static final int TEXT = Color.parseColor("#FAFAFA");
@@ -89,6 +106,25 @@ public class DrawOverlayService extends Service {
             @Override
             public void run() {
                 service.updatePauseButton();
+            }
+        });
+    }
+
+    /** The colour picked in settings; the drawing tools use it for new shapes. */
+    public static int inkColor(Context context) {
+        int color = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
+                .getInt("drawColor", DEFAULT_INK);
+        return color == 0 ? DEFAULT_INK : color;
+    }
+
+    /** Applies a new ink colour without waiting for the next recording. */
+    public static void refreshColor(Context context) {
+        final DrawOverlayService service = instance;
+        if (service == null) return;
+        service.handler.post(new Runnable() {
+            @Override
+            public void run() {
+                if (service.layer != null) service.layer.setInk(inkColor(service));
             }
         });
     }
@@ -150,6 +186,7 @@ public class DrawOverlayService extends Service {
         int size = BUBBLE_DP[sizeIndex(this)];
 
         layer = new DrawLayer(this);
+        layer.setInk(inkColor(this));
         layerParams = overlayParams(
                 WindowManager.LayoutParams.MATCH_PARENT,
                 WindowManager.LayoutParams.MATCH_PARENT);
@@ -472,6 +509,7 @@ public class DrawOverlayService extends Service {
 
         private static final class Shape {
             final int tool;
+            final int color;
             final float startX;
             final float startY;
             float endX;
@@ -480,8 +518,9 @@ public class DrawOverlayService extends Service {
             float lastX;
             float lastY;
 
-            Shape(int tool, float startX, float startY, float endX, float endY) {
+            Shape(int tool, int color, float startX, float startY, float endX, float endY) {
                 this.tool = tool;
+                this.color = color;
                 this.startX = startX;
                 this.startY = startY;
                 this.endX = endX;
@@ -510,6 +549,7 @@ public class DrawOverlayService extends Service {
         private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
         private Shape current;
         private int tool = TOOL_NONE;
+        private int ink = INK;
 
         DrawLayer(Context context) {
             super(context);
@@ -517,8 +557,13 @@ public class DrawOverlayService extends Service {
             paint.setStrokeWidth(context.getResources().getDisplayMetrics().density * 4f);
             paint.setStrokeCap(Paint.Cap.ROUND);
             paint.setStrokeJoin(Paint.Join.ROUND);
-            paint.setColor(INK);
+            paint.setColor(ink);
             setBackgroundColor(Color.TRANSPARENT);
+        }
+
+        /** New strokes use this colour; what is already drawn keeps its own. */
+        void setInk(int color) {
+            ink = color;
         }
 
         int getTool() {
@@ -542,7 +587,7 @@ public class DrawOverlayService extends Service {
             if (tool == TOOL_NONE) return false;
             switch (event.getActionMasked()) {
                 case MotionEvent.ACTION_DOWN:
-                    current = new Shape(tool, event.getX(), event.getY(),
+                    current = new Shape(tool, ink, event.getX(), event.getY(),
                             event.getX(), event.getY());
                     invalidate();
                     return true;
@@ -581,6 +626,7 @@ public class DrawOverlayService extends Service {
         }
 
         private void drawShape(Canvas canvas, Shape shape) {
+            paint.setColor(shape.color);
             if (shape.tool == TOOL_PEN) {
                 if (shape.path != null) canvas.drawPath(shape.path, paint);
                 return;

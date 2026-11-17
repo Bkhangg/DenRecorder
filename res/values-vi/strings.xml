@@ -38,7 +38,7 @@
     <string name="row_orientation">Hướng màn hình</string>
 
     <string name="row_performance">Hiệu năng khi chơi game</string>
-    <string name="performance_on">Mượt · giới hạn 60 fps</string>
+    <string name="performance_on">Mượt · 60 fps · cỡ màn hình</string>
     <string name="performance_off">Tắt</string>
     <string name="title_orientation">Hướng màn hình</string>
     <string name="orientation_auto">Tự động</string>
@@ -82,6 +82,20 @@
     <string name="draw_size_medium">Vừa</string>
     <string name="draw_size_large">Lớn</string>
     <string name="draw_size_huge">Rất lớn</string>
+    <string name="row_draw_color">Màu vẽ</string>
+    <string name="title_draw_color">Màu vẽ</string>
+    <string name="draw_color_rose">Hồng đào</string>
+    <string name="draw_color_red">Đỏ</string>
+    <string name="draw_color_orange">Cam</string>
+    <string name="draw_color_amber">Hổ phách</string>
+    <string name="draw_color_green">Xanh lá</string>
+    <string name="draw_color_teal">Xanh ngọc</string>
+    <string name="draw_color_sky">Xanh trời</string>
+    <string name="draw_color_blue">Xanh dương</string>
+    <string name="draw_color_purple">Tím</string>
+    <string name="draw_color_pink">Hồng</string>
+    <string name="draw_color_white">Trắng</string>
+    <string name="draw_color_black">Đen</string>
     <string name="select_recordings">Chọn</string>
     <string name="selected_count">Đã chọn %1$d</string>
     <string name="delete_selected">Xóa (%1$d)</string>

@@ -70,6 +70,8 @@ public class ScreenRecorder {
     private final int requestedBitrate;
     private final String mime;
     private final String orientation;   // "auto", "portrait" or "landscape"
+    /** Never record bigger than the screen: an upscale only costs the GPU. */
+    private final boolean capToScreen;
     private String codecLabel = "AVC";
 
     private MediaCodec videoCodec;
@@ -135,6 +137,19 @@ public class ScreenRecorder {
     public ScreenRecorder(Context context, MediaProjection projection, int audioSource,
                           int requestedWidth, int requestedFps, int requestedBitrate,
                           String mime, String orientation) {
+        this(context, projection, audioSource, requestedWidth, requestedFps, requestedBitrate,
+                mime, orientation, false);
+    }
+
+    /**
+     * @param capToScreen true in performance mode: a preset larger than the
+     *                    screen is recorded at the screen size instead, so the
+     *                    GPU is not asked to upscale every frame.
+     */
+    public ScreenRecorder(Context context, MediaProjection projection, int audioSource,
+                          int requestedWidth, int requestedFps, int requestedBitrate,
+                          String mime, String orientation, boolean capToScreen) {
+        this.capToScreen = capToScreen;
         this.orientation = orientation == null ? "auto" : orientation;
         this.context = context;
         this.projection = projection;
@@ -409,6 +424,11 @@ public class ScreenRecorder {
         int[] target = requestedWidth > 0
                 ? scaledSize(screenWidth, screenHeight, requestedWidth)
                 : new int[]{screenWidth & ~1, screenHeight & ~1};
+        if (capToScreen && (target[0] > screenWidth || target[1] > screenHeight)) {
+            // Same picture, less work: never encode more pixels than the screen
+            // has, which is what a game at 120 fps needs.
+            target = new int[]{screenWidth & ~1, screenHeight & ~1};
+        }
         addCandidate(candidates, target);
         addCandidate(candidates, new int[]{align(target[0], alignW), align(target[1], alignH)});
         addCandidate(candidates, new int[]{screenWidth & ~1, screenHeight & ~1});

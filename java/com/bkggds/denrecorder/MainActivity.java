@@ -169,7 +169,9 @@ public class MainActivity extends Activity {
     private String orientation = "auto";
     private boolean drawOverlay = true;
     private int drawSize = 1;
+    private int drawColor = DrawOverlayService.DEFAULT_INK;
     private TextView drawSizeValueView;
+    private TextView drawColorValueView;
     private boolean perfMode = true;
     private boolean pendingStart;
     private boolean sawRecording;
@@ -278,6 +280,7 @@ public class MainActivity extends Activity {
         perfMode = prefs.getBoolean("perfMode", true);
         drawOverlay = prefs.getBoolean("drawOverlay", true);
         drawSize = prefs.getInt("drawSize", 1);
+        drawColor = prefs.getInt("drawColor", DrawOverlayService.DEFAULT_INK);
         handler = new Handler(Looper.getMainLooper());
         try {
             rikka.shizuku.Shizuku.addRequestPermissionResultListener(islandPermissionListener);
@@ -596,6 +599,9 @@ public class MainActivity extends Activity {
         divider(generalCard);
         drawSizeValueView = addRow(generalCard, R.drawable.ic_rect, R.string.row_draw_size,
                 "", true, this::chooseDrawSize);
+        divider(generalCard);
+        drawColorValueView = addRow(generalCard, R.drawable.ic_pen, R.string.row_draw_color,
+                "", true, this::chooseDrawColor);
 
         // Super Island is a Xiaomi feature, so the row only exists there.
         if (Island.isXiaomi()) {
@@ -1178,6 +1184,7 @@ public class MainActivity extends Activity {
             updateOrientationValue();
             updateDrawValue();
             updateDrawSizeValue();
+            updateDrawColorValue();
         } else if (index == 2) {
             loadRecordings();
         }
@@ -2097,6 +2104,114 @@ public class MainActivity extends Activity {
         if (drawSizeValueView == null) return;
         String[] sizes = drawSizeLabels();
         drawSizeValueView.setText(sizes[Math.max(0, Math.min(sizes.length - 1, drawSize))]);
+    }
+
+    /** A colour well: the tools draw new shapes in the picked colour. */
+    private void chooseDrawColor() {
+        final Dialog dialog = new Dialog(this);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setBackground(round(CARD, 20, BORDER));
+        card.setPadding(dp(16), dp(18), dp(16), dp(8));
+
+        TextView titleView = label(getString(R.string.title_draw_color), 17, TEXT, true);
+        titleView.setPadding(dp(4), 0, dp(4), dp(12));
+        card.addView(titleView, lp(MATCH, WRAP, 0, 0, 0, 0));
+
+        int[] palette = DrawOverlayService.PALETTE;
+        int[] names = {
+                R.string.draw_color_rose, R.string.draw_color_red,
+                R.string.draw_color_orange, R.string.draw_color_amber,
+                R.string.draw_color_green, R.string.draw_color_teal,
+                R.string.draw_color_sky, R.string.draw_color_blue,
+                R.string.draw_color_purple, R.string.draw_color_pink,
+                R.string.draw_color_white, R.string.draw_color_black
+        };
+        int columns = 6;
+        LinearLayout row = null;
+        for (int i = 0; i < palette.length; i++) {
+            if (i % columns == 0) {
+                row = new LinearLayout(this);
+                row.setOrientation(LinearLayout.HORIZONTAL);
+                card.addView(row, lp(MATCH, WRAP, 0, 0, 0, 0));
+            }
+            final int color = palette[i];
+            boolean picked = color == drawColor;
+
+            FrameLayout cell = new FrameLayout(this);
+            cell.setContentDescription(getString(names[i]));
+            cell.setClickable(true);
+            cell.setFocusable(true);
+            cell.setBackground(round(0x00000000, 14, 0));
+
+            View dot = new View(this);
+            GradientDrawable ring = new GradientDrawable();
+            ring.setShape(GradientDrawable.OVAL);
+            ring.setColor(color);
+            ring.setStroke(dp(picked ? 3 : 1), picked ? TEXT : BORDER);
+            dot.setBackground(ring);
+            FrameLayout.LayoutParams dotParams =
+                    new FrameLayout.LayoutParams(dp(38), dp(38), Gravity.CENTER);
+            cell.addView(dot, dotParams);
+
+            cell.setOnClickListener(v -> {
+                drawColor = color;
+                prefs.edit().putInt("drawColor", drawColor).apply();
+                updateDrawColorValue();
+                DrawOverlayService.refreshColor(this);
+                dialog.dismiss();
+            });
+            row.addView(cell, new LinearLayout.LayoutParams(0, dp(54), 1f));
+        }
+
+        Button close = new Button(this);
+        close.setAllCaps(false);
+        close.setText(getString(R.string.dialog_cancel));
+        close.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+        close.setStateListAnimator(null);
+        close.setBackground(round(0x00000000, 12, 0));
+        close.setTextColor(MUTED);
+        close.setOnClickListener(v -> dialog.dismiss());
+        card.addView(close, lp(MATCH, dp(44), 0, 6, 0, 0));
+
+        FrameLayout holder = new FrameLayout(this);
+        holder.setPadding(dp(22), dp(22), dp(22), dp(22));
+        holder.addView(card, new FrameLayout.LayoutParams(MATCH, WRAP));
+        dialog.setContentView(holder);
+
+        Window window = dialog.getWindow();
+        if (window != null) {
+            window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+            window.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
+            window.setDimAmount(0.65f);
+            window.setLayout(MATCH, WRAP);
+        }
+        dialog.show();
+        if (window != null) window.setLayout(MATCH, WRAP);
+        animateDialogIn(card);
+    }
+
+    private void updateDrawColorValue() {
+        if (drawColorValueView == null) return;
+        int[] palette = DrawOverlayService.PALETTE;
+        int[] names = {
+                R.string.draw_color_rose, R.string.draw_color_red,
+                R.string.draw_color_orange, R.string.draw_color_amber,
+                R.string.draw_color_green, R.string.draw_color_teal,
+                R.string.draw_color_sky, R.string.draw_color_blue,
+                R.string.draw_color_purple, R.string.draw_color_pink,
+                R.string.draw_color_white, R.string.draw_color_black
+        };
+        int index = 0;
+        for (int i = 0; i < palette.length; i++) {
+            if (palette[i] == drawColor) {
+                index = i;
+                break;
+            }
+        }
+        drawColorValueView.setText(names[index]);
     }
 
     private void requestOverlayPermission() {

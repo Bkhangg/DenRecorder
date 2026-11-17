@@ -21,7 +21,7 @@ DenRecorder records the whole screen (and the device audio, the microphone or no
 - **Xiaomi Super Island (beta, Xiaomi only)** — the running recording shows up in HyperOS's island as a small icon with its timer, and a tap on it gives **pause, resume and stop** right on the bar; it can be hidden entirely, and HyperOS hides it by itself whenever the status bar is pulled down (the notification there carries the same buttons). Needs Shizuku once to grant the island permission.
 - **Game performance mode** — caps the recorder at 60 fps and runs the encoder in realtime priority, so a game next to it keeps its frame rate.
 - **Recordings screen** — recent/all lists with real thumbnails, the video's own name and the folder it is saved in; tap to play, long-press for play/share/**rename**/delete, or tap **Select** to pick several videos and delete them at once.
-- **Draw on screen** — a floating button while recording: pencil, rectangle or circle drawn straight onto the screen (they end up in the video), pause and stop from the same bar. A tool stays picked, so several shapes can be drawn one after another, and the button's size can be changed in settings.
+- **Draw on screen** — a floating button while recording: pencil, rectangle or circle drawn straight onto the screen (they end up in the video), pause and stop from the same bar. A tool stays picked, so several shapes can be drawn one after another; the button's size and the drawing colour (12 colours) are picked in settings, and every shape keeps the colour it was drawn with.
 - **Pause and resume** — one recording stays one file; the paused time is cut out of the video and the timer stops while paused.
 - **Built-in player** — a recording opens in DenRecorder's own player (play/pause, seek, double-tap to jump 10 s back or forward, and a rotate button that turns the video even when the phone's rotation is locked), so the video you tap is the video you get, whatever gallery app is installed.
 - **Choose where videos go** — `Movies/Screen Recorder` by default, five presets, the phone's own folder browser, or a typed path, including `Download` (videos land in the Downloads collection so MIUI keeps them there).
@@ -33,7 +33,7 @@ DenRecorder records the whole screen (and the device audio, the microphone or no
 
 ### Install
 
-1. Download `DenRecorder-1.7.0.apk` from the [Releases](../../releases) page.
+1. Download `DenRecorder-1.8.0.apk` from the [Releases](../../releases) page.
 2. Open it on the phone and allow installing apps from that source if asked.
 3. Open DenRecorder, allow the permissions it asks for, and optionally let it add the Quick Settings tile.
 
@@ -81,6 +81,13 @@ res/                    strings (EN + VI), icons, launcher icons
 ```
 
 ### What's new
+
+**1.8.0**
+
+- New **Drawing colour** setting (Settings → General, under the button size): twelve colours; from then on rectangles, circles and pencil strokes are drawn in it, and a shape already on the screen keeps the colour it had.
+- **Game performance** now also keeps the video at the screen's own size: a 2K or 4K preset is recorded at 1220 × 2712 instead of being upscaled, so the GPU and encoder do less while a heavy game runs. The row's value says so ("Smooth · 60 fps · screen size").
+- The opened island no longer repeats the app name and the timer: it shows the state and one line, while the small pill carries the counter.
+- Long recordings: the timer in the notification is counted by Android itself, and the island only refreshes its text; nothing builds up in memory over an hour.
 
 **1.7.0**
 
@@ -168,7 +175,7 @@ DenRecorder quay toàn bộ màn hình (kèm âm thanh thiết bị, micrô ho�
 - **Super Island của Xiaomi (beta, chỉ máy Xiaomi)** — bản ghi đang chạy hiện trên đảo của HyperOS dưới dạng một biểu tượng nhỏ kèm đồng hồ đếm, chạm vào đảo là **tạm dừng, tiếp tục và dừng** ngay trên thanh đó; có thể tắt hẳn, và HyperOS tự ẩn đảo khi bạn kéo thanh trạng thái xuống (thông báo ở đó có đúng các nút này). Cần Shizuku một lần để cấp quyền hiện đảo.
 - **Chế độ hiệu năng khi chơi game** — giới hạn 60 fps và ưu tiên thời gian thực cho bộ mã hóa, để game đang chạy bên cạnh vẫn mượt.
 - **Màn Bản ghi** — danh sách Gần đây/Tất cả kèm ảnh thu nhỏ thật, tên video và thư mục lưu; chạm để xem, giữ để xem/chia sẻ/**đổi tên**/xóa, hoặc bấm **Chọn** để chọn nhiều bản ghi và xóa một lần.
-- **Vẽ trên màn hình** — nút nổi khi đang quay: bút chì, hình chữ nhật hoặc khoanh tròn vẽ thẳng lên màn hình (có trong video), tạm dừng và dừng quay ngay trên thanh đó. Chọn công cụ một lần là vẽ được nhiều hình liên tiếp; kích thước nút nổi chỉnh được trong Cài đặt.
+- **Vẽ trên màn hình** — nút nổi khi đang quay: bút chì, hình chữ nhật hoặc khoanh tròn vẽ thẳng lên màn hình (có trong video), tạm dừng và dừng quay ngay trên thanh đó. Chọn công cụ một lần là vẽ được nhiều hình liên tiếp; kích thước nút nổi và màu vẽ (12 màu) chỉnh trong Cài đặt, mỗi hình giữ đúng màu lúc vẽ.
 - **Tạm dừng và tiếp tục** — một lần quay vẫn là một file, thời gian tạm dừng được cắt khỏi video và đồng hồ đếm dừng lại khi tạm dừng.
 - **Trình phát sẵn trong app** — chạm vào bản ghi là phát ngay trong DenRecorder (phát/tạm dừng, tua, nhấn đúp để lùi hoặc tiến 10 giây, nút xoay màn hình hoạt động cả khi điện thoại đang khoá xoay), đúng video vừa chọn dù máy dùng ứng dụng thư viện nào.
 - **Chọn thư mục lưu** — mặc định `Movies/Screen Recorder`, có 5 gợi ý sẵn, duyệt thư mục bằng trình chọn của điện thoại, hoặc tự nhập.
@@ -180,7 +187,7 @@ DenRecorder quay toàn bộ màn hình (kèm âm thanh thiết bị, micrô ho�
 
 ### Cài đặt
 
-1. Tải `DenRecorder-1.7.0.apk` ở mục [Releases](../../releases).
+1. Tải `DenRecorder-1.8.0.apk` ở mục [Releases](../../releases).
 2. Mở file trên điện thoại và cho phép cài đặt từ nguồn đó nếu được hỏi.
 3. Mở DenRecorder, cấp quyền khi được hỏi, có thể thêm nút vào Trung tâm điều khiển.
 
@@ -207,6 +214,13 @@ export ANDROID_HOME=$HOME/android-sdk
 `app.properties` chứa `versionCode`, `versionName`, `minSdk`.
 
 ### Có gì mới
+
+**1.8.0**
+
+- Mục mới **Màu vẽ** (Cài đặt → Chung, ngay dưới kích thước nút nổi): 12 màu; từ đó hình chữ nhật, vòng tròn và nét bút được vẽ bằng màu này, hình đã vẽ giữ nguyên màu cũ.
+- **Hiệu năng khi chơi game** giờ còn giữ video đúng cỡ màn hình: chọn 2K hay 4K thì vẫn ghi ở 1220 × 2712 thay vì phóng to, nên GPU và bộ mã hóa làm việc ít hơn khi chơi game nặng. Dòng này ghi rõ "Mượt · 60 fps · cỡ màn hình".
+- Mở đảo ra không còn lặp tên ứng dụng và đồng hồ: chỉ còn trạng thái và một dòng, còn đồng hồ đếm nằm ở viên đảo nhỏ.
+- Ghi dài: đồng hồ trong thông báo do Android tự đếm, đảo chỉ cập nhật chữ; quay cả tiếng không bị dồn bộ nhớ.
 
 **1.7.0**
 
