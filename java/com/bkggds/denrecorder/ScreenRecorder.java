@@ -455,7 +455,36 @@ public class ScreenRecorder {
         float scale = (float) targetWidth / Math.max(1, screenWidth);
         int w = Math.round(screenWidth * scale);
         int h = Math.round(screenHeight * scale);
-        return new int[]{Math.max(2, w & ~1), Math.max(2, h & ~1)};
+        return limitToPlayable(Math.max(2, w), Math.max(2, h));
+    }
+
+    /**
+     * Phone decoders stop at 3840 pixels on the long side and at 36864
+     * macroblocks per frame (H.264 level 5.1). A taller "4K" clip — 2160 × 4802
+     * on a portrait phone — records fine but then will not play in the gallery,
+     * so every recording is kept inside that limit.
+     */
+    public static int[] limitToPlayable(int width, int height) {
+        if (width < 2 || height < 2) {
+            return new int[]{Math.max(2, width & ~1), Math.max(2, height & ~1)};
+        }
+        final int maxSide = 3840;
+        final long maxMacroblocks = 36864L;
+        double scale = 1.0;
+        int side = Math.max(width, height);
+        if (side > maxSide) scale = (double) maxSide / side;
+        long scaledWidth = Math.round(width * scale);
+        long scaledHeight = Math.round(height * scale);
+        long macroblocks = ((scaledWidth + 15) / 16) * ((scaledHeight + 15) / 16);
+        if (macroblocks > maxMacroblocks) {
+            double extra = Math.sqrt((double) maxMacroblocks / macroblocks);
+            scaledWidth = Math.round(scaledWidth * extra);
+            scaledHeight = Math.round(scaledHeight * extra);
+        }
+        return new int[]{
+                (int) Math.max(2, scaledWidth & ~1),
+                (int) Math.max(2, scaledHeight & ~1)
+        };
     }
 
     private static void addCandidate(List<int[]> candidates, int[] size) {

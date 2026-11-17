@@ -13,12 +13,13 @@ DenRecorder records the whole screen (and the device audio, the microphone or no
 ### Features
 
 - **Exact screen size** — a native recording is saved at the real screen resolution (for example 1220 × 2712), not scaled down to the encoder's 16-pixel grid.
-- **Quality presets** — Native, 4K, 2K, Full HD, HD and SD, keeping the screen's aspect ratio.
+- **Quality presets** — Native, 4K, 2K, Full HD, HD and SD, keeping the screen's aspect ratio. Videos stay inside what phone decoders handle (3840 px on the long side, H.264 level 5.1 frame size), so a 4K recording plays in every gallery and player.
 - **15–50 Mbps** variable bitrate, **H.264 AVC** or **H.265 HEVC**, up to **120 fps**.
 - **Audio** — internal device audio (Android 10+), microphone, or silent.
 - **Quick Settings tile** — start and stop without opening the app, with a toast when the recording starts or is saved.
 - **Game performance mode** — caps the recorder at 60 fps and runs the encoder in realtime priority, so a game next to it keeps its frame rate.
 - **Recordings screen** — recent/all lists with real thumbnails, tap to play, long-press to play, share or delete.
+- **Built-in player** — a recording opens in DenRecorder's own player (play/pause, seek), so the video you tap is the video you get, whatever gallery app is installed.
 - **Choose where videos go** — `Movies/Screen Recorder` by default, five presets or any custom folder.
 - **Recording rotation** — automatic, portrait or landscape: the screen is locked to that rotation for the whole recording (your phone's own rotation setting comes back afterwards), so the video never turns halfway through.
 - **Long recordings** — the notification uses the system chronometer (no wake-ups every second), storage is checked every 15 s, recording stops safely before the card fills up.
@@ -28,7 +29,7 @@ DenRecorder records the whole screen (and the device audio, the microphone or no
 
 ### Install
 
-1. Download `DenRecorder-1.0.1.apk` from the [Releases](../../releases) page.
+1. Download `DenRecorder-1.1.0.apk` from the [Releases](../../releases) page.
 2. Open it on the phone and allow installing apps from that source if asked.
 3. Open DenRecorder, allow the permissions it asks for, and optionally let it add the Quick Settings tile.
 
@@ -52,7 +53,7 @@ export ANDROID_HOME=$HOME/android-sdk   # folder with android-36/android.jar and
 ./build.sh                              # writes build/app.apk
 ```
 
-`app.properties` holds `versionCode`, `versionName` and `minSdk`. The APK is signed with the debug key in `~/.keys` on first build.
+`app.properties` holds `versionCode`, `versionName` and `minSdk`. The first build creates a signing key in `~/.denrecorder-keys` and reuses it afterwards.
 
 ### Project layout
 
@@ -62,13 +63,27 @@ app.properties          versionCode / versionName / minSdk
 build.sh                build without Gradle
 java/com/bkggds/denrecorder/
   MainActivity.java     screens, settings, recordings list, dialogs
+  PlayerActivity.java   built-in video player for the recordings
   ScreenRecorder.java   MediaCodec + MediaMuxer pipeline
   RecorderService.java  foreground service, notification, toasts
+  RotationLock.java     locks the screen rotation while recording
   QsTileService.java    Quick Settings tile
   CapturePromptActivity.java  transparent capture-consent trampoline
   LocaleHelper.java     EN/VI switching
 res/                    strings (EN + VI), icons, launcher icons
 ```
+
+### What's new
+
+**1.1.0**
+
+- Videos open in DenRecorder's own player, so tapping a recording always plays that recording.
+- 4K and 2K recordings are kept inside what phone decoders handle (long side ≤ 3840 px, H.264 level 5.1 frame size), so they play in the gallery and in every player.
+- Screen rotation can be locked while recording, with the permission asked once.
+
+**1.0.1** — rotation lock while recording, permission flow.
+
+**1.0.0** — first release: native-size recording, presets, device audio, Quick Settings tile, game performance mode, recordings screen, bilingual UI.
 
 ### License
 
@@ -91,6 +106,7 @@ DenRecorder quay toàn bộ màn hình (kèm âm thanh thiết bị, micrô ho�
 - **Nút trên Trung tâm điều khiển** — bắt đầu và dừng quay mà không cần mở ứng dụng, có toast thông báo khi bắt đầu và khi đã lưu.
 - **Chế độ hiệu năng khi chơi game** — giới hạn 60 fps và ưu tiên thời gian thực cho bộ mã hóa, để game đang chạy bên cạnh vẫn mượt.
 - **Màn Bản ghi** — danh sách Gần đây/Tất cả kèm ảnh thu nhỏ thật của video, chạm để xem, giữ để xem/chia sẻ/xóa.
+- **Trình phát sẵn trong app** — chạm vào bản ghi là phát ngay trong DenRecorder (phát/tạm dừng, tua), đúng video vừa chọn dù máy dùng ứng dụng thư viện nào.
 - **Chọn thư mục lưu** — mặc định `Movies/Screen Recorder`, có 5 gợi ý sẵn hoặc tự nhập.
 - **Hướng khi ghi hình** — tự động, dọc hoặc ngang: màn hình được khóa đúng hướng đó trong suốt lần quay (cài đặt xoay của máy được trả lại sau khi dừng), nên video không bị xoay giữa chừng.
 - **Quay dài** — thông báo dùng đồng hồ đếm của hệ thống (không đánh thức mỗi giây), kiểm tra dung lượng mỗi 15 giây và tự dừng trước khi đầy bộ nhớ.
@@ -100,7 +116,7 @@ DenRecorder quay toàn bộ màn hình (kèm âm thanh thiết bị, micrô ho�
 
 ### Cài đặt
 
-1. Tải `DenRecorder-1.0.1.apk` ở mục [Releases](../../releases).
+1. Tải `DenRecorder-1.1.0.apk` ở mục [Releases](../../releases).
 2. Mở file trên điện thoại và cho phép cài đặt từ nguồn đó nếu được hỏi.
 3. Mở DenRecorder, cấp quyền khi được hỏi, có thể thêm nút vào Trung tâm điều khiển.
 
@@ -125,6 +141,18 @@ export ANDROID_HOME=$HOME/android-sdk
 ```
 
 `app.properties` chứa `versionCode`, `versionName`, `minSdk`.
+
+### Có gì mới
+
+**1.1.0**
+
+- Video mở bằng trình phát của chính DenRecorder, chạm bản ghi nào phát đúng bản ghi đó.
+- Bản ghi 4K và 2K được giữ trong giới hạn bộ giải mã điện thoại (cạnh dài ≤ 3840 px, khung hình H.264 level 5.1) nên phát được trong thư viện và mọi trình phát.
+- Có thể khóa hướng màn hình trong lúc ghi, chỉ xin quyền một lần.
+
+**1.0.1** — khóa hướng khi ghi, xin quyền.
+
+**1.0.0** — bản đầu tiên: quay đúng kích thước gốc, các mức phân giải, âm thanh trong máy, nút Trung tâm điều khiển, chế độ hiệu năng game, màn Bản ghi, song ngữ.
 
 ### Giấy phép
 

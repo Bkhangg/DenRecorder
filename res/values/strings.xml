@@ -43,6 +43,11 @@
     <string name="orientation_permission_unavailable">Could not open that settings page</string>
     <string name="toast_recording_started_locked">Recording started · %1$s locked</string>
     <string name="notification_starting">Starting…</string>
+    <string name="player_error">This video can not be played</string>
+    <string name="player_play">Play</string>
+    <string name="player_pause">Pause</string>
+    <string name="player_close">Close</string>
+    <string name="player_open_failed">Could not open the player</string>
     <string name="toast_recording_started">Recording started</string>
     <string name="toast_recording_saved">Recording saved</string>
     <string name="row_credit">Credit</string>

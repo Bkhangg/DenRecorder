@@ -634,7 +634,7 @@ public class MainActivity extends Activity {
         texts.addView(meta, lp(MATCH, WRAP, 0, 3, 0, 0));
 
         parent.addView(row, lp(MATCH, WRAP, 0, 0, 0, 0));
-        row.setOnClickListener(v -> playRecording(item.uri));
+        row.setOnClickListener(v -> playRecording(item));
         row.setOnLongClickListener(v -> {
             showRecordingActions(item);
             return true;
@@ -717,7 +717,7 @@ public class MainActivity extends Activity {
                 getString(R.string.action_delete)
         };
         showChoices(item.title(), items, -1, which -> {
-            if (which == 0) playRecording(item.uri);
+            if (which == 0) playRecording(item);
             else if (which == 1) shareRecording(item.uri);
             else confirmDelete(item);
         });
@@ -736,12 +736,12 @@ public class MainActivity extends Activity {
                 getString(R.string.dialog_cancel), null);
     }
 
-    private void playRecording(Uri uri) {
+    private void playRecording(Recording item) {
         try {
-            startActivity(new Intent(Intent.ACTION_VIEW)
-                    .setDataAndType(uri, "video/mp4")
-                    .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION));
-        } catch (Exception ignored) { }
+            PlayerActivity.open(this, item.uri, item.title());
+        } catch (Exception e) {
+            status(R.string.player_open_failed, RED);
+        }
     }
 
     private void shareRecording(Uri uri) {
@@ -1049,7 +1049,8 @@ public class MainActivity extends Activity {
             outWidth = Math.round(screenWidth * scale);
             outHeight = Math.round(screenHeight * scale);
         }
-        return new int[]{outWidth & ~1, outHeight & ~1};
+        // Same limit the recorder uses, so the label matches the real video.
+        return ScreenRecorder.limitToPlayable(outWidth, outHeight);
     }
 
     private String dims(int width) {

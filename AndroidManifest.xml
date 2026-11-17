@@ -37,6 +37,12 @@
         </activity>
 
         <activity
+            android:name=".PlayerActivity"
+            android:exported="false"
+            android:label="DenRecorder"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|uiMode" />
+
+        <activity
             android:name=".CapturePromptActivity"
             android:exported="false"
             android:excludeFromRecents="true"

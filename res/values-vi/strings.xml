@@ -43,6 +43,11 @@
     <string name="orientation_permission_unavailable">Không mở được trang cài đặt đó</string>
     <string name="toast_recording_started_locked">Đang ghi · đã khóa %1$s</string>
     <string name="notification_starting">Đang bắt đầu…</string>
+    <string name="player_error">Không phát được video này</string>
+    <string name="player_play">Phát</string>
+    <string name="player_pause">Tạm dừng</string>
+    <string name="player_close">Đóng</string>
+    <string name="player_open_failed">Không mở được trình phát</string>
     <string name="toast_recording_started">Đã bắt đầu quay</string>
     <string name="toast_recording_saved">Đã lưu bản ghi</string>
     <string name="row_credit">Tác giả</string>
