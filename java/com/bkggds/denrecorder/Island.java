@@ -227,20 +227,6 @@ public final class Island {
                 .put("colorContent", "#333333")
                 .put("colorContentDark", "#cccccc");
 
-        JSONObject hintInfo = new JSONObject()
-                .put("type", 2)
-                .put("content", app)
-                .put("title", time)
-                .put("timerInfo", new JSONObject()
-                        .put("timerType", paused ? 1 : 0)
-                        .put("timerWhen", paused ? 0 : startedAt)
-                        .put("timerTotal", 0)
-                        .put("timerSystemCurrent", System.currentTimeMillis()))
-                .put("colorContent", "#666666")
-                .put("colorContentDark", "#aaaaaa")
-                .put("colorTitle", "#222222")
-                .put("colorTitleDark", "#eeeeee");
-
         // The compact summary is only the icon and the timer: no app name, so
         // the pill stays as small as HyperOS allows.
         JSONObject islandArea = new JSONObject()
@@ -283,7 +269,8 @@ public final class Island {
                 .put("aodTitle", state)
                 .put("baseInfo", baseInfo)
                 .put("picInfo", new JSONObject().put("type", 1).put("pic", PIC_APP_ICON))
-                .put("hintInfo", hintInfo)
+                // No hintInfo: HyperOS draws it as a second line under baseInfo,
+                // which only repeated the app name and the timer.
                 .put("param_island", island);
         putActions(notification, params);
 

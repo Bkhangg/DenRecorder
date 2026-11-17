@@ -86,6 +86,7 @@ res/                    strings (EN + VI), icons, launcher icons
 
 - New setting **Start without asking** (Settings → General): with Shizuku running, DenRecorder presses Android's own "Share screen" button, so recording starts from a single tap on the start button or the Quick Settings tile.
 - The capture dialog still appears for a moment and the permission stays Android's own; turn the option off to confirm every recording by hand.
+- Super Island no longer repeats the app name and the timer: the opened island shows the state and one line, "DenRecorder · 00:22".
 
 **1.6.0**
 
@@ -211,6 +212,7 @@ export ANDROID_HOME=$HOME/android-sdk
 
 - Mục mới **Quay không cần hỏi** (Cài đặt → Chung): khi Shizuku đang chạy, DenRecorder tự bấm nút "Chia sẻ màn hình" của Android, nên bấm nút quay hoặc nút Trung tâm điều khiển là ghi ngay.
 - Hộp thoại của hệ thống vẫn hiện trong chốc lát và quyền vẫn là của Android; tắt mục này nếu muốn tự xác nhận mỗi lần quay.
+- Super Island không lặp lại tên ứng dụng và đồng hồ đếm nữa: mở đảo ra chỉ còn trạng thái và một dòng "DenRecorder · 00:22".
 
 **1.6.0**
 
