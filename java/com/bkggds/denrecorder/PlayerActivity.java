@@ -38,7 +38,11 @@ public class PlayerActivity extends Activity {
     private static final int MUTED = Color.parseColor("#A1A1AA");
     private static final int PANEL = Color.parseColor("#E6111113");
 
+    private static final int SEEK_STEP_MS = 10_000;
+
     private VideoView videoView;
+    private android.view.GestureDetector gestures;
+    private TextView seekHint;
     private LinearLayout topBar;
     private LinearLayout bottomBar;
     private ImageView playButton;
@@ -111,6 +115,17 @@ public class PlayerActivity extends Activity {
         bottomParams.setMargins(dp(10), 0, dp(10), dp(10));
         root.addView(bottomBar, bottomParams);
 
+        seekHint = new TextView(this);
+        seekHint.setTextColor(TEXT);
+        seekHint.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+        seekHint.setGravity(Gravity.CENTER);
+        seekHint.setBackground(round(PANEL, 16));
+        seekHint.setPadding(dp(16), dp(10), dp(16), dp(10));
+        seekHint.setAlpha(0f);
+        root.addView(seekHint, new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.WRAP_CONTENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT, Gravity.CENTER));
+
         errorView = new TextView(this);
         errorView.setText(getString(R.string.player_error));
         errorView.setTextColor(MUTED);
@@ -121,9 +136,43 @@ public class PlayerActivity extends Activity {
                 FrameLayout.LayoutParams.WRAP_CONTENT,
                 FrameLayout.LayoutParams.WRAP_CONTENT, Gravity.CENTER));
 
-        View.OnClickListener toggle = v -> setControlsVisible(!controlsVisible);
-        root.setOnClickListener(toggle);
-        videoView.setOnClickListener(toggle);
+        // One tap shows or hides the controls, two taps seek by ten seconds
+        // (left side back, right side on, in the middle play/pause).
+        gestures = new android.view.GestureDetector(this,
+                new android.view.GestureDetector.SimpleOnGestureListener() {
+                    @Override
+                    public boolean onSingleTapConfirmed(android.view.MotionEvent event) {
+                        setControlsVisible(!controlsVisible);
+                        return true;
+                    }
+
+                    @Override
+                    public boolean onDoubleTap(android.view.MotionEvent event) {
+                        if (!prepared) return false;
+                        int width = root.getWidth();
+                        int position = videoView.getCurrentPosition();
+                        int duration = Math.max(1, videoView.getDuration());
+                        if (event.getX() < width / 3f) {
+                            videoView.seekTo(Math.max(0, position - SEEK_STEP_MS));
+                            showSeekHint(R.string.player_seek_back);
+                        } else if (event.getX() > width * 2f / 3f) {
+                            videoView.seekTo(Math.min(duration, position + SEEK_STEP_MS));
+                            showSeekHint(R.string.player_seek_forward);
+                        } else {
+                            togglePlay();
+                            return true;
+                        }
+                        finished = false;
+                        updateProgress();
+                        return true;
+                    }
+                });
+        View.OnTouchListener gestureTouch = (v, event) -> {
+            gestures.onTouchEvent(event);
+            return true;
+        };
+        root.setOnTouchListener(gestureTouch);
+        videoView.setOnTouchListener(gestureTouch);
 
         videoView.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
             @Override
@@ -236,6 +285,15 @@ public class PlayerActivity extends Activity {
                 LinearLayout.LayoutParams.WRAP_CONTENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT));
         return bar;
+    }
+
+    /** A short "10s" pill so the jump is visible. */
+    private void showSeekHint(int textRes) {
+        if (seekHint == null) return;
+        seekHint.animate().cancel();
+        seekHint.setText(getString(textRes));
+        seekHint.setAlpha(1f);
+        seekHint.animate().alpha(0f).setStartDelay(500).setDuration(400).start();
     }
 
     private String intentTitle() {

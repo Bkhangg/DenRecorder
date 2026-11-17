@@ -112,6 +112,10 @@ public class ScreenRecorder {
     private int videoBitrate = VIDEO_BITRATE;
     private long startNs;
     private long lastVideoPts = -1;
+    private final java.util.concurrent.atomic.AtomicLong audioFrames =
+            new java.util.concurrent.atomic.AtomicLong(0);
+    /** The video went into MediaStore's downloads collection (Download folder). */
+    private boolean outputInDownloads;
 
     public ScreenRecorder(Context context, MediaProjection projection, int audioSource) {
         this(context, projection, audioSource, 0, TARGET_FPS, VIDEO_BITRATE, CODEC_AVC, "auto");
@@ -147,6 +151,7 @@ public class ScreenRecorder {
         if (paused || stopping || !started) return;
         pauseStartedUs = SystemClock.elapsedRealtime() * 1000L;
         paused = true;
+        Log.i(TAG, "Paused at " + pauseStartedUs / 1000 + " ms");
     }
 
     /** Continues the video where it was, with a fresh key frame. */
@@ -155,6 +160,7 @@ public class ScreenRecorder {
         long now = SystemClock.elapsedRealtime() * 1000L;
         if (now > pauseStartedUs) pausedUs.addAndGet(now - pauseStartedUs);
         paused = false;
+        Log.i(TAG, "Resumed, paused so far " + pausedUs.get() / 1000 + " ms");
         requestSyncFrame();
     }
 
@@ -349,14 +355,26 @@ public class ScreenRecorder {
         return folder.isEmpty() ? DEFAULT_FOLDER : folder;
     }
 
+    /**
+     * Videos live in the video collection, except in Download: MediaStore only
+     * takes those through its own downloads collection, so "Save to Download"
+     * used to fall back to the default folder.
+     */
     private Uri insertVideo(ContentResolver resolver, String folder) {
+        boolean downloads = folder.equalsIgnoreCase("Download")
+                || folder.toLowerCase(Locale.US).startsWith("download/");
+        Uri collection = downloads
+                ? MediaStore.Downloads.EXTERNAL_CONTENT_URI
+                : MediaStore.Video.Media.EXTERNAL_CONTENT_URI;
         ContentValues values = new ContentValues();
-        values.put(MediaStore.Video.Media.DISPLAY_NAME, outputName);
-        values.put(MediaStore.Video.Media.MIME_TYPE, "video/mp4");
-        values.put(MediaStore.Video.Media.RELATIVE_PATH, folder + "/");
-        values.put(MediaStore.Video.Media.IS_PENDING, 1);
+        values.put(MediaStore.MediaColumns.DISPLAY_NAME, outputName);
+        values.put(MediaStore.MediaColumns.MIME_TYPE, "video/mp4");
+        values.put(MediaStore.MediaColumns.RELATIVE_PATH, folder + "/");
+        values.put(MediaStore.MediaColumns.IS_PENDING, 1);
         try {
-            return resolver.insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, values);
+            Uri uri = resolver.insert(collection, values);
+            if (uri != null) outputInDownloads = downloads;
+            return uri;
         } catch (Exception e) {
             Log.w(TAG, "Could not create a file in " + folder, e);
             return null;
@@ -781,6 +799,7 @@ public class ScreenRecorder {
         MediaCodec.BufferInfo info = new MediaCodec.BufferInfo();
         short[] pcm = new short[1024 * CHANNELS];
         long frames = 0;
+        audioFrames.set(0);
 
         while (!stopping) {
             int read;
@@ -814,6 +833,7 @@ public class ScreenRecorder {
                     long pts = frames * 1_000_000L / SAMPLE_RATE;
                     audioCodec.queueInputBuffer(index, 0, count * 2, pts, 0);
                     frames += count / CHANNELS;
+                    audioFrames.set(frames);
                 }
             }
             drainAudio(info, false);
@@ -921,6 +941,12 @@ public class ScreenRecorder {
         started = false;
     }
 
+    void logTimeline() {
+        Log.i(TAG, "Timeline: last video pts " + lastVideoPts / 1000
+                + " ms, audio " + (audioActive ? audioFrames.get() * 1000L / SAMPLE_RATE : 0)
+                + " ms, paused " + pausedUs.get() / 1000 + " ms");
+    }
+
     private void cleanupOutput() {
         closeOutputFd();
         try { if (muxer != null) muxer.release(); } catch (Exception ignored) { }
@@ -968,7 +994,7 @@ public class ScreenRecorder {
             return;
         }
         ContentValues values = new ContentValues();
-        values.put(MediaStore.Video.Media.IS_PENDING, 0);
+        values.put(MediaStore.MediaColumns.IS_PENDING, 0);
         try { resolver.update(outputUri, values, null, null); } catch (Exception ignored) { }
     }
 

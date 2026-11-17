@@ -126,6 +126,11 @@ public class MainActivity extends Activity {
     private TextView recentTab;
     private TextView allTab;
     private boolean showAllRecordings;
+    private boolean recordingsSelectMode;
+    private final java.util.LinkedHashSet<String> selectedRecordings =
+            new java.util.LinkedHashSet<>();
+    private TextView selectButton;
+    private TextView deleteSelectedButton;
 
     private LinearLayout navRecord;
     private LinearLayout navRecordings;
@@ -147,6 +152,8 @@ public class MainActivity extends Activity {
     private String language = "en";
     private String orientation = "auto";
     private boolean drawOverlay = true;
+    private int drawSize = 1;
+    private TextView drawSizeValueView;
     private boolean perfMode = true;
     private boolean pendingStart;
     private boolean sawRecording;
@@ -195,6 +202,7 @@ public class MainActivity extends Activity {
         orientation = prefs.getString("orientation", "auto");
         perfMode = prefs.getBoolean("perfMode", true);
         drawOverlay = prefs.getBoolean("drawOverlay", true);
+        drawSize = prefs.getInt("drawSize", 1);
         handler = new Handler(Looper.getMainLooper());
 
         buildUi();
@@ -480,6 +488,9 @@ public class MainActivity extends Activity {
         divider(generalCard);
         drawValueView = addRow(generalCard, R.drawable.ic_pen, R.string.row_draw,
                 "", true, this::toggleDrawOverlay);
+        divider(generalCard);
+        drawSizeValueView = addRow(generalCard, R.drawable.ic_rect, R.string.row_draw_size,
+                "", true, this::chooseDrawSize);
 
         list.addView(sectionLabel(R.string.section_about), lp(MATCH, WRAP, 0, 22, 0, 0));
         LinearLayout aboutCard = card();
@@ -515,8 +526,24 @@ public class MainActivity extends Activity {
         });
         tabs.addView(allTab, new LinearLayout.LayoutParams(0, dp(40), 1f));
 
+        LinearLayout summaryRow = new LinearLayout(this);
+        summaryRow.setOrientation(LinearLayout.HORIZONTAL);
+        summaryRow.setGravity(Gravity.CENTER_VERTICAL);
+        list.addView(summaryRow, lp(MATCH, WRAP, 0, 12, 0, 0));
+
         recordingsSummary = label("", 12, FAINT, false);
-        list.addView(recordingsSummary, lp(MATCH, WRAP, 0, 14, 0, 0));
+        summaryRow.addView(recordingsSummary, new LinearLayout.LayoutParams(0, WRAP, 1f));
+
+        deleteSelectedButton = label("", 12, RED, true);
+        deleteSelectedButton.setPadding(dp(12), dp(8), dp(4), dp(8));
+        deleteSelectedButton.setVisibility(View.GONE);
+        deleteSelectedButton.setOnClickListener(v -> confirmDeleteSelected());
+        summaryRow.addView(deleteSelectedButton, new LinearLayout.LayoutParams(WRAP, WRAP));
+
+        selectButton = label(getString(R.string.select_recordings), 12, TEXT, true);
+        selectButton.setPadding(dp(12), dp(8), dp(4), dp(8));
+        selectButton.setOnClickListener(v -> setSelectMode(!recordingsSelectMode));
+        summaryRow.addView(selectButton, new LinearLayout.LayoutParams(WRAP, WRAP));
 
         recordingsHint = label("", 12, FAINT, false);
         recordingsHint.setLineSpacing(dp(3), 1f);
@@ -552,46 +579,30 @@ public class MainActivity extends Activity {
         }
 
         List<Recording> items = new ArrayList<>();
-        Cursor cursor = null;
-        try {
-            String[] projection = new String[]{
-                    MediaStore.Video.Media._ID,
-                    MediaStore.Video.Media.DISPLAY_NAME,
-                    MediaStore.Video.Media.DURATION,
-                    MediaStore.Video.Media.SIZE,
-                    MediaStore.Video.Media.DATE_ADDED,
-                    MediaStore.Video.Media.WIDTH,
-                    MediaStore.Video.Media.HEIGHT
-            };
-            // Recordings are found by their name, not by the folder, so the list
-            // keeps showing everything after "Save to" was changed.
-            String selection = MediaStore.Video.Media.DISPLAY_NAME + " LIKE ?";
-            String[] args = new String[]{SCREEN_RECORDING_PREFIX + "%"};
-            cursor = getContentResolver().query(MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
-                    projection, selection, args,
-                    MediaStore.Video.Media.DATE_ADDED + " DESC");
-            while (cursor != null && cursor.moveToNext()) {
-                long id = cursor.getLong(0);
-                String name = cursor.getString(1);
-                long duration = cursor.getLong(2);
-                long size = cursor.getLong(3);
-                long added = cursor.getLong(4);
-                int width = cursor.getInt(5);
-                int height = cursor.getInt(6);
-                Uri uri = ContentUris.withAppendedId(
-                        MediaStore.Video.Media.EXTERNAL_CONTENT_URI, id);
-                items.add(new Recording(uri, name, added, duration, size, width, height));
-                if (items.size() >= 500) break;
-            }
-        } catch (Exception ignored) {
-        } finally {
-            try { if (cursor != null) cursor.close(); } catch (Exception ignored) { }
+        // Recordings are found by their name, not by the folder, so the list
+        // keeps showing everything after "Save to" was changed. "Download" goes
+        // into MediaStore's downloads collection, everything else into videos.
+        readRecordings(items, MediaStore.Video.Media.EXTERNAL_CONTENT_URI, null);
+        if (Build.VERSION.SDK_INT >= 29) {
+            readRecordings(items, MediaStore.Downloads.EXTERNAL_CONTENT_URI, "video/mp4");
         }
+        java.util.Collections.sort(items, (a, b) -> Long.compare(b.added, a.added));
+        if (items.size() > 500) items = items.subList(0, 500);
+
+        // A selection only lasts as long as the video exists.
+        java.util.LinkedHashSet<String> alive = new java.util.LinkedHashSet<>();
+        for (Recording item : items) {
+            if (selectedRecordings.contains(item.uri.toString())) {
+                alive.add(item.uri.toString());
+            }
+        }
+        selectedRecordings.retainAll(alive);
 
         long totalSize = 0;
         for (Recording item : items) totalSize += item.size;
         recordingsSummary.setText(getString(R.string.recordings_count,
                 items.size(), formatSize(totalSize)));
+        updateSelectBar();
 
         int shown = showAllRecordings ? items.size() : Math.min(10, items.size());
         if (shown == 0) {
@@ -609,6 +620,45 @@ public class MainActivity extends Activity {
         }
     }
 
+    private void readRecordings(List<Recording> out, Uri collection, String mimeFilter) {
+        boolean scoped = Build.VERSION.SDK_INT >= 29;
+        Cursor cursor = null;
+        try {
+            String[] projection = new String[]{
+                    MediaStore.MediaColumns._ID,
+                    MediaStore.MediaColumns.DISPLAY_NAME,
+                    MediaStore.MediaColumns.DURATION,
+                    MediaStore.MediaColumns.SIZE,
+                    MediaStore.MediaColumns.DATE_ADDED,
+                    MediaStore.MediaColumns.WIDTH,
+                    MediaStore.MediaColumns.HEIGHT,
+                    scoped ? MediaStore.MediaColumns.RELATIVE_PATH : MediaStore.MediaColumns.DATA
+            };
+            String selection = MediaStore.MediaColumns.DISPLAY_NAME + " LIKE ?";
+            if (mimeFilter != null) selection += " AND " + MediaStore.MediaColumns.MIME_TYPE + "=?";
+            String[] args = mimeFilter == null
+                    ? new String[]{SCREEN_RECORDING_PREFIX + "%"}
+                    : new String[]{SCREEN_RECORDING_PREFIX + "%", mimeFilter};
+            cursor = getContentResolver().query(collection, projection, selection, args,
+                    MediaStore.MediaColumns.DATE_ADDED + " DESC");
+            while (cursor != null && cursor.moveToNext()) {
+                long id = cursor.getLong(0);
+                long duration = cursor.getLong(2);
+                long size = cursor.getLong(3);
+                long added = cursor.getLong(4);
+                int width = cursor.getInt(5);
+                int height = cursor.getInt(6);
+                String location = cursor.getString(7);
+                out.add(new Recording(ContentUris.withAppendedId(collection, id),
+                        cursor.getString(1), added, duration, size, width, height,
+                        folderLabel(location, scoped)));
+            }
+        } catch (Exception ignored) {
+        } finally {
+            try { if (cursor != null) cursor.close(); } catch (Exception ignored) { }
+        }
+    }
+
     private void addRecordingRow(LinearLayout parent, final Recording item) {
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);
@@ -616,6 +666,13 @@ public class MainActivity extends Activity {
         row.setPadding(0, dp(12), 0, dp(12));
         row.setClickable(true);
         row.setFocusable(true);
+
+        final ImageView dot = new ImageView(this);
+        LinearLayout.LayoutParams dotParams = new LinearLayout.LayoutParams(dp(26), dp(26));
+        dotParams.setMargins(0, 0, dp(12), 0);
+        row.addView(dot, dotParams);
+        dot.setVisibility(recordingsSelectMode ? View.VISIBLE : View.GONE);
+        styleSelectDot(dot, selectedRecordings.contains(item.uri.toString()));
 
         final ImageView thumb = new ImageView(this);
         thumb.setScaleType(ImageView.ScaleType.CENTER_CROP);
@@ -634,10 +691,23 @@ public class MainActivity extends Activity {
         TextView meta = label(item.meta(), 12, FAINT, false);
         texts.addView(meta, lp(MATCH, WRAP, 0, 3, 0, 0));
 
+        // Where the video lives, so a changed save folder is easy to spot.
+        TextView path = label(getString(R.string.recording_path, item.folder), 11, FAINT, false);
+        path.setMaxLines(1);
+        path.setEllipsize(android.text.TextUtils.TruncateAt.MIDDLE);
+        texts.addView(path, lp(MATCH, WRAP, 0, 2, 0, 0));
+
         parent.addView(row, lp(MATCH, WRAP, 0, 0, 0, 0));
-        row.setOnClickListener(v -> playRecording(item));
+        row.setOnClickListener(v -> {
+            if (recordingsSelectMode) {
+                toggleSelection(item, dot);
+            } else {
+                playRecording(item);
+            }
+        });
         row.setOnLongClickListener(v -> {
-            showRecordingActions(item);
+            if (!recordingsSelectMode) setSelectMode(true);
+            toggleSelection(item, dot);
             return true;
         });
     }
@@ -711,6 +781,72 @@ public class MainActivity extends Activity {
         }
     }
 
+    /** Choosing videos to remove: taps select instead of opening. */
+    private void setSelectMode(boolean on) {
+        recordingsSelectMode = on;
+        selectedRecordings.clear();
+        loadRecordings();
+    }
+
+    private void toggleSelection(Recording item, ImageView dot) {
+        String key = item.uri.toString();
+        if (!selectedRecordings.remove(key)) selectedRecordings.add(key);
+        styleSelectDot(dot, selectedRecordings.contains(key));
+        updateSelectBar();
+    }
+
+    private void styleSelectDot(ImageView dot, boolean selected) {
+        if (selected) {
+            dot.setImageResource(R.drawable.ic_check);
+            dot.setColorFilter(Color.WHITE);
+            dot.setPadding(dp(5), dp(5), dp(5), dp(5));
+        } else {
+            dot.setImageDrawable(null);
+        }
+        GradientDrawable background = new GradientDrawable();
+        background.setShape(GradientDrawable.OVAL);
+        if (selected) {
+            background.setColor(RED);
+        } else {
+            background.setColor(Color.TRANSPARENT);
+            background.setStroke(dp(2), BORDER);
+        }
+        dot.setBackground(background);
+    }
+
+    private void updateSelectBar() {
+        if (selectButton == null) return;
+        int count = selectedRecordings.size();
+        selectButton.setText(getString(recordingsSelectMode
+                ? R.string.dialog_cancel : R.string.select_recordings));
+        deleteSelectedButton.setVisibility(
+                recordingsSelectMode && count > 0 ? View.VISIBLE : View.GONE);
+        if (count > 0) {
+            deleteSelectedButton.setText(getString(R.string.delete_selected, count));
+        }
+        if (recordingsSelectMode) {
+            recordingsSummary.setText(getString(R.string.selected_count, count));
+        }
+    }
+
+    private void confirmDeleteSelected() {
+        final List<Uri> uris = new ArrayList<>();
+        for (String key : selectedRecordings) uris.add(Uri.parse(key));
+        if (uris.isEmpty()) return;
+        showCard(getString(R.string.delete_selected_title, uris.size()),
+                getString(R.string.delete_selected_body),
+                getString(R.string.dialog_delete),
+                () -> {
+                    for (Uri uri : uris) {
+                        try {
+                            getContentResolver().delete(uri, null, null);
+                        } catch (Exception ignored) { }
+                    }
+                    setSelectMode(false);
+                },
+                getString(R.string.dialog_cancel), null);
+    }
+
     private void showRecordingActions(final Recording item) {
         String[] items = {
                 getString(R.string.action_open),
@@ -755,6 +891,20 @@ public class MainActivity extends Activity {
         } catch (Exception ignored) { }
     }
 
+    /** "Download/DenRecorder" out of a RELATIVE_PATH or a full file path. */
+    private static String folderLabel(String location, boolean scoped) {
+        if (location == null) return "";
+        String out = location;
+        if (!scoped) {
+            int slash = out.lastIndexOf('/');
+            out = slash > 0 ? out.substring(0, slash) : out;
+            int root = out.indexOf("0/"); // /storage/emulated/0/Download
+            if (root >= 0) out = out.substring(root + 2);
+        }
+        while (out.endsWith("/")) out = out.substring(0, out.length() - 1);
+        return out.isEmpty() ? "/" : out;
+    }
+
     private static String formatSize(long bytes) {
         if (bytes < 1024L * 1024L) return Math.max(1, bytes / 1024) + " KB";
         double mb = bytes / (1024.0 * 1024.0);
@@ -781,9 +931,10 @@ public class MainActivity extends Activity {
         final long size;
         final int width;
         final int height;
+        final String folder;
 
         Recording(Uri uri, String name, long added, long duration, long size,
-                  int width, int height) {
+                  int width, int height, String folder) {
             this.uri = uri;
             this.name = name == null ? "" : name;
             this.added = added;
@@ -791,6 +942,7 @@ public class MainActivity extends Activity {
             this.size = size;
             this.width = width;
             this.height = height;
+            this.folder = folder == null ? "" : folder;
         }
 
         String title() {
@@ -833,6 +985,7 @@ public class MainActivity extends Activity {
             updateStorageValue();
             updateOrientationValue();
             updateDrawValue();
+            updateDrawSizeValue();
         } else if (index == 2) {
             loadRecordings();
         }
@@ -1633,6 +1786,32 @@ public class MainActivity extends Activity {
         }
     }
 
+    private String[] drawSizeLabels() {
+        return new String[]{
+                getString(R.string.draw_size_small),
+                getString(R.string.draw_size_medium),
+                getString(R.string.draw_size_large),
+                getString(R.string.draw_size_huge)
+        };
+    }
+
+    private void chooseDrawSize() {
+        String[] sizes = drawSizeLabels();
+        showChoices(getString(R.string.title_draw_size), sizes,
+                Math.max(0, Math.min(sizes.length - 1, drawSize)), which -> {
+                    drawSize = which;
+                    prefs.edit().putInt("drawSize", drawSize).apply();
+                    updateDrawSizeValue();
+                    DrawOverlayService.refreshSize(this);
+                });
+    }
+
+    private void updateDrawSizeValue() {
+        if (drawSizeValueView == null) return;
+        String[] sizes = drawSizeLabels();
+        drawSizeValueView.setText(sizes[Math.max(0, Math.min(sizes.length - 1, drawSize))]);
+    }
+
     private void requestOverlayPermission() {
         try {
             startActivityForResult(new Intent(
@@ -1928,7 +2107,7 @@ public class MainActivity extends Activity {
                 styleButton(mainButton, RED);
                 startDotAnimation();
             }
-            long elapsed = System.currentTimeMillis() - RecorderService.startedAt;
+            long elapsed = RecorderService.elapsedMs();
             heroTitle.setText(getString(RecorderService.isPaused
                     ? R.string.hero_paused_title
                     : R.string.hero_recording_title)

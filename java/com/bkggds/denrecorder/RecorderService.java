@@ -29,6 +29,13 @@ public class RecorderService extends Service {
 
     private static final String TAG = "RecorderService";
 
+    /**
+     * The running service, so the floating button can pause and stop it
+     * directly. Starting a service from the background is restricted on newer
+     * Android versions, and an overlay button lives in the background.
+     */
+    private static volatile RecorderService instance;
+
     public static final String ACTION_START = "com.bkggds.denrecorder.action.START";
     public static final String ACTION_STOP = "com.bkggds.denrecorder.action.STOP";
     public static final String ACTION_PAUSE = "com.bkggds.denrecorder.action.PAUSE";
@@ -41,9 +48,27 @@ public class RecorderService extends Service {
     public static volatile boolean isRecording;
     public static volatile boolean isPaused;
     public static volatile long startedAt;
+    /** Time spent paused, so the timer shows the length of the video. */
+    public static volatile long pausedTotalMs;
+    private static volatile long pausedAtMs;
     public static volatile Uri lastUri;
     public static volatile String lastError;
     public static volatile String lastSummary;
+
+    /** Length of the recording so far, paused time left out. */
+    public static long elapsedMs() {
+        if (!isRecording || startedAt <= 0) return 0;
+        long now = System.currentTimeMillis();
+        long paused = pausedTotalMs;
+        if (isPaused && pausedAtMs > 0) paused += now - pausedAtMs;
+        return Math.max(0, now - startedAt - paused);
+    }
+
+    private static void resetTimer() {
+        startedAt = System.currentTimeMillis();
+        pausedTotalMs = 0;
+        pausedAtMs = 0;
+    }
 
     private static final String CHANNEL_ID = "recording";
     private static final int NOTIF_ID = 4711;
@@ -90,6 +115,7 @@ public class RecorderService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
+        instance = this;
         handler = new Handler(Looper.getMainLooper());
         createChannel();
     }
@@ -253,7 +279,7 @@ public class RecorderService extends Service {
 
         lastError = null;
         lastUri = null;
-        startedAt = System.currentTimeMillis();
+        resetTimer();
         isRecording = true;
         handler.post(ticker);
 
@@ -303,7 +329,10 @@ public class RecorderService extends Service {
             @Override
             public void run() {
                 try {
-                    if (active != null) active.stop();
+                    if (active != null) {
+                        active.stop();
+                        active.logTimeline();
+                    }
                 } catch (Exception e) {
                     Log.w(TAG, "Error while stopping", e);
                 }
@@ -355,6 +384,7 @@ public class RecorderService extends Service {
     public void pauseRecording() {
         if (!isRecording || recorder == null || isPaused) return;
         isPaused = true;
+        pausedAtMs = System.currentTimeMillis();
         try {
             recorder.pause();
         } catch (Exception e) {
@@ -367,6 +397,10 @@ public class RecorderService extends Service {
 
     public void resumeRecording() {
         if (!isRecording || recorder == null || !isPaused) return;
+        if (pausedAtMs > 0) {
+            pausedTotalMs += System.currentTimeMillis() - pausedAtMs;
+            pausedAtMs = 0;
+        }
         isPaused = false;
         try {
             recorder.resume();
@@ -386,6 +420,7 @@ public class RecorderService extends Service {
         DrawOverlayService.stop(this);
         // Safety net: never leave the screen locked after a killed service.
         RotationLock.release(this);
+        if (instance == this) instance = null;
         super.onDestroy();
     }
 
@@ -481,6 +516,17 @@ public class RecorderService extends Service {
     }
 
     public static void requestPause(android.content.Context context) {
+        final RecorderService service = instance;
+        if (service != null) {
+            service.handler.post(new Runnable() {
+                @Override
+                public void run() {
+                    if (isPaused) service.resumeRecording();
+                    else service.pauseRecording();
+                }
+            });
+            return;
+        }
         try {
             context.startService(new Intent(context, RecorderService.class)
                     .setAction(isPaused ? ACTION_RESUME : ACTION_PAUSE));
@@ -488,6 +534,16 @@ public class RecorderService extends Service {
     }
 
     public static void requestStop(android.content.Context context) {
+        final RecorderService service = instance;
+        if (service != null) {
+            service.handler.post(new Runnable() {
+                @Override
+                public void run() {
+                    service.stopRecording(null);
+                }
+            });
+            return;
+        }
         Intent intent = new Intent(context, RecorderService.class).setAction(ACTION_STOP);
         try {
             context.startService(intent);

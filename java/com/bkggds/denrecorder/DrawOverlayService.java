@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.PixelFormat;
 import android.graphics.RectF;
 import android.graphics.drawable.GradientDrawable;
@@ -26,9 +27,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The little floating button that shows while recording: it draws a rectangle
- * or a circle straight onto the screen (so they end up in the video) and holds
- * pause and stop for the recording.
+ * The little floating button that shows while recording: it draws a pencil
+ * stroke, a rectangle or a circle straight onto the screen (so they end up in
+ * the video) and holds pause and stop for the recording.
  *
  * It lives in the recorder's process, so the recording's foreground service
  * keeps it alive; drawing is only possible after the "display over other apps"
@@ -38,6 +39,10 @@ public class DrawOverlayService extends Service {
 
     public static final String ACTION_START = "com.bkggds.denrecorder.overlay.START";
     public static final String ACTION_STOP = "com.bkggds.denrecorder.overlay.STOP";
+
+    /** Sizes of the floating button, picked in settings. */
+    public static final int[] BUBBLE_DP = {44, 58, 74, 92};
+    public static final int[] TOOL_DP = {42, 50, 60, 72};
 
     private static final int INK = Color.parseColor("#F43F5E");
     private static final int PANEL = Color.parseColor("#EE111113");
@@ -54,6 +59,12 @@ public class DrawOverlayService extends Service {
         } catch (Exception e) {
             return false;
         }
+    }
+
+    public static int sizeIndex(Context context) {
+        int size = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
+                .getInt("drawSize", 1);
+        return Math.max(0, Math.min(BUBBLE_DP.length - 1, size));
     }
 
     public static void start(Context context) {
@@ -78,6 +89,18 @@ public class DrawOverlayService extends Service {
             @Override
             public void run() {
                 service.updatePauseButton();
+            }
+        });
+    }
+
+    /** Applies a new button size without waiting for the next recording. */
+    public static void refreshSize(Context context) {
+        final DrawOverlayService service = instance;
+        if (service == null) return;
+        service.handler.post(new Runnable() {
+            @Override
+            public void run() {
+                service.applySize();
             }
         });
     }
@@ -124,6 +147,7 @@ public class DrawOverlayService extends Service {
     private void show() {
         int screenWidth = getResources().getDisplayMetrics().widthPixels;
         int screenHeight = getResources().getDisplayMetrics().heightPixels;
+        int size = BUBBLE_DP[sizeIndex(this)];
 
         layer = new DrawLayer(this);
         layerParams = overlayParams(
@@ -135,12 +159,12 @@ public class DrawOverlayService extends Service {
         bubble = new ImageView(this);
         bubble.setImageResource(R.drawable.ic_pen);
         bubble.setColorFilter(TEXT);
-        bubble.setBackground(circle(PANEL, dp(28), BORDER));
-        bubble.setPadding(dp(14), dp(14), dp(14), dp(14));
         bubble.setContentDescription(getString(R.string.overlay_button));
-        bubbleX = screenWidth - dp(74);
+        styleBubble(size);
+
+        bubbleX = screenWidth - dp(size + 18);
         bubbleY = screenHeight - dp(260);
-        bubbleParams = overlayParams(dp(56), dp(56));
+        bubbleParams = overlayParams(dp(size), dp(size));
         bubbleParams.x = bubbleX;
         bubbleParams.y = bubbleY;
 
@@ -162,25 +186,30 @@ public class DrawOverlayService extends Service {
         }
 
         bubble.setOnTouchListener(new DragListener());
-        bubble.setOnClickListener(v -> {
-            // The touch listener decides between a tap and a drag.
-        });
+    }
+
+    private void styleBubble(int size) {
+        int pad = Math.round(size * 0.25f);
+        bubble.setPadding(dp(pad), dp(pad), dp(pad), dp(pad));
+        bubble.setBackground(circle(PANEL, size / 2, BORDER));
     }
 
     private LinearLayout buildPanel() {
+        int button = TOOL_DP[sizeIndex(this)];
         LinearLayout bar = new LinearLayout(this);
         bar.setOrientation(LinearLayout.HORIZONTAL);
         bar.setGravity(Gravity.CENTER_VERTICAL);
         bar.setBackground(round(PANEL, 18, BORDER));
-        bar.setPadding(dp(6), dp(6), dp(6), dp(6));
+        bar.setPadding(dp(5), dp(5), dp(5), dp(5));
 
-        bar.addView(toolButton(R.drawable.ic_rect, R.string.overlay_rect, v -> pickTool(DrawLayer.TOOL_RECT)));
-        bar.addView(toolButton(R.drawable.ic_circle, R.string.overlay_circle, v -> pickTool(DrawLayer.TOOL_CIRCLE)));
-        bar.addView(toolButton(R.drawable.ic_trash, R.string.overlay_clear, v -> {
+        bar.addView(toolButton(R.drawable.ic_pen, R.string.overlay_pen, button, v -> pickTool(DrawLayer.TOOL_PEN)));
+        bar.addView(toolButton(R.drawable.ic_rect, R.string.overlay_rect, button, v -> pickTool(DrawLayer.TOOL_RECT)));
+        bar.addView(toolButton(R.drawable.ic_circle, R.string.overlay_circle, button, v -> pickTool(DrawLayer.TOOL_CIRCLE)));
+        bar.addView(toolButton(R.drawable.ic_trash, R.string.overlay_clear, button, v -> {
             layer.clear();
-            stopDrawing();
+            updateToolHighlight();
         }));
-        pauseButton = toolButton(R.drawable.ic_pause, R.string.action_pause, v -> {
+        pauseButton = toolButton(R.drawable.ic_pause, R.string.action_pause, button, v -> {
             RecorderService.requestPause(this);
             handler.postDelayed(new Runnable() {
                 @Override
@@ -190,43 +219,45 @@ public class DrawOverlayService extends Service {
             }, 150);
         });
         bar.addView(pauseButton);
-        bar.addView(toolButton(R.drawable.ic_stop, R.string.overlay_stop, v -> {
+        bar.addView(toolButton(R.drawable.ic_stop, R.string.overlay_stop, button, v -> {
             RecorderService.requestStop(this);
             stopSelf();
         }));
-        bar.addView(toolButton(R.drawable.ic_close, R.string.overlay_hide, v -> stopSelf()));
+        bar.addView(toolButton(R.drawable.ic_close, R.string.overlay_hide, button, v -> stopSelf()));
         return bar;
     }
 
-    private ImageView toolButton(int iconRes, int labelRes, View.OnClickListener click) {
+    private ImageView toolButton(int iconRes, int labelRes, int sizeDp,
+                                 View.OnClickListener click) {
         ImageView button = new ImageView(this);
         button.setImageResource(iconRes);
         button.setColorFilter(TEXT);
-        button.setPadding(dp(12), dp(12), dp(12), dp(12));
+        int pad = Math.round(sizeDp * 0.21f);
+        button.setPadding(dp(pad), dp(pad), dp(pad), dp(pad));
         button.setBackground(round(Color.parseColor("#00000000"), 14, 0));
         button.setContentDescription(getString(labelRes));
         button.setClickable(true);
         button.setFocusable(true);
         button.setOnClickListener(click);
         LinearLayout.LayoutParams params =
-                new LinearLayout.LayoutParams(dp(48), dp(48));
+                new LinearLayout.LayoutParams(dp(sizeDp), dp(sizeDp));
         params.setMargins(dp(1), 0, dp(1), 0);
         button.setLayoutParams(params);
         return button;
     }
 
+    /** Picks a tool and keeps it, so several shapes can be drawn in a row. */
     private void pickTool(int tool) {
         boolean same = layer.getTool() == tool;
         layer.setTool(same ? DrawLayer.TOOL_NONE : tool);
         updateLayerTouchable();
         updateToolHighlight();
-        if (!same) {
-            panelOpen = false; // the next touch draws on the screen
-            panel.setVisibility(View.GONE);
-        }
+        panelOpen = false; // the next touch draws on the screen
+        panel.setVisibility(View.GONE);
     }
 
     private void stopDrawing() {
+        if (layer == null) return;
         layer.setTool(DrawLayer.TOOL_NONE);
         updateLayerTouchable();
         updateToolHighlight();
@@ -235,12 +266,11 @@ public class DrawOverlayService extends Service {
     private void updateToolHighlight() {
         if (panel == null) return;
         int tool = layer == null ? DrawLayer.TOOL_NONE : layer.getTool();
-        for (int i = 0; i < 2 && i < panel.getChildCount(); i++) {
+        for (int i = 0; i < 3 && i < panel.getChildCount(); i++) {
             ImageView button = (ImageView) panel.getChildAt(i);
-            int icon = i == 0 ? R.drawable.ic_rect : R.drawable.ic_circle;
-            int wanted = i == 0 ? DrawLayer.TOOL_RECT : DrawLayer.TOOL_CIRCLE;
+            int wanted = i == 0 ? DrawLayer.TOOL_PEN
+                    : i == 1 ? DrawLayer.TOOL_RECT : DrawLayer.TOOL_CIRCLE;
             button.setColorFilter(tool == wanted ? ACTIVE : TEXT);
-            button.setImageResource(icon);
         }
     }
 
@@ -269,26 +299,61 @@ public class DrawOverlayService extends Service {
                 paused ? R.string.action_resume : R.string.action_pause));
     }
 
+    /** The button size can be changed in settings and applies right away. */
+    private void applySize() {
+        if (bubble == null || bubbleParams == null) return;
+        int size = BUBBLE_DP[sizeIndex(this)];
+        styleBubble(size);
+        bubbleParams.width = dp(size);
+        bubbleParams.height = dp(size);
+        int screenWidth = getResources().getDisplayMetrics().widthPixels;
+        bubbleX = Math.max(0, Math.min(bubbleX, screenWidth - bubbleParams.width));
+        bubbleParams.x = bubbleX;
+        try {
+            windowManager.updateViewLayout(bubble, bubbleParams);
+        } catch (Exception ignored) { }
+
+        int tool = TOOL_DP[sizeIndex(this)];
+        if (panel != null) {
+            int inner = dp(tool);
+            int pad = Math.round(tool * 0.21f);
+            for (int i = 0; i < panel.getChildCount(); i++) {
+                View child = panel.getChildAt(i);
+                LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) child.getLayoutParams();
+                params.width = inner;
+                params.height = inner;
+                child.setLayoutParams(params);
+                child.setPadding(dp(pad), dp(pad), dp(pad), dp(pad));
+            }
+        }
+        if (panelOpen) movePanel();
+    }
+
     private void togglePanel() {
+        if (!panelOpen && layer.getTool() != DrawLayer.TOOL_NONE) {
+            // Drawing is on: a tap on the button ends it, then shows the tools.
+            stopDrawing();
+        }
         panelOpen = !panelOpen;
         if (panelOpen) {
             updatePauseButton();
+            updateToolHighlight();
             movePanel();
             panel.setVisibility(View.VISIBLE);
             panel.setAlpha(0f);
             panel.animate().alpha(1f).setDuration(140).start();
         } else {
             panel.setVisibility(View.GONE);
-            stopDrawing();
         }
     }
 
     private void movePanel() {
         int width = getResources().getDisplayMetrics().widthPixels;
-        int panelWidth = dp(6 * 50 + 16);
+        int button = dp(TOOL_DP[sizeIndex(this)] + 2);
+        int panelWidth = button * 7 + dp(10);
         int x = Math.max(dp(4), Math.min(bubbleX, width - panelWidth - dp(4)));
         panelParams.x = x;
-        panelParams.y = Math.max(dp(40), bubbleY - dp(62));
+        panelParams.y = Math.max(dp(40), bubbleY - button - dp(16));
         try {
             windowManager.updateViewLayout(panel, panelParams);
         } catch (Exception ignored) { }
@@ -334,8 +399,8 @@ public class DrawOverlayService extends Service {
                     if (!moved) return true;
                     int width = getResources().getDisplayMetrics().widthPixels;
                     int height = getResources().getDisplayMetrics().heightPixels;
-                    bubbleX = Math.max(0, Math.min(startX + dx, width - dp(56)));
-                    bubbleY = Math.max(0, Math.min(startY + dy, height - dp(56)));
+                    bubbleX = Math.max(0, Math.min(startX + dx, width - bubbleParams.width));
+                    bubbleY = Math.max(0, Math.min(startY + dy, height - bubbleParams.height));
                     bubbleParams.x = bubbleX;
                     bubbleParams.y = bubbleY;
                     try {
@@ -401,8 +466,9 @@ public class DrawOverlayService extends Service {
         public static final int TOOL_NONE = 0;
         public static final int TOOL_RECT = 1;
         public static final int TOOL_CIRCLE = 2;
+        public static final int TOOL_PEN = 3;
 
-        private static final int MAX_SHAPES = 300;
+        private static final int MAX_SHAPES = 200;
 
         private static final class Shape {
             final int tool;
@@ -410,6 +476,9 @@ public class DrawOverlayService extends Service {
             final float startY;
             float endX;
             float endY;
+            final Path path;
+            float lastX;
+            float lastY;
 
             Shape(int tool, float startX, float startY, float endX, float endY) {
                 this.tool = tool;
@@ -417,6 +486,23 @@ public class DrawOverlayService extends Service {
                 this.startY = startY;
                 this.endX = endX;
                 this.endY = endY;
+                this.path = tool == TOOL_PEN ? new Path() : null;
+                if (path != null) {
+                    path.moveTo(startX, startY);
+                    path.lineTo(startX + 0.5f, startY + 0.5f);
+                    lastX = startX + 0.5f;
+                    lastY = startY + 0.5f;
+                }
+            }
+
+            void extendTo(float x, float y) {
+                if (path != null) {
+                    path.quadTo(lastX, lastY, (lastX + x) / 2f, (lastY + y) / 2f);
+                    lastX = x;
+                    lastY = y;
+                }
+                endX = x;
+                endY = y;
             }
         }
 
@@ -430,6 +516,7 @@ public class DrawOverlayService extends Service {
             paint.setStyle(Paint.Style.STROKE);
             paint.setStrokeWidth(context.getResources().getDisplayMetrics().density * 4f);
             paint.setStrokeCap(Paint.Cap.ROUND);
+            paint.setStrokeJoin(Paint.Join.ROUND);
             paint.setColor(INK);
             setBackgroundColor(Color.TRANSPARENT);
         }
@@ -440,7 +527,7 @@ public class DrawOverlayService extends Service {
 
         void setTool(int newTool) {
             tool = newTool;
-            if (newTool == TOOL_NONE) current = null;
+            current = null;
             invalidate();
         }
 
@@ -461,27 +548,24 @@ public class DrawOverlayService extends Service {
                     return true;
                 case MotionEvent.ACTION_MOVE:
                     if (current != null) {
-                        current.endX = event.getX();
-                        current.endY = event.getY();
+                        current.extendTo(event.getX(), event.getY());
                         invalidate();
                     }
                     return true;
                 case MotionEvent.ACTION_UP:
                 case MotionEvent.ACTION_CANCEL:
                     if (current != null) {
-                        current.endX = event.getX();
-                        current.endY = event.getY();
-                        if (Math.abs(current.endX - current.startX) > dp(6)
-                                || Math.abs(current.endY - current.startY) > dp(6)) {
+                        current.extendTo(event.getX(), event.getY());
+                        boolean big = Math.abs(current.endX - current.startX) > dp(6)
+                                || Math.abs(current.endY - current.startY) > dp(6);
+                        if (big) {
                             if (shapes.size() >= MAX_SHAPES) shapes.remove(0);
                             shapes.add(current);
                         }
                         current = null;
-                        tool = TOOL_NONE;
                         invalidate();
-                        if (getContext() instanceof DrawOverlayService) {
-                            ((DrawOverlayService) getContext()).onShapeDrawn();
-                        }
+                        // The tool stays picked, so the next shape can be drawn
+                        // right away without another tap on the button.
                     }
                     return true;
                 default:
@@ -497,6 +581,10 @@ public class DrawOverlayService extends Service {
         }
 
         private void drawShape(Canvas canvas, Shape shape) {
+            if (shape.tool == TOOL_PEN) {
+                if (shape.path != null) canvas.drawPath(shape.path, paint);
+                return;
+            }
             float left = Math.min(shape.startX, shape.endX);
             float top = Math.min(shape.startY, shape.endY);
             float right = Math.max(shape.startX, shape.endX);
@@ -512,13 +600,5 @@ public class DrawOverlayService extends Service {
             return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, value,
                     getResources().getDisplayMetrics());
         }
-    }
-
-    /** One shape is down: back to normal touching, tools close. */
-    void onShapeDrawn() {
-        updateLayerTouchable();
-        updateToolHighlight();
-        panelOpen = false;
-        if (panel != null) panel.setVisibility(View.GONE);
     }
 }
