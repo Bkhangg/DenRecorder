@@ -41,6 +41,7 @@ public class CapturePromptActivity extends Activity {
         }
         try {
             startActivityForResult(capture, REQ_PROJECTION);
+            FastStart.arm(this);
         } catch (Exception e) {
             finish();
             overridePendingTransition(0, 0);

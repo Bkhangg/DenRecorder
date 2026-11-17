@@ -70,6 +70,7 @@ public class MainActivity extends Activity {
     private static final int REQ_OVERLAY = 1004;
     private static final int REQ_FOLDER = 1005;
     private static final int REQ_SHIZUKU = 1006;
+    private static final int REQ_SHIZUKU_FAST = 1011;
 
     /** Every file DenRecorder writes starts with this name. */
     private static final String SCREEN_RECORDING_PREFIX = "DenRecorder_";
@@ -123,8 +124,10 @@ public class MainActivity extends Activity {
     private TextView themeValueView;
     private TextView islandValueView;
     private TextView islandModeValueView;
+    private TextView fastStartValueView;
     /** Set while the Shizuku permission request is on its way. */
     private boolean islandRequestPending;
+    private boolean fastStartRequestPending;
     private TextView storageValueView;
     private TextView orientationValueView;
     private TextView drawValueView;
@@ -288,6 +291,7 @@ public class MainActivity extends Activity {
         updateAudioValue();
         updateBatteryValue();
         updateTileValue();
+        updateFastStartValue();
         updateLanguageValue();
         handleAutoStart(getIntent());
         maybeShowSetup();
@@ -569,6 +573,9 @@ public class MainActivity extends Activity {
         divider(generalCard);
         tileValueView = addRow(generalCard, R.drawable.ic_tile, R.string.row_tile,
                 "", true, this::requestTile);
+        divider(generalCard);
+        fastStartValueView = addRow(generalCard, R.drawable.ic_chip,
+                R.string.row_fast_start, "", true, this::toggleFastStart);
         divider(generalCard);
         languageValueView = addRow(generalCard, R.drawable.ic_language, R.string.row_language,
                 "", true, this::chooseLanguage);
@@ -1163,6 +1170,7 @@ public class MainActivity extends Activity {
             updateAudioValue();
             updateBatteryValue();
             updateTileValue();
+            updateFastStartValue();
             updateLanguageValue();
             updateThemeValue();
             updateIslandValue();
@@ -1480,6 +1488,54 @@ public class MainActivity extends Activity {
         tileValueView.setText(getString(prefs.getBoolean("tileAdded", false)
                 ? R.string.value_tile_added
                 : R.string.value_tile_missing));
+    }
+
+    private void updateFastStartValue() {
+        if (fastStartValueView == null) return;
+        int res;
+        if (!FastStart.enabled(this)) res = R.string.value_fast_off;
+        else if (FastStart.available()) res = R.string.value_fast_on;
+        else res = R.string.value_fast_need;
+        fastStartValueView.setText(res);
+    }
+
+    /** One tap starts a recording: Shizuku presses Android's own button. */
+    private void toggleFastStart() {
+        if (FastStart.enabled(this)) {
+            FastStart.setEnabled(this, false);
+            updateFastStartValue();
+            Toast.makeText(this, R.string.fast_start_off_toast, Toast.LENGTH_SHORT).show();
+            return;
+        }
+        showCard(getString(R.string.fast_start_title), getString(R.string.fast_start_body),
+                getString(R.string.fast_start_enable), this::enableFastStart,
+                getString(R.string.dialog_cancel), null);
+    }
+
+    private void enableFastStart() {
+        if (!ShizukuBridge.installed(this)) {
+            showCard(getString(R.string.fast_start_need_title),
+                    getString(R.string.fast_start_need_body),
+                    getString(R.string.island_install_shizuku), this::openShizukuDownload,
+                    getString(R.string.dialog_cancel), null);
+            return;
+        }
+        if (!ShizukuBridge.running()) {
+            showCard(getString(R.string.fast_start_need_title),
+                    getString(R.string.island_waiting_shizuku),
+                    getString(R.string.island_open_shizuku), this::openShizukuApp,
+                    getString(R.string.dialog_cancel), null);
+            return;
+        }
+        if (!ShizukuBridge.allowed()) {
+            fastStartRequestPending = true;
+            Toast.makeText(this, R.string.island_allow_in_shizuku, Toast.LENGTH_LONG).show();
+            ShizukuBridge.requestPermission(REQ_SHIZUKU_FAST);
+            return;
+        }
+        FastStart.setEnabled(this, true);
+        updateFastStartValue();
+        Toast.makeText(this, R.string.fast_start_on_toast, Toast.LENGTH_SHORT).show();
     }
 
     private String versionName() {
@@ -2190,6 +2246,25 @@ public class MainActivity extends Activity {
             new rikka.shizuku.Shizuku.OnRequestPermissionResultListener() {
                 @Override
                 public void onRequestPermissionResult(int requestCode, int grantResult) {
+                    if (requestCode == REQ_SHIZUKU_FAST) {
+                        if (!fastStartRequestPending) return;
+                        fastStartRequestPending = false;
+                        handler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                if (grantResult == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                                    enableFastStart();
+                                } else {
+                                    showCard(getString(R.string.fast_start_need_title),
+                                            getString(R.string.fast_start_denied_body),
+                                            getString(R.string.island_request_again),
+                                            MainActivity.this::enableFastStart,
+                                            getString(R.string.dialog_cancel), null);
+                                }
+                            }
+                        });
+                        return;
+                    }
                     if (requestCode != REQ_SHIZUKU || !islandRequestPending) return;
                     islandRequestPending = false;
                     handler.post(new Runnable() {
@@ -2437,6 +2512,7 @@ public class MainActivity extends Activity {
             }
             projectionRequested = true;
             startActivityForResult(capture, REQ_PROJECTION);
+            FastStart.arm(this);
             status(R.string.status_allow_capture, MUTED);
         } catch (Exception e) {
             projectionRequested = false;
