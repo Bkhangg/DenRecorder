@@ -100,11 +100,18 @@ public class ScreenRecorder {
     private volatile boolean stopping;
     private volatile boolean started;
 
+    /** Pause drops encoded frames and closes the timestamp gap on resume. */
+    private volatile boolean paused;
+    private volatile long pauseStartedUs;
+    private final java.util.concurrent.atomic.AtomicLong pausedUs =
+            new java.util.concurrent.atomic.AtomicLong(0);
+
     private int width;
     private int height;
     private int fps;
     private int videoBitrate = VIDEO_BITRATE;
     private long startNs;
+    private long lastVideoPts = -1;
 
     public ScreenRecorder(Context context, MediaProjection projection, int audioSource) {
         this(context, projection, audioSource, 0, TARGET_FPS, VIDEO_BITRATE, CODEC_AVC, "auto");
@@ -133,6 +140,36 @@ public class ScreenRecorder {
         this.requestedBitrate = requestedBitrate > 0 ? requestedBitrate : VIDEO_BITRATE;
         this.mime = CODEC_HEVC.equals(mime) ? CODEC_HEVC : CODEC_AVC;
         this.codecLabel = this.mime.equals(CODEC_HEVC) ? "HEVC" : "AVC";
+    }
+
+    /** Stops adding frames to the video without ending it. */
+    public void pause() {
+        if (paused || stopping || !started) return;
+        pauseStartedUs = SystemClock.elapsedRealtime() * 1000L;
+        paused = true;
+    }
+
+    /** Continues the video where it was, with a fresh key frame. */
+    public void resume() {
+        if (!paused || stopping) return;
+        long now = SystemClock.elapsedRealtime() * 1000L;
+        if (now > pauseStartedUs) pausedUs.addAndGet(now - pauseStartedUs);
+        paused = false;
+        requestSyncFrame();
+    }
+
+    public boolean isPaused() {
+        return paused;
+    }
+
+    private void requestSyncFrame() {
+        try {
+            android.os.Bundle params = new android.os.Bundle();
+            params.putInt(MediaCodec.PARAMETER_KEY_REQUEST_SYNC_FRAME, 0);
+            if (videoCodec != null) videoCodec.setParameters(params);
+        } catch (Exception e) {
+            Log.w(TAG, "Could not ask for a key frame", e);
+        }
     }
 
     public Uri getOutputUri() {
@@ -711,13 +748,22 @@ public class ScreenRecorder {
                     if (buffer != null && info.size > 0
                             && (info.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) == 0) {
                         if (firstPts < 0) firstPts = info.presentationTimeUs;
-                        info.presentationTimeUs = Math.max(0, info.presentationTimeUs - firstPts);
-                        buffer.position(info.offset);
-                        buffer.limit(info.offset + info.size);
-                        synchronized (muxLock) {
-                            if (muxStarted) {
-                                muxer.writeSampleData(videoTrack, buffer, info);
-                                writtenSamples++;
+                        if (!paused) {
+                            // Frames encoded while paused are dropped; the time
+                            // they took is cut out so the video runs on without
+                            // a freeze. The muxer also needs growing timestamps.
+                            long pts = Math.max(0,
+                                    info.presentationTimeUs - firstPts - pausedUs.get());
+                            if (pts <= lastVideoPts) pts = lastVideoPts + 1;
+                            lastVideoPts = pts;
+                            info.presentationTimeUs = pts;
+                            buffer.position(info.offset);
+                            buffer.limit(info.offset + info.size);
+                            synchronized (muxLock) {
+                                if (muxStarted) {
+                                    muxer.writeSampleData(videoTrack, buffer, info);
+                                    writtenSamples++;
+                                }
                             }
                         }
                     }
@@ -746,6 +792,11 @@ public class ScreenRecorder {
             if (read <= 0) {
                 if (stopping) break;
                 SystemClock.sleep(5);
+                continue;
+            }
+            if (paused) {
+                // Sound recorded while paused is not kept either.
+                drainAudio(info, false);
                 continue;
             }
             int index;

@@ -50,6 +50,29 @@
     <string name="player_open_failed">Could not open the player</string>
     <string name="toast_recording_started">Recording started</string>
     <string name="toast_recording_saved">Recording saved</string>
+    <string name="row_draw">Draw on screen</string>
+    <string name="value_draw_on">On · floating button</string>
+    <string name="value_draw_off">Off</string>
+    <string name="value_draw_need">Allow display over apps</string>
+    <string name="draw_permission_title">Allow drawing on screen</string>
+    <string name="draw_permission_body">Android needs the \"display over other apps\" permission before the floating button can appear. Turn it on for DenRecorder, then come back.</string>
+    <string name="draw_permission_grant">Open settings</string>
+    <string name="draw_permission_later">Not now</string>
+    <string name="draw_permission_on">Drawing is ready</string>
+    <string name="draw_permission_off">Drawing needs \"display over other apps\"</string>
+    <string name="draw_permission_unavailable">Could not open that settings page</string>
+    <string name="overlay_button">Drawing tools</string>
+    <string name="overlay_rect">Rectangle</string>
+    <string name="overlay_circle">Circle</string>
+    <string name="overlay_clear">Clear drawings</string>
+    <string name="overlay_stop">Stop recording</string>
+    <string name="overlay_hide">Hide drawing tools</string>
+    <string name="action_pause">Pause</string>
+    <string name="action_resume">Resume</string>
+    <string name="notification_paused">Paused</string>
+    <string name="hero_paused_title">Paused</string>
+    <string name="toast_recording_paused">Recording paused</string>
+    <string name="toast_recording_resumed">Recording resumed</string>
     <string name="row_credit">Credit</string>
 
     <string name="value_native">Native · %1$s</string>
@@ -95,7 +118,7 @@
     <string name="status_tile_failed">Add it from Control Center › Edit tiles</string>
     <string name="status_folder_changed">New recordings go to %1$s</string>
     <string name="hint_home">Resolution, frame rate (up to 120 fps), quality and codec live in Settings. The floating bar below switches between recording, your videos and settings.</string>
-    <string name="hint_recordings">Recordings are in %1$s. Tap one to play it, hold it to share or delete.</string>
+    <string name="hint_recordings">Recordings made with DenRecorder. Tap one to play it, hold it to share or delete. New videos go to %1$s.</string>
 
     <string name="title_resolution">Resolution</string>
     <string name="title_quality">Video quality</string>
@@ -125,7 +148,7 @@
 
     <string name="recordings_recent">Recent</string>
     <string name="recordings_all">All</string>
-    <string name="recordings_empty">No recordings here yet. Videos you record land in this folder.</string>
+    <string name="recordings_empty">No recordings yet. The next one you record shows up here.</string>
     <string name="recordings_count">%1$d video(s) · %2$s</string>
     <string name="recordings_count_all">%1$d video(s) · %2$s</string>
     <string name="recordings_action_title">This recording</string>

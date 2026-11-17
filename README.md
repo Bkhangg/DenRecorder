@@ -19,6 +19,8 @@ DenRecorder records the whole screen (and the device audio, the microphone or no
 - **Quick Settings tile** — start and stop without opening the app, with a toast when the recording starts or is saved.
 - **Game performance mode** — caps the recorder at 60 fps and runs the encoder in realtime priority, so a game next to it keeps its frame rate.
 - **Recordings screen** — recent/all lists with real thumbnails, tap to play, long-press to play, share or delete.
+- **Draw on screen** — a floating button while recording: draw a rectangle or circle on the screen (they end up in the video), and pause or stop the recording from the same bar.
+- **Pause and resume** — one recording stays one file; the paused time is cut out.
 - **Built-in player** — a recording opens in DenRecorder's own player (play/pause, seek), so the video you tap is the video you get, whatever gallery app is installed.
 - **Choose where videos go** — `Movies/Screen Recorder` by default, five presets or any custom folder.
 - **Recording rotation** — automatic, portrait or landscape: the screen is locked to that rotation for the whole recording (your phone's own rotation setting comes back afterwards), so the video never turns halfway through.
@@ -29,7 +31,7 @@ DenRecorder records the whole screen (and the device audio, the microphone or no
 
 ### Install
 
-1. Download `DenRecorder-1.1.1.apk` from the [Releases](../../releases) page.
+1. Download `DenRecorder-1.2.0.apk` from the [Releases](../../releases) page.
 2. Open it on the phone and allow installing apps from that source if asked.
 3. Open DenRecorder, allow the permissions it asks for, and optionally let it add the Quick Settings tile.
 
@@ -75,6 +77,13 @@ res/                    strings (EN + VI), icons, launcher icons
 
 ### What's new
 
+**1.2.0**
+
+- Floating drawing button while recording: rectangle, circle, clear, pause/resume and stop.
+- Pause and resume a recording without splitting the file.
+- Recordings screen shows every DenRecorder video, even after changing the save folder.
+- Long setting values (Vietnamese game performance label, folder paths) wrap instead of being cut off.
+
 **1.1.1**
 
 - Videos open in DenRecorder's own player, so tapping a recording always plays that recording.
@@ -106,6 +115,8 @@ DenRecorder quay toàn bộ màn hình (kèm âm thanh thiết bị, micrô ho�
 - **Nút trên Trung tâm điều khiển** — bắt đầu và dừng quay mà không cần mở ứng dụng, có toast thông báo khi bắt đầu và khi đã lưu.
 - **Chế độ hiệu năng khi chơi game** — giới hạn 60 fps và ưu tiên thời gian thực cho bộ mã hóa, để game đang chạy bên cạnh vẫn mượt.
 - **Màn Bản ghi** — danh sách Gần đây/Tất cả kèm ảnh thu nhỏ thật của video, chạm để xem, giữ để xem/chia sẻ/xóa.
+- **Vẽ trên màn hình** — nút nổi khi đang quay: vẽ hình chữ nhật hoặc khoanh tròn lên màn hình (có trong video), tạm dừng hoặc dừng quay ngay trên thanh đó.
+- **Tạm dừng và tiếp tục** — một lần quay vẫn là một file, thời gian tạm dừng được cắt bỏ.
 - **Trình phát sẵn trong app** — chạm vào bản ghi là phát ngay trong DenRecorder (phát/tạm dừng, tua), đúng video vừa chọn dù máy dùng ứng dụng thư viện nào.
 - **Chọn thư mục lưu** — mặc định `Movies/Screen Recorder`, có 5 gợi ý sẵn hoặc tự nhập.
 - **Hướng khi ghi hình** — tự động, dọc hoặc ngang: màn hình được khóa đúng hướng đó trong suốt lần quay (cài đặt xoay của máy được trả lại sau khi dừng), nên video không bị xoay giữa chừng.
@@ -116,7 +127,7 @@ DenRecorder quay toàn bộ màn hình (kèm âm thanh thiết bị, micrô ho�
 
 ### Cài đặt
 
-1. Tải `DenRecorder-1.1.1.apk` ở mục [Releases](../../releases).
+1. Tải `DenRecorder-1.2.0.apk` ở mục [Releases](../../releases).
 2. Mở file trên điện thoại và cho phép cài đặt từ nguồn đó nếu được hỏi.
 3. Mở DenRecorder, cấp quyền khi được hỏi, có thể thêm nút vào Trung tâm điều khiển.
 
@@ -143,6 +154,13 @@ export ANDROID_HOME=$HOME/android-sdk
 `app.properties` chứa `versionCode`, `versionName`, `minSdk`.
 
 ### Có gì mới
+
+**1.2.0**
+
+- Nút nổi vẽ trên màn hình khi đang quay: hình chữ nhật, khoanh tròn, xóa nét, tạm dừng/tiếp tục và dừng quay.
+- Tạm dừng rồi tiếp tục quay mà vẫn giữ một file duy nhất.
+- Màn Bản ghi hiện mọi video DenRecorder, kể cả sau khi đổi thư mục lưu.
+- Giá trị dài trong Cài đặt (hiệu năng game, đường dẫn thư mục) xuống dòng thay vì bị cắt.
 
 **1.1.1**
 

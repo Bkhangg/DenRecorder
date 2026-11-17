@@ -67,6 +67,10 @@ public class MainActivity extends Activity {
     private static final int REQ_PROJECTION = 1001;
     private static final int REQ_PERMISSIONS = 1002;
     private static final int REQ_WRITE_SETTINGS = 1003;
+    private static final int REQ_OVERLAY = 1004;
+
+    /** Every file DenRecorder writes starts with this name. */
+    private static final String SCREEN_RECORDING_PREFIX = "DenRecorder_";
 
     // Shadcn-style palette (zinc scale).
     private static final int BG = Color.parseColor("#09090B");
@@ -111,6 +115,7 @@ public class MainActivity extends Activity {
     private TextView languageValueView;
     private TextView storageValueView;
     private TextView orientationValueView;
+    private TextView drawValueView;
     private TextView performanceValueView;
     private View recordingDot;
     private ValueAnimator dotAnimator;
@@ -141,6 +146,7 @@ public class MainActivity extends Activity {
     private String codec = "avc";
     private String language = "en";
     private String orientation = "auto";
+    private boolean drawOverlay = true;
     private boolean perfMode = true;
     private boolean pendingStart;
     private boolean sawRecording;
@@ -188,6 +194,7 @@ public class MainActivity extends Activity {
         language = prefs.getString(LocaleHelper.KEY, "en");
         orientation = prefs.getString("orientation", "auto");
         perfMode = prefs.getBoolean("perfMode", true);
+        drawOverlay = prefs.getBoolean("drawOverlay", true);
         handler = new Handler(Looper.getMainLooper());
 
         buildUi();
@@ -470,6 +477,9 @@ public class MainActivity extends Activity {
                 "", true, this::chooseOrientation);
         divider(generalCard);
         addHint(generalCard, R.string.hint_orientation);
+        divider(generalCard);
+        drawValueView = addRow(generalCard, R.drawable.ic_pen, R.string.row_draw,
+                "", true, this::toggleDrawOverlay);
 
         list.addView(sectionLabel(R.string.section_about), lp(MATCH, WRAP, 0, 22, 0, 0));
         LinearLayout aboutCard = card();
@@ -553,19 +563,10 @@ public class MainActivity extends Activity {
                     MediaStore.Video.Media.WIDTH,
                     MediaStore.Video.Media.HEIGHT
             };
-            String selection;
-            String[] args;
-            if (Build.VERSION.SDK_INT >= 29) {
-                selection = MediaStore.Video.Media.RELATIVE_PATH + "=? OR "
-                        + MediaStore.Video.Media.RELATIVE_PATH + "=?";
-                args = new String[]{folder, folder + "/"};
-            } else {
-                // Android 9 and older: find the videos by their path on the card.
-                java.io.File dir = ScreenRecorder.publicFolder(folder);
-                String prefix = (dir == null ? folder : dir.getAbsolutePath()) + "/";
-                selection = MediaStore.Video.Media.DATA + " LIKE ?";
-                args = new String[]{prefix + "%"};
-            }
+            // Recordings are found by their name, not by the folder, so the list
+            // keeps showing everything after "Save to" was changed.
+            String selection = MediaStore.Video.Media.DISPLAY_NAME + " LIKE ?";
+            String[] args = new String[]{SCREEN_RECORDING_PREFIX + "%"};
             cursor = getContentResolver().query(MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
                     projection, selection, args,
                     MediaStore.Video.Media.DATE_ADDED + " DESC");
@@ -831,6 +832,7 @@ public class MainActivity extends Activity {
             updateLanguageValue();
             updateStorageValue();
             updateOrientationValue();
+            updateDrawValue();
         } else if (index == 2) {
             loadRecordings();
         }
@@ -934,7 +936,10 @@ public class MainActivity extends Activity {
 
         TextView valueView = label(value, 14, MUTED, false);
         valueView.setGravity(Gravity.END);
-        valueView.setSingleLine(true);
+        // Long values (Vietnamese "Mượt · giới hạn 60 fps", folder paths) wrap
+        // instead of being cut off.
+        valueView.setMaxLines(2);
+        valueView.setEllipsize(null);
         LinearLayout.LayoutParams valueParams =
                 new LinearLayout.LayoutParams(0, WRAP, 1f);
         valueParams.setMargins(dp(12), 0, 0, 0);
@@ -1609,6 +1614,43 @@ public class MainActivity extends Activity {
         orientationValueView.setText(res);
     }
 
+    // ---------- Drawing on screen ----------
+
+    /**
+     * The floating button with rectangle, circle, pause and stop. Android needs
+     * the "display over other apps" grant before anything can be drawn.
+     */
+    private void toggleDrawOverlay() {
+        drawOverlay = !drawOverlay;
+        prefs.edit().putBoolean("drawOverlay", drawOverlay).apply();
+        updateDrawValue();
+        if (drawOverlay && !DrawOverlayService.canDraw(this)) {
+            showCard(getString(R.string.draw_permission_title),
+                    getString(R.string.draw_permission_body),
+                    getString(R.string.draw_permission_grant),
+                    this::requestOverlayPermission,
+                    getString(R.string.draw_permission_later), null);
+        }
+    }
+
+    private void requestOverlayPermission() {
+        try {
+            startActivityForResult(new Intent(
+                    android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                    Uri.parse("package:" + getPackageName())), REQ_OVERLAY);
+        } catch (Exception e) {
+            status(R.string.draw_permission_unavailable, RED);
+        }
+    }
+
+    private void updateDrawValue() {
+        if (drawValueView == null) return;
+        int res = !drawOverlay ? R.string.value_draw_off
+                : DrawOverlayService.canDraw(this) ? R.string.value_draw_on
+                : R.string.value_draw_need;
+        drawValueView.setText(res);
+    }
+
     private void chooseBitrate() {
         if (blockWhileRecording()) return;
         final int[] values = {15, 20, 25, 32, 40, 50};
@@ -1829,6 +1871,13 @@ public class MainActivity extends Activity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQ_OVERLAY) {
+            updateDrawValue();
+            status(DrawOverlayService.canDraw(this)
+                    ? R.string.draw_permission_on
+                    : R.string.draw_permission_off, MUTED);
+            return;
+        }
         if (requestCode == REQ_WRITE_SETTINGS) {
             updateOrientationValue();
             status(RotationLock.canWrite(this)
@@ -1880,7 +1929,9 @@ public class MainActivity extends Activity {
                 startDotAnimation();
             }
             long elapsed = System.currentTimeMillis() - RecorderService.startedAt;
-            heroTitle.setText(getString(R.string.hero_recording_title)
+            heroTitle.setText(getString(RecorderService.isPaused
+                    ? R.string.hero_paused_title
+                    : R.string.hero_recording_title)
                     + "  " + formatDuration(elapsed));
             statusView.setVisibility(View.GONE);
         } else {

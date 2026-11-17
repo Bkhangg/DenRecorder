@@ -50,6 +50,29 @@
     <string name="player_open_failed">Không mở được trình phát</string>
     <string name="toast_recording_started">Đã bắt đầu quay</string>
     <string name="toast_recording_saved">Đã lưu bản ghi</string>
+    <string name="row_draw">Vẽ trên màn hình</string>
+    <string name="value_draw_on">Bật · nút nổi</string>
+    <string name="value_draw_off">Tắt</string>
+    <string name="value_draw_need">Cho phép hiển thị trên ứng dụng khác</string>
+    <string name="draw_permission_title">Cho phép vẽ trên màn hình</string>
+    <string name="draw_permission_body">Android cần quyền \"hiển thị trên ứng dụng khác\" để nút nổi xuất hiện. Bật quyền đó cho DenRecorder rồi quay lại.</string>
+    <string name="draw_permission_grant">Mở cài đặt</string>
+    <string name="draw_permission_later">Để sau</string>
+    <string name="draw_permission_on">Đã sẵn sàng vẽ</string>
+    <string name="draw_permission_off">Cần bật \"hiển thị trên ứng dụng khác\" để vẽ</string>
+    <string name="draw_permission_unavailable">Không mở được trang cài đặt đó</string>
+    <string name="overlay_button">Công cụ vẽ</string>
+    <string name="overlay_rect">Hình chữ nhật</string>
+    <string name="overlay_circle">Khoanh tròn</string>
+    <string name="overlay_clear">Xóa nét vẽ</string>
+    <string name="overlay_stop">Dừng quay</string>
+    <string name="overlay_hide">Ẩn công cụ vẽ</string>
+    <string name="action_pause">Tạm dừng</string>
+    <string name="action_resume">Tiếp tục</string>
+    <string name="notification_paused">Đã tạm dừng</string>
+    <string name="hero_paused_title">Đang tạm dừng</string>
+    <string name="toast_recording_paused">Đã tạm dừng quay</string>
+    <string name="toast_recording_resumed">Tiếp tục quay</string>
     <string name="row_credit">Tác giả</string>
 
     <string name="value_native">Gốc · %1$s</string>
@@ -95,7 +118,7 @@
     <string name="status_tile_failed">Thêm trong Trung tâm điều khiển › Sửa nút</string>
     <string name="status_folder_changed">Video mới sẽ lưu vào %1$s</string>
     <string name="hint_home">Độ phân giải, tốc độ khung hình (tới 120 fps), chất lượng và bộ mã hóa nằm trong Cài đặt. Thanh nổi bên dưới để chuyển giữa quay, bản ghi và cài đặt.</string>
-    <string name="hint_recordings">Bản ghi nằm trong %1$s. Chạm để xem, giữ để chia sẻ hoặc xóa.</string>
+    <string name="hint_recordings">Các bản ghi của DenRecorder. Chạm để xem, giữ để chia sẻ hoặc xóa. Video mới lưu vào %1$s.</string>
 
     <string name="title_resolution">Độ phân giải</string>
     <string name="title_quality">Chất lượng video</string>
@@ -125,7 +148,7 @@
 
     <string name="recordings_recent">Gần đây</string>
     <string name="recordings_all">Tất cả</string>
-    <string name="recordings_empty">Chưa có bản ghi nào ở đây. Video bạn quay sẽ nằm trong thư mục này.</string>
+    <string name="recordings_empty">Chưa có bản ghi nào. Bản ghi tiếp theo sẽ xuất hiện ở đây.</string>
     <string name="recordings_count">%1$d video · %2$s</string>
     <string name="recordings_count_all">%1$d video · %2$s</string>
     <string name="recordings_action_title">Bản ghi này</string>

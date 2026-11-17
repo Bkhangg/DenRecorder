@@ -31,12 +31,15 @@ public class RecorderService extends Service {
 
     public static final String ACTION_START = "com.bkggds.denrecorder.action.START";
     public static final String ACTION_STOP = "com.bkggds.denrecorder.action.STOP";
+    public static final String ACTION_PAUSE = "com.bkggds.denrecorder.action.PAUSE";
+    public static final String ACTION_RESUME = "com.bkggds.denrecorder.action.RESUME";
 
     public static final String EXTRA_RESULT_CODE = "resultCode";
     public static final String EXTRA_DATA = "data";
     public static final String EXTRA_AUDIO = "audio";
 
     public static volatile boolean isRecording;
+    public static volatile boolean isPaused;
     public static volatile long startedAt;
     public static volatile Uri lastUri;
     public static volatile String lastError;
@@ -96,6 +99,14 @@ public class RecorderService extends Service {
         String action = intent == null ? null : intent.getAction();
         if (ACTION_STOP.equals(action)) {
             stopRecording(null);
+            return START_NOT_STICKY;
+        }
+        if (ACTION_PAUSE.equals(action)) {
+            pauseRecording();
+            return START_NOT_STICKY;
+        }
+        if (ACTION_RESUME.equals(action)) {
+            resumeRecording();
             return START_NOT_STICKY;
         }
         if (ACTION_START.equals(action)) {
@@ -262,6 +273,9 @@ public class RecorderService extends Service {
             recorder.start();
             updateNotification();
             refreshTile();
+            if (prefs.getBoolean("drawOverlay", true)) {
+                DrawOverlayService.start(this);
+            }
             toast(rotationLocked
                     ? getString(R.string.toast_recording_started_locked,
                             getString("landscape".equals(orientation)
@@ -314,6 +328,9 @@ public class RecorderService extends Service {
                     projection = null;
                 }
 
+                DrawOverlayService.stop(RecorderService.this);
+                isPaused = false;
+
                 final Uri savedUri = uri;
                 final String savedError = failReason != null ? failReason : lastError;
                 handler.post(new Runnable() {
@@ -334,10 +351,39 @@ public class RecorderService extends Service {
         }, "rec-stop").start();
     }
 
+    /** Holds the video without ending it, so one file stays one recording. */
+    public void pauseRecording() {
+        if (!isRecording || recorder == null || isPaused) return;
+        isPaused = true;
+        try {
+            recorder.pause();
+        } catch (Exception e) {
+            Log.w(TAG, "Could not pause", e);
+        }
+        updateNotification();
+        DrawOverlayService.refreshControls(this);
+        toast(getString(R.string.toast_recording_paused));
+    }
+
+    public void resumeRecording() {
+        if (!isRecording || recorder == null || !isPaused) return;
+        isPaused = false;
+        try {
+            recorder.resume();
+        } catch (Exception e) {
+            Log.w(TAG, "Could not resume", e);
+        }
+        updateNotification();
+        DrawOverlayService.refreshControls(this);
+        toast(getString(R.string.toast_recording_resumed));
+    }
+
     @Override
     public void onDestroy() {
         handler.removeCallbacks(ticker);
         isRecording = false;
+        isPaused = false;
+        DrawOverlayService.stop(this);
         // Safety net: never leave the screen locked after a killed service.
         RotationLock.release(this);
         super.onDestroy();
@@ -372,6 +418,10 @@ public class RecorderService extends Service {
         Intent stop = new Intent(this, RecorderService.class).setAction(ACTION_STOP);
         PendingIntent stopIntent = PendingIntent.getService(this, 1, stop, pendingFlags());
 
+        Intent hold = new Intent(this, RecorderService.class)
+                .setAction(isPaused ? ACTION_RESUME : ACTION_PAUSE);
+        PendingIntent holdIntent = PendingIntent.getService(this, 2, hold, pendingFlags());
+
         Notification.Builder builder;
         if (Build.VERSION.SDK_INT >= 26) {
             builder = new Notification.Builder(this, CHANNEL_ID);
@@ -402,6 +452,20 @@ public class RecorderService extends Service {
                     android.R.drawable.ic_menu_close_clear_cancel,
                     getString(R.string.notification_stop), stopIntent).build();
         }
+        int holdIcon = isPaused ? R.drawable.ic_play : R.drawable.ic_pause;
+        Notification.Action holdAction;
+        if (Build.VERSION.SDK_INT >= 23) {
+            holdAction = new Notification.Action.Builder(
+                    Icon.createWithResource(this, holdIcon),
+                    getString(isPaused ? R.string.action_resume : R.string.action_pause),
+                    holdIntent).build();
+        } else {
+            holdAction = new Notification.Action.Builder(
+                    holdIcon,
+                    getString(isPaused ? R.string.action_resume : R.string.action_pause),
+                    holdIntent).build();
+        }
+        builder.addAction(holdAction);
         builder.addAction(stopAction);
         return builder.build();
     }
@@ -410,7 +474,16 @@ public class RecorderService extends Service {
         if (!isRecording || recorder == null) return;
         NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         try {
-            nm.notify(NOTIF_ID, buildNotification(recorder.describeSettings()));
+            nm.notify(NOTIF_ID, buildNotification(
+                    (isPaused ? getString(R.string.notification_paused) + " · " : "")
+                            + recorder.describeSettings()));
+        } catch (Exception ignored) { }
+    }
+
+    public static void requestPause(android.content.Context context) {
+        try {
+            context.startService(new Intent(context, RecorderService.class)
+                    .setAction(isPaused ? ACTION_RESUME : ACTION_PAUSE));
         } catch (Exception ignored) { }
     }
 
