@@ -140,8 +140,28 @@ public final class Island {
         return context.getSharedPreferences(LocaleHelper.PREFS, Context.MODE_PRIVATE);
     }
 
+    /**
+     * The island draws its picture at a fixed size, so a vector is scaled up to
+     * fill the pill and looks big. Drawing it into a bitmap with a wide
+     * transparent margin keeps the same box but a much smaller glyph.
+     */
     private static Icon smallIcon(Context context) {
-        return Icon.createWithResource(context, R.drawable.ic_video);
+        try {
+            int box = 192;
+            int glyph = Math.round(box * 0.46f);
+            android.graphics.Bitmap bitmap = android.graphics.Bitmap.createBitmap(
+                    box, box, android.graphics.Bitmap.Config.ARGB_8888);
+            android.graphics.Canvas canvas = new android.graphics.Canvas(bitmap);
+            @SuppressWarnings("deprecation")
+            android.graphics.drawable.Drawable drawable =
+                    context.getResources().getDrawable(R.drawable.ic_video);
+            int left = (box - glyph) / 2;
+            drawable.setBounds(left, left, left + glyph, left + glyph);
+            drawable.draw(canvas);
+            return Icon.createWithBitmap(bitmap);
+        } catch (Throwable e) {
+            return Icon.createWithResource(context, R.drawable.ic_video);
+        }
     }
 
     /**

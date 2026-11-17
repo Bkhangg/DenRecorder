@@ -105,6 +105,11 @@ public class MainActivity extends Activity {
     private ScrollView homeScroll;
     private ScrollView settingsScroll;
     private ScrollView recordingsScroll;
+    private LinearLayout homeList;
+    private LinearLayout settingsList;
+    private LinearLayout recordingsPageList;
+    private boolean settingsRevealed;
+    private boolean recordingsRevealed;
 
     private TextView heroTitle;
     private TextView heroBody;
@@ -485,6 +490,7 @@ public class MainActivity extends Activity {
         LinearLayout list = new LinearLayout(this);
         list.setOrientation(LinearLayout.VERTICAL);
         homeScroll.addView(list, new ScrollView.LayoutParams(MATCH, WRAP));
+        homeList = list;
 
         LinearLayout hero = card();
         hero.setPadding(dp(20), dp(20), dp(20), dp(20));
@@ -537,12 +543,16 @@ public class MainActivity extends Activity {
         TextView hint = label(getString(R.string.hint_home), 12, FAINT, false);
         hint.setLineSpacing(dp(3), 1f);
         list.addView(hint, lp(MATCH, WRAP, 0, 18, 0, 0));
+
+        // The home screen is on show at start: let its parts rise in.
+        revealChildren(list, 55);
     }
 
     private void buildSettings() {
         LinearLayout list = new LinearLayout(this);
         list.setOrientation(LinearLayout.VERTICAL);
         settingsScroll.addView(list, new ScrollView.LayoutParams(MATCH, WRAP));
+        settingsList = list;
 
         list.addView(sectionLabel(R.string.section_capture), lp(MATCH, WRAP, 0, 10, 0, 0));
         LinearLayout qualityCard = card();
@@ -630,6 +640,7 @@ public class MainActivity extends Activity {
         LinearLayout list = new LinearLayout(this);
         list.setOrientation(LinearLayout.VERTICAL);
         recordingsScroll.addView(list, new ScrollView.LayoutParams(MATCH, WRAP));
+        recordingsPageList = list;
 
         LinearLayout tabs = new LinearLayout(this);
         tabs.setOrientation(LinearLayout.HORIZONTAL);
@@ -748,7 +759,7 @@ public class MainActivity extends Activity {
         recordingsList.addView(card, lp(MATCH, WRAP, 0, 0, 0, 0));
         for (int i = 0; i < shown; i++) {
             if (i > 0) divider(card);
-            addRecordingRow(card, items.get(i));
+            addRecordingRow(card, items.get(i), i);
         }
     }
 
@@ -791,7 +802,7 @@ public class MainActivity extends Activity {
         }
     }
 
-    private void addRecordingRow(LinearLayout parent, final Recording item) {
+    private void addRecordingRow(LinearLayout parent, final Recording item, int index) {
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
@@ -832,6 +843,14 @@ public class MainActivity extends Activity {
         texts.addView(path, lp(MATCH, WRAP, 0, 2, 0, 0));
 
         parent.addView(row, lp(MATCH, WRAP, 0, 0, 0, 0));
+        if (index < 8) {
+            row.setAlpha(0f);
+            row.setTranslationY(dp(8));
+            row.animate().alpha(1f).translationY(0f)
+                    .setStartDelay(index * 45L)
+                    .setDuration(220)
+                    .start();
+        }
         row.setOnClickListener(v -> {
             if (recordingsSelectMode) {
                 toggleSelection(item, dot);
@@ -1170,6 +1189,15 @@ public class MainActivity extends Activity {
         styleNavItem(navRecordings, navRecordingsIcon, navRecordingsLabel, index == 2);
         styleNavItem(navSettings, navSettingsIcon, navSettingsLabel, index == 1);
         animateScreenIn(index == 0 ? homeScroll : index == 1 ? settingsScroll : recordingsScroll);
+        // Settings and the recordings are built at start, so they get their
+        // rise-in the first time they are actually opened.
+        if (index == 1 && !settingsRevealed) {
+            settingsRevealed = true;
+            revealChildren(settingsList, 32);
+        } else if (index == 2 && !recordingsRevealed) {
+            recordingsRevealed = true;
+            revealChildren(recordingsPageList, 45);
+        }
         updateBackCallback();
         if (index == 1) {
             updateQualityValues();
@@ -1204,6 +1232,40 @@ public class MainActivity extends Activity {
                 .start();
     }
 
+    /** Parts of a screen rise in one after another, like a short cascade. */
+    private void revealChildren(LinearLayout list, int stepMs) {
+        if (list == null) return;
+        for (int i = 0; i < list.getChildCount(); i++) {
+            View child = list.getChildAt(i);
+            child.animate().cancel();
+            child.setAlpha(0f);
+            child.setTranslationY(dp(10));
+            child.animate()
+                    .alpha(1f)
+                    .translationY(0f)
+                    .setStartDelay(i * (long) stepMs)
+                    .setDuration(260)
+                    .setInterpolator(new android.view.animation.DecelerateInterpolator())
+                    .start();
+        }
+    }
+
+    /** A settings value fades to its new text instead of switching abruptly. */
+    private void setValue(TextView view, CharSequence text) {
+        if (view == null || text == null) return;
+        CharSequence current = view.getText();
+        if (current != null && text.toString().contentEquals(current)) return;
+        view.animate().cancel();
+        final CharSequence next = text;
+        view.animate().alpha(0f).setDuration(70).withEndAction(new Runnable() {
+            @Override
+            public void run() {
+                view.setText(next);
+                view.animate().alpha(1f).setDuration(150).start();
+            }
+        }).start();
+    }
+
     /** Buttons shrink a little while pressed. */
     private void pressEffect(final View view) {
         if (view == null) return;
@@ -1228,6 +1290,22 @@ public class MainActivity extends Activity {
         int color = active ? TEXT : FAINT;
         icon.setColorFilter(color);
         label.setTextColor(color);
+        icon.animate().cancel();
+        label.animate().cancel();
+        if (active) {
+            // The picked tab's icon pops once, and its label fades in.
+            icon.setScaleX(1.22f);
+            icon.setScaleY(1.22f);
+            icon.animate().scaleX(1f).scaleY(1f).setDuration(260)
+                    .setInterpolator(new android.view.animation.OvershootInterpolator(2.4f))
+                    .start();
+            label.setAlpha(0.35f);
+            label.animate().alpha(1f).setDuration(190).start();
+        } else {
+            icon.setScaleX(1f);
+            icon.setScaleY(1f);
+            label.setAlpha(1f);
+        }
     }
 
     private LinearLayout navItem(int iconRes, String text) {
@@ -1349,6 +1427,8 @@ public class MainActivity extends Activity {
     /** Start and stop keep the same button, with the icon that fits it. */
     private void setMainButton(boolean recording) {
         if (mainButton == null) return;
+        boolean changed = mainButton.isSelected() != recording;
+        mainButton.setSelected(recording);
         int background = recording ? RED : PRIMARY;
         int foreground = recording ? Color.WHITE : PRIMARY_FG;
         mainButton.setBackground(round(background, 12, 0));
@@ -1356,6 +1436,20 @@ public class MainActivity extends Activity {
         mainLabel.setTextColor(foreground);
         mainIcon.setImageResource(recording ? R.drawable.ic_stop : R.drawable.ic_record);
         mainIcon.setColorFilter(foreground);
+        if (!changed) return;
+        // Start and stop get a short pulse, so the switch is felt as well as seen.
+        mainButton.animate().cancel();
+        mainButton.setScaleX(0.97f);
+        mainButton.setScaleY(0.97f);
+        mainButton.animate().scaleX(1f).scaleY(1f).setDuration(240)
+                .setInterpolator(new android.view.animation.OvershootInterpolator(2f))
+                .start();
+        mainIcon.setScaleX(0.5f);
+        mainIcon.setScaleY(0.5f);
+        mainIcon.setAlpha(0.3f);
+        mainIcon.animate().scaleX(1f).scaleY(1f).alpha(1f).setDuration(220)
+                .setInterpolator(new android.view.animation.OvershootInterpolator(2.2f))
+                .start();
     }
 
     private void styleButton(Button button, int background) {
@@ -1459,20 +1553,14 @@ public class MainActivity extends Activity {
     }
 
     private void updateQualityValues() {
-        if (resolutionValueView != null) resolutionValueView.setText(resolutionLabel());
-        if (bitrateValueView != null) {
-            bitrateValueView.setText(getString(R.string.value_mbps, bitrateMbps));
-        }
-        if (fpsValueView != null) {
-            fpsValueView.setText(getString(R.string.value_fps, videoFps));
-        }
-        if (codecValueView != null) codecValueView.setText(codecLabel());
-        if (performanceValueView != null) {
-            performanceValueView.setText(perfMode
-                    ? R.string.performance_on
-                    : R.string.performance_off);
-        }
-        if (heroBody != null) heroBody.setText(summaryLine());
+        setValue(resolutionValueView, resolutionLabel());
+        setValue(bitrateValueView, getString(R.string.value_mbps, bitrateMbps));
+        setValue(fpsValueView, getString(R.string.value_fps, videoFps));
+        setValue(codecValueView, codecLabel());
+        setValue(performanceValueView, getString(perfMode
+                ? R.string.performance_on
+                : R.string.performance_off));
+        setValue(heroBody, summaryLine());
     }
 
     private void updateAudioValue() {
@@ -1481,18 +1569,18 @@ public class MainActivity extends Activity {
         if (audioSource == ScreenRecorder.AUDIO_MIC) res = R.string.audio_mic;
         else if (audioSource == ScreenRecorder.AUDIO_INTERNAL) res = R.string.audio_internal;
         else res = R.string.audio_none;
-        audioValueView.setText(getString(res));
+        setValue(audioValueView, getString(res));
     }
 
     private void updateLanguageValue() {
         if (languageValueView == null) return;
-        languageValueView.setText(getString(
+        setValue(languageValueView, getString(
                 "vi".equals(language) ? R.string.language_vi : R.string.language_en));
     }
 
     private void updateTileValue() {
         if (tileValueView == null) return;
-        tileValueView.setText(getString(prefs.getBoolean("tileAdded", false)
+        setValue(tileValueView, getString(prefs.getBoolean("tileAdded", false)
                 ? R.string.value_tile_added
                 : R.string.value_tile_missing));
     }
@@ -1503,7 +1591,7 @@ public class MainActivity extends Activity {
         if (!FastStart.enabled(this)) res = R.string.value_fast_off;
         else if (FastStart.available()) res = R.string.value_fast_on;
         else res = R.string.value_fast_need;
-        fastStartValueView.setText(res);
+        setValue(fastStartValueView, getString(res));
     }
 
     /** One tap starts a recording: Shizuku presses Android's own button. */
@@ -1826,7 +1914,7 @@ public class MainActivity extends Activity {
 
     private void updateBatteryValue() {
         if (batteryValueView == null) return;
-        batteryValueView.setText(getString(batteryUnrestricted()
+        setValue(batteryValueView, getString(batteryUnrestricted()
                 ? R.string.battery_on
                 : R.string.battery_off));
     }
@@ -2000,7 +2088,7 @@ public class MainActivity extends Activity {
     }
 
     private void updateStorageValue() {
-        if (storageValueView != null) storageValueView.setText(saveFolder());
+        setValue(storageValueView, saveFolder());
         if (recordingsHint != null) {
             recordingsHint.setText(getString(R.string.hint_recordings, saveFolder()));
         }
@@ -2058,7 +2146,7 @@ public class MainActivity extends Activity {
         int res = "portrait".equals(orientation) ? R.string.orientation_portrait
                 : "landscape".equals(orientation) ? R.string.orientation_landscape
                 : R.string.orientation_auto;
-        orientationValueView.setText(res);
+        setValue(orientationValueView, getString(res));
     }
 
     // ---------- Drawing on screen ----------
@@ -2103,7 +2191,7 @@ public class MainActivity extends Activity {
     private void updateDrawSizeValue() {
         if (drawSizeValueView == null) return;
         String[] sizes = drawSizeLabels();
-        drawSizeValueView.setText(sizes[Math.max(0, Math.min(sizes.length - 1, drawSize))]);
+        setValue(drawSizeValueView, sizes[Math.max(0, Math.min(sizes.length - 1, drawSize))]);
     }
 
     /** A colour well: the tools draw new shapes in the picked colour. */
@@ -2195,6 +2283,8 @@ public class MainActivity extends Activity {
 
     private void updateDrawColorValue() {
         if (drawColorValueView == null) return;
+        // The colour can also be changed from the floating bar while recording.
+        drawColor = prefs.getInt("drawColor", DrawOverlayService.DEFAULT_INK);
         int[] palette = DrawOverlayService.PALETTE;
         int[] names = {
                 R.string.draw_color_rose, R.string.draw_color_red,
@@ -2211,7 +2301,7 @@ public class MainActivity extends Activity {
                 break;
             }
         }
-        drawColorValueView.setText(names[index]);
+        setValue(drawColorValueView, getString(names[index]));
     }
 
     private void requestOverlayPermission() {
@@ -2229,7 +2319,7 @@ public class MainActivity extends Activity {
         int res = !drawOverlay ? R.string.value_draw_off
                 : DrawOverlayService.canDraw(this) ? R.string.value_draw_on
                 : R.string.value_draw_need;
-        drawValueView.setText(res);
+        setValue(drawValueView, getString(res));
     }
 
     private void chooseBitrate() {
@@ -2415,11 +2505,9 @@ public class MainActivity extends Activity {
         if (!Island.enabled(this)) res = R.string.island_value_off;
         else if (Island.allowed(this)) res = R.string.island_value_on;
         else res = R.string.island_value_need;
-        islandValueView.setText(res);
-        if (islandModeValueView != null) {
-            islandModeValueView.setText(Island.onlyWhenPulled(this)
-                    ? R.string.island_mode_pull : R.string.island_mode_always);
-        }
+        setValue(islandValueView, getString(res));
+        setValue(islandModeValueView, getString(Island.onlyWhenPulled(this)
+                ? R.string.island_mode_pull : R.string.island_mode_always));
     }
 
     /** The island can wait for a pull of the status bar, or stay visible. */
@@ -2534,7 +2622,7 @@ public class MainActivity extends Activity {
         int res = "light".equals(theme) ? R.string.theme_light
                 : "dark".equals(theme) ? R.string.theme_dark
                 : R.string.theme_auto;
-        themeValueView.setText(res);
+        setValue(themeValueView, getString(res));
     }
 
     private boolean blockWhileRecording() {
@@ -2708,8 +2796,18 @@ public class MainActivity extends Activity {
     private void status(String text, int color) {
         if (statusView == null) return;
         statusView.setVisibility(View.VISIBLE);
-        statusView.setText(text);
+        boolean same = text != null && text.contentEquals(statusView.getText());
         statusView.setTextColor(color);
+        if (same && statusView.getAlpha() == 1f) return;
+        statusView.animate().cancel();
+        statusView.setText(text);
+        if (same) {
+            statusView.setAlpha(1f);
+            return;
+        }
+        statusView.setAlpha(0f);
+        statusView.setTranslationY(dp(4));
+        statusView.animate().alpha(1f).translationY(0f).setDuration(180).start();
     }
 
     // ---------- State refresh ----------

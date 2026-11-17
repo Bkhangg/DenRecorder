@@ -109,6 +109,7 @@
     <string name="overlay_clear">Xóa nét vẽ</string>
     <string name="overlay_stop">Dừng quay</string>
     <string name="overlay_hide">Ẩn công cụ vẽ</string>
+    <string name="overlay_color">Màu vẽ</string>
     <string name="action_pause">Tạm dừng</string>
     <string name="action_resume">Tiếp tục</string>
     <string name="notification_paused">Đã tạm dừng</string>

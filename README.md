@@ -18,22 +18,22 @@ DenRecorder records the whole screen (and the device audio, the microphone or no
 - **Audio** — internal device audio (Android 10+), microphone, or silent.
 - **Quick Settings tile** — start and stop without opening the app, with a toast when the recording starts or is saved.
 - **One tap to record (optional, Shizuku)** — Android asks for the screen-capture permission every time; with Shizuku running, DenRecorder can press that button itself, so the start button or the tile begins recording straight away. The system dialog still flashes by, and the option can be turned off again in Settings.
-- **Xiaomi Super Island (beta, Xiaomi only)** — the running recording shows up in HyperOS's island as a small icon with its timer, and a tap on it gives **pause, resume and stop** right on the bar; it can be hidden entirely, and HyperOS hides it by itself whenever the status bar is pulled down (the notification there carries the same buttons). Needs Shizuku once to grant the island permission.
+- **Xiaomi Super Island (beta, Xiaomi only)** — the running recording shows up in HyperOS's island as a small icon with its timer, and a tap on it gives **pause, resume and stop** right on the bar (the stop button is a filled square, not a cross); it can be hidden entirely, and HyperOS hides it by itself whenever the status bar is pulled down (the notification there carries the same buttons). Needs Shizuku once to grant the island permission.
 - **Game performance mode** — caps the recorder at 60 fps and runs the encoder in realtime priority, so a game next to it keeps its frame rate.
 - **Recordings screen** — recent/all lists with real thumbnails, the video's own name and the folder it is saved in; tap to play, long-press for play/share/**rename**/delete, or tap **Select** to pick several videos and delete them at once.
-- **Draw on screen** — a floating button while recording: pencil, rectangle or circle drawn straight onto the screen (they end up in the video), pause and stop from the same bar. A tool stays picked, so several shapes can be drawn one after another; the button's size and the drawing colour (12 colours) are picked in settings, and every shape keeps the colour it was drawn with.
+- **Draw on screen** — a floating button while recording: pencil, rectangle or circle drawn straight onto the screen (they end up in the video), pause and stop from the same bar. A tool stays picked, so several shapes can be drawn one after another, and the bar carries the whole palette (12 colours): the colour can be changed in the middle of a recording, and every shape keeps the colour it was drawn with. The button's size is picked in settings.
 - **Pause and resume** — one recording stays one file; the paused time is cut out of the video and the timer stops while paused.
 - **Built-in player** — a recording opens in DenRecorder's own player (play/pause, seek, double-tap to jump 10 s back or forward, and a rotate button that turns the video even when the phone's rotation is locked), so the video you tap is the video you get, whatever gallery app is installed.
 - **Choose where videos go** — `Movies/Screen Recorder` by default, five presets, the phone's own folder browser, or a typed path, including `Download` (videos land in the Downloads collection so MIUI keeps them there).
 - **Recording rotation** — automatic, portrait or landscape: the screen is locked to that rotation for the whole recording (your phone's own rotation setting comes back afterwards), so the video never turns halfway through.
 - **Long recordings** — the notification uses the system chronometer (no wake-ups every second), storage is checked every 15 s, recording stops safely before the card fills up.
 - **Bilingual** — English and Vietnamese, English on first launch.
-- **Shadcn-style UI** — dark, light or automatic (follows the phone), a floating bottom bar and short, subtle animations.
+- **Shadcn-style UI** — dark, light or automatic (follows the phone), a floating bottom bar, screens that rise in part by part and short, subtle animations.
 - **Android 5.1 (SDK 22) to Android 16 (SDK 36).**
 
 ### Install
 
-1. Download `DenRecorder-1.8.0.apk` from the [Releases](../../releases) page.
+1. Download `DenRecorder-1.9.0.apk` from the [Releases](../../releases) page.
 2. Open it on the phone and allow installing apps from that source if asked.
 3. Open DenRecorder, allow the permissions it asks for, and optionally let it add the Quick Settings tile.
 
@@ -81,6 +81,14 @@ res/                    strings (EN + VI), icons, launcher icons
 ```
 
 ### What's new
+
+**1.9.0**
+
+- The drawing bar now carries the colours: twelve dots under the tools, so the drawing colour is changed in the middle of a recording without leaving it. The picked dot is ringed, and the next shape uses the new colour straight away.
+- The island's picture is much smaller: the same video glyph is drawn into a wide transparent box, so the pill shows a small icon instead of one that nearly fills it.
+- Stopping looks like stopping: the notification's and the island's stop button is a filled square instead of a cross.
+- More motion: the home, settings and recordings pages rise in part by part, values cross-fade when they change, the picked tab's icon pops, start and stop pulse, the status line fades in, recording rows come in one after another, the floating button pops in and the drawing bar scales in. Opening the tools no longer ends the tool you had picked.
+- Fix: after the bar grew, a tap could land off its buttons; the floating window is now measured and given an exact size.
 
 **1.8.0**
 
@@ -175,7 +183,7 @@ DenRecorder quay toàn bộ màn hình (kèm âm thanh thiết bị, micrô ho�
 - **Super Island của Xiaomi (beta, chỉ máy Xiaomi)** — bản ghi đang chạy hiện trên đảo của HyperOS dưới dạng một biểu tượng nhỏ kèm đồng hồ đếm, chạm vào đảo là **tạm dừng, tiếp tục và dừng** ngay trên thanh đó; có thể tắt hẳn, và HyperOS tự ẩn đảo khi bạn kéo thanh trạng thái xuống (thông báo ở đó có đúng các nút này). Cần Shizuku một lần để cấp quyền hiện đảo.
 - **Chế độ hiệu năng khi chơi game** — giới hạn 60 fps và ưu tiên thời gian thực cho bộ mã hóa, để game đang chạy bên cạnh vẫn mượt.
 - **Màn Bản ghi** — danh sách Gần đây/Tất cả kèm ảnh thu nhỏ thật, tên video và thư mục lưu; chạm để xem, giữ để xem/chia sẻ/**đổi tên**/xóa, hoặc bấm **Chọn** để chọn nhiều bản ghi và xóa một lần.
-- **Vẽ trên màn hình** — nút nổi khi đang quay: bút chì, hình chữ nhật hoặc khoanh tròn vẽ thẳng lên màn hình (có trong video), tạm dừng và dừng quay ngay trên thanh đó. Chọn công cụ một lần là vẽ được nhiều hình liên tiếp; kích thước nút nổi và màu vẽ (12 màu) chỉnh trong Cài đặt, mỗi hình giữ đúng màu lúc vẽ.
+- **Vẽ trên màn hình** — nút nổi khi đang quay: bút chì, hình chữ nhật hoặc khoanh tròn vẽ thẳng lên màn hình (có trong video), tạm dừng và dừng quay ngay trên thanh đó. Chọn công cụ một lần là vẽ được nhiều hình liên tiếp, và thanh vẽ có sẵn đủ bảng màu (12 màu): đang quay vẫn đổi màu được, mỗi hình giữ đúng màu lúc vẽ. Kích thước nút nổi chỉnh trong Cài đặt.
 - **Tạm dừng và tiếp tục** — một lần quay vẫn là một file, thời gian tạm dừng được cắt khỏi video và đồng hồ đếm dừng lại khi tạm dừng.
 - **Trình phát sẵn trong app** — chạm vào bản ghi là phát ngay trong DenRecorder (phát/tạm dừng, tua, nhấn đúp để lùi hoặc tiến 10 giây, nút xoay màn hình hoạt động cả khi điện thoại đang khoá xoay), đúng video vừa chọn dù máy dùng ứng dụng thư viện nào.
 - **Chọn thư mục lưu** — mặc định `Movies/Screen Recorder`, có 5 gợi ý sẵn, duyệt thư mục bằng trình chọn của điện thoại, hoặc tự nhập.
@@ -187,7 +195,7 @@ DenRecorder quay toàn bộ màn hình (kèm âm thanh thiết bị, micrô ho�
 
 ### Cài đặt
 
-1. Tải `DenRecorder-1.8.0.apk` ở mục [Releases](../../releases).
+1. Tải `DenRecorder-1.9.0.apk` ở mục [Releases](../../releases).
 2. Mở file trên điện thoại và cho phép cài đặt từ nguồn đó nếu được hỏi.
 3. Mở DenRecorder, cấp quyền khi được hỏi, có thể thêm nút vào Trung tâm điều khiển.
 
@@ -214,6 +222,14 @@ export ANDROID_HOME=$HOME/android-sdk
 `app.properties` chứa `versionCode`, `versionName`, `minSdk`.
 
 ### Có gì mới
+
+**1.9.0**
+
+- Thanh vẽ có luôn bảng màu: mười hai chấm màu ngay dưới các công cụ, nên đang quay vẫn đổi màu vẽ được mà không phải thoát ra. Chấm đang chọn có viền, hình vẽ tiếp theo dùng màu mới ngay.
+- Icon trong đảo nhỏ hẳn: cùng một icon camera được vẽ vào một khung trong suốt rộng, nên viên đảo hiện icon nhỏ xíu thay vì gần đầy khung.
+- Dừng đúng nghĩa dừng: nút dừng trong thông báo và trong đảo là hình vuông đặc, không còn dấu X.
+- Thêm chuyển động: trang Quay, Cài đặt và Bản ghi hiện lần lượt từng phần, giá trị đổi mờ dần, icon tab đang chọn nảy nhẹ, nút bắt đầu/dừng nhấp nháy, dòng trạng thái mờ dần vào, các dòng bản ghi hiện nối tiếp, nút nổi bật ra và thanh vẽ phóng nhẹ. Mở công cụ không còn làm mất công cụ đang chọn.
+- Sửa lỗi: sau khi thanh vẽ rộng ra, bấm có thể lệch khỏi nút; cửa sổ nổi giờ được đo và đặt đúng kích thước.
 
 **1.8.0**
 

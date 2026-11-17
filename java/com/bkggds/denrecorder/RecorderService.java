@@ -568,13 +568,15 @@ public class RecorderService extends Service {
                 .setPriority(Notification.PRIORITY_LOW);
 
         Notification.Action stopAction;
+        // A filled square, not a cross: the cross reads as "close" (and the
+        // island shows the very same action), a square reads as "stop".
         if (Build.VERSION.SDK_INT >= 23) {
             stopAction = new Notification.Action.Builder(
-                    Icon.createWithResource(this, android.R.drawable.ic_menu_close_clear_cancel),
+                    Icon.createWithResource(this, R.drawable.ic_stop),
                     getString(R.string.notification_stop), stopIntent).build();
         } else {
             stopAction = new Notification.Action.Builder(
-                    android.R.drawable.ic_menu_close_clear_cancel,
+                    R.drawable.ic_stop,
                     getString(R.string.notification_stop), stopIntent).build();
         }
         int holdIcon = isPaused ? R.drawable.ic_play : R.drawable.ic_pause;

@@ -125,6 +125,7 @@ public class DrawOverlayService extends Service {
             @Override
             public void run() {
                 if (service.layer != null) service.layer.setInk(inkColor(service));
+                service.updatePalette();
             }
         });
     }
@@ -141,12 +142,26 @@ public class DrawOverlayService extends Service {
         });
     }
 
+    /** Colours of the quick palette, named by the strings in the same order. */
+    private static final int[] PALETTE_NAMES = {
+            R.string.draw_color_rose, R.string.draw_color_red,
+            R.string.draw_color_orange, R.string.draw_color_amber,
+            R.string.draw_color_green, R.string.draw_color_teal,
+            R.string.draw_color_sky, R.string.draw_color_blue,
+            R.string.draw_color_purple, R.string.draw_color_pink,
+            R.string.draw_color_white, R.string.draw_color_black
+    };
+    private static final int SWATCH_COLUMNS = 6;
+
     private final Handler handler = new Handler(Looper.getMainLooper());
     private WindowManager windowManager;
     private DrawLayer layer;
     private ImageView bubble;
     private LinearLayout panel;
+    private LinearLayout toolbar;
+    private LinearLayout palettePanel;
     private ImageView pauseButton;
+    private final List<ImageView> swatches = new ArrayList<>();
     private WindowManager.LayoutParams layerParams;
     private WindowManager.LayoutParams bubbleParams;
     private WindowManager.LayoutParams panelParams;
@@ -207,9 +222,8 @@ public class DrawOverlayService extends Service {
 
         panel = buildPanel();
         panel.setVisibility(View.GONE);
-        panelParams = overlayParams(
-                WindowManager.LayoutParams.WRAP_CONTENT,
-                WindowManager.LayoutParams.WRAP_CONTENT);
+        panelParams = overlayParams(1, 1);
+        measurePanel();
         panelParams.x = bubbleX;
         panelParams.y = bubbleY;
 
@@ -223,6 +237,18 @@ public class DrawOverlayService extends Service {
         }
 
         bubble.setOnTouchListener(new DragListener());
+
+        // A soft pop-in instead of the button just being there.
+        bubble.setScaleX(0.5f);
+        bubble.setScaleY(0.5f);
+        bubble.setAlpha(0f);
+        bubble.animate()
+                .scaleX(1f)
+                .scaleY(1f)
+                .alpha(1f)
+                .setDuration(220)
+                .setInterpolator(new android.view.animation.OvershootInterpolator(1.5f))
+                .start();
     }
 
     private void styleBubble(int size) {
@@ -233,16 +259,20 @@ public class DrawOverlayService extends Service {
 
     private LinearLayout buildPanel() {
         int button = TOOL_DP[sizeIndex(this)];
-        LinearLayout bar = new LinearLayout(this);
-        bar.setOrientation(LinearLayout.HORIZONTAL);
-        bar.setGravity(Gravity.CENTER_VERTICAL);
-        bar.setBackground(round(PANEL, 18, BORDER));
-        bar.setPadding(dp(5), dp(5), dp(5), dp(5));
+        LinearLayout container = new LinearLayout(this);
+        container.setOrientation(LinearLayout.VERTICAL);
+        container.setBackground(round(PANEL, 18, BORDER));
+        container.setPadding(dp(5), dp(5), dp(5), dp(5));
 
-        bar.addView(toolButton(R.drawable.ic_pen, R.string.overlay_pen, button, v -> pickTool(DrawLayer.TOOL_PEN)));
-        bar.addView(toolButton(R.drawable.ic_rect, R.string.overlay_rect, button, v -> pickTool(DrawLayer.TOOL_RECT)));
-        bar.addView(toolButton(R.drawable.ic_circle, R.string.overlay_circle, button, v -> pickTool(DrawLayer.TOOL_CIRCLE)));
-        bar.addView(toolButton(R.drawable.ic_trash, R.string.overlay_clear, button, v -> {
+        toolbar = new LinearLayout(this);
+        toolbar.setOrientation(LinearLayout.HORIZONTAL);
+        toolbar.setGravity(Gravity.CENTER_VERTICAL);
+        container.addView(toolbar);
+
+        toolbar.addView(toolButton(R.drawable.ic_pen, R.string.overlay_pen, button, v -> pickTool(DrawLayer.TOOL_PEN)));
+        toolbar.addView(toolButton(R.drawable.ic_rect, R.string.overlay_rect, button, v -> pickTool(DrawLayer.TOOL_RECT)));
+        toolbar.addView(toolButton(R.drawable.ic_circle, R.string.overlay_circle, button, v -> pickTool(DrawLayer.TOOL_CIRCLE)));
+        toolbar.addView(toolButton(R.drawable.ic_trash, R.string.overlay_clear, button, v -> {
             layer.clear();
             updateToolHighlight();
         }));
@@ -255,20 +285,92 @@ public class DrawOverlayService extends Service {
                 }
             }, 150);
         });
-        bar.addView(pauseButton);
-        bar.addView(toolButton(R.drawable.ic_stop, R.string.overlay_stop, button, v -> {
+        toolbar.addView(pauseButton);
+        toolbar.addView(toolButton(R.drawable.ic_stop, R.string.overlay_stop, button, v -> {
             RecorderService.requestStop(this);
             stopSelf();
         }));
-        bar.addView(toolButton(R.drawable.ic_close, R.string.overlay_hide, button, v -> stopSelf()));
-        return bar;
+        toolbar.addView(toolButton(R.drawable.ic_collapse, R.string.overlay_hide, button, v -> stopSelf()));
+
+        // The ink colour is pickable at any time while recording: a row of
+        // colour dots sits under the tools and new shapes use the last pick.
+        palettePanel = buildPalette();
+        container.addView(palettePanel);
+        updatePalette();
+        return container;
+    }
+
+    /** Two rows of colour dots, shown under the bar while recording. */
+    private LinearLayout buildPalette() {
+        LinearLayout palette = new LinearLayout(this);
+        palette.setOrientation(LinearLayout.VERTICAL);
+        palette.setPadding(0, dp(4), 0, dp(2));
+
+        LinearLayout row = null;
+        for (int i = 0; i < PALETTE.length; i++) {
+            if (i % SWATCH_COLUMNS == 0) {
+                row = new LinearLayout(this);
+                row.setOrientation(LinearLayout.HORIZONTAL);
+                row.setGravity(Gravity.CENTER);
+                palette.addView(row);
+            }
+            ImageView swatch = swatch(PALETTE[i], PALETTE_NAMES[i]);
+            swatches.add(swatch);
+            LinearLayout.LayoutParams params =
+                    new LinearLayout.LayoutParams(swatchSizePx(), swatchSizePx());
+            params.setMargins(dp(1), dp(1), dp(1), dp(1));
+            row.addView(swatch, params);
+        }
+        return palette;
+    }
+
+    private ImageView swatch(final int color, int nameRes) {
+        ImageView view = new ImageView(this);
+        view.setContentDescription(getString(nameRes));
+        view.setClickable(true);
+        view.setFocusable(true);
+        view.setOnClickListener(v -> {
+            getSharedPreferences("settings", MODE_PRIVATE)
+                    .edit().putInt("drawColor", color).apply();
+            if (layer != null) layer.setInk(color);
+            updatePalette();
+        });
+        return view;
+    }
+
+    private void updatePalette() {
+        if (swatches.isEmpty()) return;
+        int ink = inkColor(this);
+        int pad = Math.round(swatchDp() * 0.16f);
+        for (int i = 0; i < swatches.size() && i < PALETTE.length; i++) {
+            ImageView view = swatches.get(i);
+            boolean picked = PALETTE[i] == ink;
+            GradientDrawable dot = new GradientDrawable();
+            dot.setShape(GradientDrawable.OVAL);
+            dot.setColor(PALETTE[i]);
+            dot.setStroke(dp(picked ? 3 : 1),
+                    picked ? TEXT : (PALETTE[i] == 0xFFFFFFFF ? BORDER : 0x66FFFFFF));
+            view.setImageDrawable(dot);
+            view.setPadding(dp(pad), dp(pad), dp(pad), dp(pad));
+        }
+    }
+
+    private int swatchDp() {
+        int button = TOOL_DP[sizeIndex(this)];
+        return Math.max(30, Math.round(button * 0.74f));
+    }
+
+    private int swatchSizePx() {
+        return dp(swatchDp());
     }
 
     private ImageView toolButton(int iconRes, int labelRes, int sizeDp,
                                  View.OnClickListener click) {
         ImageView button = new ImageView(this);
-        button.setImageResource(iconRes);
-        button.setColorFilter(TEXT);
+        if (iconRes != 0) {
+            button.setImageResource(iconRes);
+            button.setColorFilter(TEXT);
+        }
         int pad = Math.round(sizeDp * 0.21f);
         button.setPadding(dp(pad), dp(pad), dp(pad), dp(pad));
         button.setBackground(round(Color.parseColor("#00000000"), 14, 0));
@@ -301,10 +403,10 @@ public class DrawOverlayService extends Service {
     }
 
     private void updateToolHighlight() {
-        if (panel == null) return;
+        if (toolbar == null) return;
         int tool = layer == null ? DrawLayer.TOOL_NONE : layer.getTool();
-        for (int i = 0; i < 3 && i < panel.getChildCount(); i++) {
-            ImageView button = (ImageView) panel.getChildAt(i);
+        for (int i = 0; i < 3 && i < toolbar.getChildCount(); i++) {
+            ImageView button = (ImageView) toolbar.getChildAt(i);
             int wanted = i == 0 ? DrawLayer.TOOL_PEN
                     : i == 1 ? DrawLayer.TOOL_RECT : DrawLayer.TOOL_CIRCLE;
             button.setColorFilter(tool == wanted ? ACTIVE : TEXT);
@@ -351,11 +453,11 @@ public class DrawOverlayService extends Service {
         } catch (Exception ignored) { }
 
         int tool = TOOL_DP[sizeIndex(this)];
-        if (panel != null) {
+        if (toolbar != null) {
             int inner = dp(tool);
             int pad = Math.round(tool * 0.21f);
-            for (int i = 0; i < panel.getChildCount(); i++) {
-                View child = panel.getChildAt(i);
+            for (int i = 0; i < toolbar.getChildCount(); i++) {
+                View child = toolbar.getChildAt(i);
                 LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) child.getLayoutParams();
                 params.width = inner;
                 params.height = inner;
@@ -363,34 +465,70 @@ public class DrawOverlayService extends Service {
                 child.setPadding(dp(pad), dp(pad), dp(pad), dp(pad));
             }
         }
+        int cell = swatchSizePx();
+        for (ImageView swatch : swatches) {
+            LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) swatch.getLayoutParams();
+            params.width = cell;
+            params.height = cell;
+            swatch.setLayoutParams(params);
+        }
+        updatePalette();
+        measurePanel();
         if (panelOpen) movePanel();
     }
 
     private void togglePanel() {
-        if (!panelOpen && layer.getTool() != DrawLayer.TOOL_NONE) {
-            // Drawing is on: a tap on the button ends it, then shows the tools.
-            stopDrawing();
-        }
         panelOpen = !panelOpen;
         if (panelOpen) {
             updatePauseButton();
             updateToolHighlight();
+            updatePalette();
+            measurePanel();
             movePanel();
             panel.setVisibility(View.VISIBLE);
             panel.setAlpha(0f);
-            panel.animate().alpha(1f).setDuration(140).start();
+            panel.setScaleX(0.9f);
+            panel.setScaleY(0.9f);
+            panel.setTranslationY(dp(8));
+            panel.animate()
+                    .alpha(1f)
+                    .scaleX(1f)
+                    .scaleY(1f)
+                    .translationY(0f)
+                    .setDuration(170)
+                    .setInterpolator(new android.view.animation.DecelerateInterpolator())
+                    .start();
         } else {
             panel.setVisibility(View.GONE);
         }
     }
 
-    private void movePanel() {
+    /**
+     * The bar is a WRAP_CONTENT window, so its size is measured here and given
+     * to the window as a number of pixels: a wrap window that grows (the colour
+     * row) otherwise keeps a stale frame, and taps land off the buttons.
+     */
+    private void measurePanel() {
+        if (panel == null || panelParams == null) return;
         int width = getResources().getDisplayMetrics().widthPixels;
-        int button = dp(TOOL_DP[sizeIndex(this)] + 2);
-        int panelWidth = button * 7 + dp(10);
-        int x = Math.max(dp(4), Math.min(bubbleX, width - panelWidth - dp(4)));
+        panel.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.AT_MOST),
+                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
+        int measuredWidth = Math.max(1, panel.getMeasuredWidth());
+        int measuredHeight = Math.max(1, panel.getMeasuredHeight());
+        if (panelParams.width == measuredWidth && panelParams.height == measuredHeight) return;
+        panelParams.width = measuredWidth;
+        panelParams.height = measuredHeight;
+        try {
+            windowManager.updateViewLayout(panel, panelParams);
+        } catch (Exception ignored) { }
+    }
+
+    private void movePanel() {
+        if (panelParams == null) return;
+        int width = getResources().getDisplayMetrics().widthPixels;
+        int x = Math.max(dp(4), Math.min(bubbleX, width - panelParams.width - dp(4)));
         panelParams.x = x;
-        panelParams.y = Math.max(dp(40), bubbleY - button - dp(16));
+        panelParams.y = Math.max(dp(40), bubbleY - panelParams.height - dp(10));
         try {
             windowManager.updateViewLayout(panel, panelParams);
         } catch (Exception ignored) { }
@@ -463,6 +601,9 @@ public class DrawOverlayService extends Service {
         remove(layer);
         bubble = null;
         panel = null;
+        toolbar = null;
+        palettePanel = null;
+        swatches.clear();
         layer = null;
         super.onDestroy();
     }

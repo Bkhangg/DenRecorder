@@ -109,6 +109,7 @@
     <string name="overlay_clear">Clear drawings</string>
     <string name="overlay_stop">Stop recording</string>
     <string name="overlay_hide">Hide drawing tools</string>
+    <string name="overlay_color">Drawing colour</string>
     <string name="action_pause">Pause</string>
     <string name="action_resume">Resume</string>
     <string name="notification_paused">Paused</string>
