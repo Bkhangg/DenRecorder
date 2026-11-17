@@ -104,6 +104,21 @@ public class RecorderService extends Service {
         }
     };
 
+    /**
+     * The island draws the time we send, not a chronometer, so it is refreshed
+     * once a second while the beta feature is on. Nothing else in the app
+     * updates that often.
+     */
+    private final Runnable islandTicker = new Runnable() {
+        @Override
+        public void run() {
+            if (!isRecording) return;
+            if (!Island.enabled(RecorderService.this)) return;
+            if (Island.allowed(RecorderService.this)) updateNotification();
+            handler.postDelayed(this, 1_000);
+        }
+    };
+
     private long freeBytes() {
         try {
             java.io.File dir = getExternalFilesDir(null);
@@ -285,6 +300,7 @@ public class RecorderService extends Service {
         resetTimer();
         isRecording = true;
         handler.post(ticker);
+        if (Island.enabled(this)) handler.post(islandTicker);
 
         try {
             int resWidth = prefs.getInt("resWidth", 0);
@@ -323,6 +339,7 @@ public class RecorderService extends Service {
         finishing = true;
         isRecording = false;
         handler.removeCallbacks(ticker);
+        handler.removeCallbacks(islandTicker);
 
         final ScreenRecorder active = recorder;
         recorder = null;
@@ -420,6 +437,7 @@ public class RecorderService extends Service {
     @Override
     public void onDestroy() {
         handler.removeCallbacks(ticker);
+        handler.removeCallbacks(islandTicker);
         isRecording = false;
         isPaused = false;
         DrawOverlayService.stop(this);
