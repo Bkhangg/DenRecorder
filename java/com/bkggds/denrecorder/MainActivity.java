@@ -122,6 +122,7 @@ public class MainActivity extends Activity {
     private TextView languageValueView;
     private TextView themeValueView;
     private TextView islandValueView;
+    private TextView islandModeValueView;
     /** Set while the Shizuku permission request is on its way. */
     private boolean islandRequestPending;
     private TextView storageValueView;
@@ -596,6 +597,9 @@ public class MainActivity extends Activity {
             list.addView(betaCard, lp(MATCH, WRAP, 0, 8, 0, 0));
             islandValueView = addRow(betaCard, R.drawable.ic_tile, R.string.row_island,
                     "", true, this::chooseIsland);
+            divider(betaCard);
+            islandModeValueView = addRow(betaCard, R.drawable.ic_rect,
+                    R.string.row_island_mode, "", true, this::chooseIslandMode);
             divider(betaCard);
             addHint(betaCard, R.string.hint_island_beta);
         }
@@ -2222,6 +2226,22 @@ public class MainActivity extends Activity {
         else if (Island.allowed(this)) res = R.string.island_value_on;
         else res = R.string.island_value_need;
         islandValueView.setText(res);
+        if (islandModeValueView != null) {
+            islandModeValueView.setText(Island.onlyWhenPulled(this)
+                    ? R.string.island_mode_pull : R.string.island_mode_always);
+        }
+    }
+
+    /** The island can wait for a pull of the status bar, or stay visible. */
+    private void chooseIslandMode() {
+        boolean always = !Island.onlyWhenPulled(this);
+        showChoices(getString(R.string.title_island_mode),
+                new String[]{getString(R.string.island_mode_pull),
+                        getString(R.string.island_mode_always)},
+                always ? 1 : 0, which -> {
+                    Island.setAlwaysVisible(this, which == 1);
+                    updateIslandValue();
+                });
     }
 
     private void disableIsland() {

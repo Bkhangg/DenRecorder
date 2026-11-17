@@ -12,17 +12,18 @@ import android.os.Bundle;
 import android.provider.Settings;
 import android.util.Log;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 /**
  * Xiaomi HyperOS Super Island (超级岛), beta.
  *
  * HyperOS picks an island entry up from the extras of an ongoing notification:
- * a JSON template in "miui.focus.param" and the pictures in "miui.focus.pics".
- * SystemUI only reads them from apps it allows, so the permission
- * miui.permission.USE_FOCUS_NOTIFICATION has to be granted by Shizuku first.
- * Everything here is best effort: when the phone does not know the island the
- * notification simply stays a normal notification.
+ * a JSON template in "miui.focus.param", the pictures in "miui.focus.pics" and
+ * the buttons in "miui.focus.actions". SystemUI only reads them from apps it
+ * allows, so the permission miui.permission.USE_FOCUS_NOTIFICATION has to be
+ * granted by Shizuku first. Everything here is best effort: when the phone does
+ * not know the island the notification simply stays a normal notification.
  */
 public final class Island {
 
@@ -30,11 +31,15 @@ public final class Island {
 
     /** SharedPreferences entry: the user switched the beta on. */
     public static final String KEY = "islandBeta";
+    /** SharedPreferences entry: keep the island out of the status bar. */
+    public static final String KEY_MODE = "islandMode";
     public static final String CHANNEL_TEST = "island_test";
     public static final int TEST_ID = 4713;
 
     private static final String EXTRA_PARAM = "miui.focus.param";
     private static final String EXTRA_PICS = "miui.focus.pics";
+    private static final String EXTRA_ACTIONS = "miui.focus.actions";
+    private static final String ACTION_KEY = "miui.focus.action_";
     private static final String PIC_SMALL = "miui.focus.pic_small";
     private static final String PIC_SMALL_DARK = "miui.focus.pic_small_dark";
     private static final String PIC_APP_ICON = "miui.focus.pic_app_icon";
@@ -118,6 +123,19 @@ public final class Island {
         prefs(context).edit().putBoolean(KEY, on).apply();
     }
 
+    /**
+     * True when the island waits for a pull of the status bar instead of sitting
+     * in the status bar all the time. This is the default, as the island is
+     * meant to be a quiet extra, not a permanent badge.
+     */
+    public static boolean onlyWhenPulled(Context context) {
+        return !"always".equals(prefs(context).getString(KEY_MODE, "swipe"));
+    }
+
+    public static void setAlwaysVisible(Context context, boolean always) {
+        prefs(context).edit().putString(KEY_MODE, always ? "always" : "swipe").apply();
+    }
+
     private static SharedPreferences prefs(Context context) {
         return context.getSharedPreferences(LocaleHelper.PREFS, Context.MODE_PRIVATE);
     }
@@ -126,12 +144,29 @@ public final class Island {
         return Icon.createWithResource(context, R.drawable.ic_video);
     }
 
-    /** Adds the island template to an ongoing recording notification. */
+    /**
+     * Adds the island template to an ongoing recording notification.
+     *
+     * The island is a compact pill with the app icon and the timer; tapping it
+     * opens the expanded entry with the pause/resume and stop buttons that the
+     * notification already carries.
+     */
     public static void apply(Context context, Notification notification, String state,
                              String time, long startedAt, boolean paused) {
+        apply(context, notification, state, time, startedAt, paused, false);
+    }
+
+    /**
+     * @param forceVisible true only for the test entry, which should show up
+     *                     right away instead of waiting for a pull.
+     */
+    public static void apply(Context context, Notification notification, String state,
+                             String time, long startedAt, boolean paused,
+                             boolean forceVisible) {
         if (notification == null) return;
         try {
-            JSONObject param = buildParam(context, state, time, startedAt, paused);
+            JSONObject param = buildParam(context, notification, state, time, startedAt,
+                    paused, forceVisible);
             notification.extras.putString(EXTRA_PARAM, param.toString());
 
             Bundle pics = new Bundle();
@@ -141,13 +176,37 @@ public final class Island {
             pics.putParcelable(PIC_SMALL, smallIcon(context));
             pics.putParcelable(PIC_SMALL_DARK, smallIcon(context));
             notification.extras.putBundle(EXTRA_PICS, pics);
+
         } catch (Throwable e) {
             Log.w(TAG, "island extras failed", e);
         }
     }
 
-    private static JSONObject buildParam(Context context, String state, String time,
-                                        long startedAt, boolean paused) throws Exception {
+    /**
+     * HyperOS reads buttons from a bundle of Notification.Action objects, and
+     * the template only names them by key. The recording notification already
+     * has pause/resume and stop, so the island shows the very same buttons.
+     */
+    private static void putActions(Notification notification, JSONObject params)
+            throws Exception {
+        Notification.Action[] actions = notification.actions;
+        if (actions == null || actions.length == 0) return;
+
+        Bundle bundle = new Bundle();
+        JSONArray list = new JSONArray();
+        int count = Math.min(3, actions.length);
+        for (int i = 0; i < count; i++) {
+            String key = ACTION_KEY + (i + 1);
+            bundle.putParcelable(key, actions[i]);
+            list.put(new JSONObject().put("action", key));
+        }
+        notification.extras.putBundle(EXTRA_ACTIONS, bundle);
+        params.put("actions", list);
+    }
+
+    private static JSONObject buildParam(Context context, Notification notification,
+                                         String state, String time, long startedAt,
+                                         boolean paused, boolean forceVisible) throws Exception {
         long sequence = Math.max(System.currentTimeMillis() / 1000L, lastSequence + 1);
         lastSequence = sequence;
         String app = context.getString(R.string.app_name);
@@ -182,28 +241,30 @@ public final class Island {
                 .put("colorTitle", "#222222")
                 .put("colorTitleDark", "#eeeeee");
 
-        JSONObject textInfo = new JSONObject()
-                .put("frontTitle", "")
-                .put("title", time)
-                .put("content", "")
-                .put("showHighlightColor", false)
-                .put("narrowFont", false);
-
+        // The compact summary is only the icon and the timer: no app name, so
+        // the pill stays as small as HyperOS allows.
         JSONObject islandArea = new JSONObject()
-                .put("templateNo", 2)
                 .put("imageTextInfoLeft", new JSONObject()
                         .put("type", 1)
-                        .put("picInfo", new JSONObject().put("type", 1).put("pic", PIC_SMALL))
+                        .put("picInfo", new JSONObject().put("type", 1).put("pic", PIC_SMALL)))
+                .put("imageTextInfoRight", new JSONObject()
+                        .put("type", 2)
                         .put("textInfo", new JSONObject()
-                                .put("title", app)
+                                .put("title", time)
                                 .put("content", "")
                                 .put("showHighlightColor", false)
-                                .put("narrowFont", false)))
-                .put("textInfo", textInfo);
+                                .put("narrowFont", true)));
 
+        boolean pulled = !forceVisible && onlyWhenPulled(context);
         JSONObject island = new JSONObject()
-                .put("islandProperty", 1)
+                // 2 = the island exists to be operated, so a tap opens the
+                // entry with its buttons instead of just opening the app.
+                .put("islandProperty", 2)
+                .put("islandPriority", 2)
                 .put("islandTimeout", 24 * 60 * 60)
+                // Keep the summary away until the status bar is pulled down.
+                .put("dismissIsland", pulled)
+                .put("maxSize", false)
                 .put("bigIslandArea", islandArea)
                 .put("smallIslandArea", new JSONObject()
                         .put("picInfo", new JSONObject().put("type", 1).put("pic", PIC_SMALL)));
@@ -224,6 +285,7 @@ public final class Island {
                 .put("picInfo", new JSONObject().put("type", 1).put("pic", PIC_APP_ICON))
                 .put("hintInfo", hintInfo)
                 .put("param_island", island);
+        putActions(notification, params);
 
         return new JSONObject().put("param_v2", params);
     }
@@ -255,9 +317,10 @@ public final class Island {
                     .setCategory(Notification.CATEGORY_STATUS)
                     .setPriority(Notification.PRIORITY_LOW);
             Notification notification = builder.build();
+            // The test shows at once, even in "only when pulled down" mode.
             apply(context, notification,
                     context.getString(R.string.island_test_title), "00:10",
-                    System.currentTimeMillis(), false);
+                    System.currentTimeMillis(), false, true);
             nm.notify(TEST_ID, notification);
         } catch (Throwable e) {
             Log.w(TAG, "test island failed", e);

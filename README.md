@@ -17,7 +17,7 @@ DenRecorder records the whole screen (and the device audio, the microphone or no
 - **15–50 Mbps** variable bitrate, **H.264 AVC** or **H.265 HEVC**, up to **120 fps**.
 - **Audio** — internal device audio (Android 10+), microphone, or silent.
 - **Quick Settings tile** — start and stop without opening the app, with a toast when the recording starts or is saved.
-- **Xiaomi Super Island (beta, Xiaomi only)** — the running recording shows up in HyperOS's island with its timer; needs Shizuku once to grant the island permission.
+- **Xiaomi Super Island (beta, Xiaomi only)** — the running recording shows up in HyperOS's island as a small icon with its timer, and a tap on it gives **pause, resume and stop** right on the bar; it can be hidden entirely, and HyperOS hides it by itself whenever the status bar is pulled down (the notification there carries the same buttons). Needs Shizuku once to grant the island permission.
 - **Game performance mode** — caps the recorder at 60 fps and runs the encoder in realtime priority, so a game next to it keeps its frame rate.
 - **Recordings screen** — recent/all lists with real thumbnails, the video's own name and the folder it is saved in; tap to play, long-press for play/share/**rename**/delete, or tap **Select** to pick several videos and delete them at once.
 - **Draw on screen** — a floating button while recording: pencil, rectangle or circle drawn straight onto the screen (they end up in the video), pause and stop from the same bar. A tool stays picked, so several shapes can be drawn one after another, and the button's size can be changed in settings.
@@ -32,7 +32,7 @@ DenRecorder records the whole screen (and the device audio, the microphone or no
 
 ### Install
 
-1. Download `DenRecorder-1.5.0.apk` from the [Releases](../../releases) page.
+1. Download `DenRecorder-1.6.0.apk` from the [Releases](../../releases) page.
 2. Open it on the phone and allow installing apps from that source if asked.
 3. Open DenRecorder, allow the permissions it asks for, and optionally let it add the Quick Settings tile.
 
@@ -80,6 +80,13 @@ res/                    strings (EN + VI), icons, launcher icons
 ```
 
 ### What's new
+
+**1.6.0**
+
+- Super Island is smaller: only the icon and the timer, no app name.
+- Tap the island: it opens right there with **pause / resume** and **stop**.
+- Settings → Super Island has a new **Show island** row: **Hidden** (default) or **Always visible**.
+- HyperOS removes the island by itself while the status bar is pulled down, so the notification in the shade carries the same pause and stop buttons.
 
 **1.5.0**
 
@@ -150,7 +157,7 @@ DenRecorder quay toàn bộ màn hình (kèm âm thanh thiết bị, micrô ho�
 - **15–50 Mbps**, **H.264 AVC** hoặc **H.265 HEVC**, tới **120 fps**.
 - **Âm thanh** — âm thanh trong máy (Android 10 trở lên), micrô, hoặc không có.
 - **Nút trên Trung tâm điều khiển** — bắt đầu và dừng quay mà không cần mở ứng dụng, có toast thông báo khi bắt đầu và khi đã lưu.
-- **Super Island của Xiaomi (beta, chỉ máy Xiaomi)** — bản ghi đang chạy hiện trên đảo của HyperOS kèm đồng hồ đếm; cần Shizuku một lần để cấp quyền hiện đảo.
+- **Super Island của Xiaomi (beta, chỉ máy Xiaomi)** — bản ghi đang chạy hiện trên đảo của HyperOS dưới dạng một biểu tượng nhỏ kèm đồng hồ đếm, chạm vào đảo là **tạm dừng, tiếp tục và dừng** ngay trên thanh đó; có thể tắt hẳn, và HyperOS tự ẩn đảo khi bạn kéo thanh trạng thái xuống (thông báo ở đó có đúng các nút này). Cần Shizuku một lần để cấp quyền hiện đảo.
 - **Chế độ hiệu năng khi chơi game** — giới hạn 60 fps và ưu tiên thời gian thực cho bộ mã hóa, để game đang chạy bên cạnh vẫn mượt.
 - **Màn Bản ghi** — danh sách Gần đây/Tất cả kèm ảnh thu nhỏ thật, tên video và thư mục lưu; chạm để xem, giữ để xem/chia sẻ/**đổi tên**/xóa, hoặc bấm **Chọn** để chọn nhiều bản ghi và xóa một lần.
 - **Vẽ trên màn hình** — nút nổi khi đang quay: bút chì, hình chữ nhật hoặc khoanh tròn vẽ thẳng lên màn hình (có trong video), tạm dừng và dừng quay ngay trên thanh đó. Chọn công cụ một lần là vẽ được nhiều hình liên tiếp; kích thước nút nổi chỉnh được trong Cài đặt.
@@ -165,7 +172,7 @@ DenRecorder quay toàn bộ màn hình (kèm âm thanh thiết bị, micrô ho�
 
 ### Cài đặt
 
-1. Tải `DenRecorder-1.5.0.apk` ở mục [Releases](../../releases).
+1. Tải `DenRecorder-1.6.0.apk` ở mục [Releases](../../releases).
 2. Mở file trên điện thoại và cho phép cài đặt từ nguồn đó nếu được hỏi.
 3. Mở DenRecorder, cấp quyền khi được hỏi, có thể thêm nút vào Trung tâm điều khiển.
 
@@ -192,6 +199,13 @@ export ANDROID_HOME=$HOME/android-sdk
 `app.properties` chứa `versionCode`, `versionName`, `minSdk`.
 
 ### Có gì mới
+
+**1.6.0**
+
+- Super Island gọn hơn: chỉ còn biểu tượng và đồng hồ đếm, bỏ tên ứng dụng.
+- Chạm vào đảo: mở ngay tại đó với **tạm dừng / tiếp tục** và **dừng**.
+- Cài đặt → Super Island có thêm mục **Hiện đảo**: **Ẩn** (mặc định) hoặc **Luôn hiện**.
+- HyperOS tự bỏ đảo khi kéo thanh trạng thái xuống, nên thông báo trong khay có đúng hai nút tạm dừng và dừng.
 
 **1.5.0**
 

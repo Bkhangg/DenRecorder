@@ -215,13 +215,13 @@
 
     <string name="section_beta">BETA</string>
     <string name="row_island">Super Island</string>
-    <string name="hint_island_beta">Beta, Xiaomi only. Shows the recording in HyperOS\'s Super Island; Shizuku is needed once to grant the permission.</string>
+    <string name="hint_island_beta">Beta, Xiaomi only. While you record, the island shows a small icon and the timer; a tap on it gives pause and stop. HyperOS hides the island whenever the status bar is pulled down, so the notification there carries the same buttons. Shizuku is needed once to grant the permission.</string>
     <string name="island_value_off">Off · beta</string>
     <string name="island_value_on">On · beta</string>
     <string name="island_value_need">Needs Shizuku</string>
     <string name="island_title">Super Island (beta)</string>
-    <string name="island_body">HyperOS shows the recording in its Super Island: the timer and the app, tap it to come back. HyperOS only draws apps it trusts, and that permission can only be given through Shizuku. Turn it on and start a recording to try it.</string>
-    <string name="island_body_on">The island shows every recording. Turn it off here if the island stays empty or you do not want it; the normal notification stays either way.</string>
+    <string name="island_body">HyperOS can show the recording in its Super Island: a small icon and the timer. Tap the island for pause and stop. HyperOS hides the island on its own as soon as the status bar is pulled down, and the notification there has the same buttons. That permission can only be given through Shizuku.</string>
+    <string name="island_body_on">While you record, the island shows a small icon and the timer; a tap gives pause and stop. HyperOS hides it by itself whenever the status bar is pulled down. Choose Hidden if you would rather have no island at all; the notification stays either way.</string>
     <string name="island_enable">Enable with Shizuku</string>
     <string name="island_disable">Turn off</string>
     <string name="island_need_shizuku_title">Shizuku is needed</string>
@@ -245,4 +245,9 @@
     <string name="island_test_text">If the island shows this, Super Island works</string>
     <string name="island_recording">Recording</string>
     <string name="island_paused">Paused</string>
+
+    <string name="row_island_mode">Show island</string>
+    <string name="title_island_mode">When to show the island</string>
+    <string name="island_mode_pull">Hidden</string>
+    <string name="island_mode_always">Always visible</string>
 </resources>
