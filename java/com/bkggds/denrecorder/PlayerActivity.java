@@ -41,6 +41,7 @@ public class PlayerActivity extends Activity {
     private static final int SEEK_STEP_MS = 10_000;
 
     private VideoView videoView;
+    private ImageView rotateButton;
     private android.view.GestureDetector gestures;
     private TextView seekHint;
     private LinearLayout topBar;
@@ -234,6 +235,20 @@ public class PlayerActivity extends Activity {
                 new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
         titleParams.setMargins(dp(10), 0, 0, 0);
         bar.addView(title, titleParams);
+
+        // Turns the player itself, so a phone with rotation lock on still gets
+        // the landscape view.
+        rotateButton = new ImageView(this);
+        rotateButton.setImageResource(R.drawable.ic_rotate);
+        rotateButton.setColorFilter(TEXT);
+        rotateButton.setBackground(round(Color.parseColor("#27272A"), 16));
+        rotateButton.setPadding(dp(6), dp(6), dp(6), dp(6));
+        rotateButton.setContentDescription(getString(R.string.player_rotate));
+        rotateButton.setOnClickListener(v -> toggleOrientation());
+        LinearLayout.LayoutParams rotateParams =
+                new LinearLayout.LayoutParams(dp(30), dp(30));
+        rotateParams.setMargins(dp(10), 0, 0, 0);
+        bar.addView(rotateButton, rotateParams);
         return bar;
     }
 
@@ -285,6 +300,20 @@ public class PlayerActivity extends Activity {
                 LinearLayout.LayoutParams.WRAP_CONTENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT));
         return bar;
+    }
+
+    /**
+     * Flips between portrait and landscape. setRequestedOrientation is used on
+     * purpose: it is not affected by the phone's own rotation lock.
+     */
+    private void toggleOrientation() {
+        try {
+            boolean landscape = getResources().getConfiguration().orientation
+                    == android.content.res.Configuration.ORIENTATION_LANDSCAPE;
+            setRequestedOrientation(landscape
+                    ? android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+                    : android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+        } catch (Exception ignored) { }
     }
 
     /** A short "10s" pill so the jump is visible. */

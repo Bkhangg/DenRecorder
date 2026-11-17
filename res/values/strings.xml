@@ -192,4 +192,24 @@
     <string name="tile_recording">Recording…</string>
     <string name="tile_start_desc">Start screen recording</string>
     <string name="tile_stop_desc">Stop screen recording</string>
+
+    <string name="row_theme">Theme</string>
+    <string name="title_theme">Theme</string>
+    <string name="theme_dark">Dark</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_auto">Automatic · follow the phone</string>
+    <string name="folder_browse">Browse folders…</string>
+    <string name="folder_browse_unavailable">This phone has no folder browser</string>
+    <string name="folder_browse_unsupported_title">That folder can not be used</string>
+    <string name="folder_browse_unsupported_body">Pick a folder on the phone\'s own storage, for example Download or Movies. Folders on a memory card or in the cloud are not supported yet.</string>
+    <string name="action_rename">Rename</string>
+    <string name="rename_title">Rename recording</string>
+    <string name="rename_hint">My clip</string>
+    <string name="rename_invalid">Use a name without / or :</string>
+    <string name="rename_failed">Could not rename this video</string>
+    <string name="rename_done">Renamed</string>
+    <string name="notification_channel_saved">Saved recordings</string>
+    <string name="notification_saved_title">Recording saved</string>
+    <string name="notification_saved_text">Saved in %1$s</string>
+    <string name="player_rotate">Rotate screen</string>
 </resources>

@@ -18,20 +18,20 @@ DenRecorder records the whole screen (and the device audio, the microphone or no
 - **Audio** — internal device audio (Android 10+), microphone, or silent.
 - **Quick Settings tile** — start and stop without opening the app, with a toast when the recording starts or is saved.
 - **Game performance mode** — caps the recorder at 60 fps and runs the encoder in realtime priority, so a game next to it keeps its frame rate.
-- **Recordings screen** — recent/all lists with real thumbnails and the folder each video is saved in; tap to play, long-press for play/share/delete, or tap **Select** to pick several videos and delete them at once.
+- **Recordings screen** — recent/all lists with real thumbnails, the video's own name and the folder it is saved in; tap to play, long-press for play/share/**rename**/delete, or tap **Select** to pick several videos and delete them at once.
 - **Draw on screen** — a floating button while recording: pencil, rectangle or circle drawn straight onto the screen (they end up in the video), pause and stop from the same bar. A tool stays picked, so several shapes can be drawn one after another, and the button's size can be changed in settings.
 - **Pause and resume** — one recording stays one file; the paused time is cut out of the video and the timer stops while paused.
-- **Built-in player** — a recording opens in DenRecorder's own player (play/pause, seek, double-tap to jump 10 s back or forward), so the video you tap is the video you get, whatever gallery app is installed.
-- **Choose where videos go** — `Movies/Screen Recorder` by default, five presets or any custom folder, including `Download` (videos land in the Downloads collection so MIUI keeps them there).
+- **Built-in player** — a recording opens in DenRecorder's own player (play/pause, seek, double-tap to jump 10 s back or forward, and a rotate button that turns the video even when the phone's rotation is locked), so the video you tap is the video you get, whatever gallery app is installed.
+- **Choose where videos go** — `Movies/Screen Recorder` by default, five presets, the phone's own folder browser, or a typed path, including `Download` (videos land in the Downloads collection so MIUI keeps them there).
 - **Recording rotation** — automatic, portrait or landscape: the screen is locked to that rotation for the whole recording (your phone's own rotation setting comes back afterwards), so the video never turns halfway through.
 - **Long recordings** — the notification uses the system chronometer (no wake-ups every second), storage is checked every 15 s, recording stops safely before the card fills up.
 - **Bilingual** — English and Vietnamese, English on first launch.
-- **Shadcn-style dark UI** with a floating bottom bar and short, subtle animations.
+- **Shadcn-style UI** — dark, light or automatic (follows the phone), a floating bottom bar and short, subtle animations.
 - **Android 5.1 (SDK 22) to Android 16 (SDK 36).**
 
 ### Install
 
-1. Download `DenRecorder-1.3.1.apk` from the [Releases](../../releases) page.
+1. Download `DenRecorder-1.4.0.apk` from the [Releases](../../releases) page.
 2. Open it on the phone and allow installing apps from that source if asked.
 3. Open DenRecorder, allow the permissions it asks for, and optionally let it add the Quick Settings tile.
 
@@ -76,6 +76,16 @@ res/                    strings (EN + VI), icons, launcher icons
 ```
 
 ### What's new
+
+**1.4.0**
+
+- Theme: dark, light or automatic (follows the phone's dark mode).
+- Player: a rotate button turns the video to landscape even while the phone's auto-rotate is off.
+- The end of a recording shows a "recording saved" notification that opens the new video; the stop toast stays.
+- New Shadcn-style app icon (outlined screen with a record dot).
+- **Browse folders…** in Save to: pick the folder with the phone's own folder picker.
+- The recordings list shows each video's name, and long-press → Rename renames it.
+- Start and stop buttons now carry a record and stop icon.
 
 **1.3.1**
 
@@ -125,11 +135,11 @@ DenRecorder quay toàn bộ màn hình (kèm âm thanh thiết bị, micrô ho�
 - **Âm thanh** — âm thanh trong máy (Android 10 trở lên), micrô, hoặc không có.
 - **Nút trên Trung tâm điều khiển** — bắt đầu và dừng quay mà không cần mở ứng dụng, có toast thông báo khi bắt đầu và khi đã lưu.
 - **Chế độ hiệu năng khi chơi game** — giới hạn 60 fps và ưu tiên thời gian thực cho bộ mã hóa, để game đang chạy bên cạnh vẫn mượt.
-- **Màn Bản ghi** — danh sách Gần đây/Tất cả kèm ảnh thu nhỏ thật và thư mục lưu của từng video; chạm để xem, giữ để xem/chia sẻ/xóa, hoặc bấm **Chọn** để chọn nhiều bản ghi và xóa một lần.
+- **Màn Bản ghi** — danh sách Gần đây/Tất cả kèm ảnh thu nhỏ thật, tên video và thư mục lưu; chạm để xem, giữ để xem/chia sẻ/**đổi tên**/xóa, hoặc bấm **Chọn** để chọn nhiều bản ghi và xóa một lần.
 - **Vẽ trên màn hình** — nút nổi khi đang quay: bút chì, hình chữ nhật hoặc khoanh tròn vẽ thẳng lên màn hình (có trong video), tạm dừng và dừng quay ngay trên thanh đó. Chọn công cụ một lần là vẽ được nhiều hình liên tiếp; kích thước nút nổi chỉnh được trong Cài đặt.
 - **Tạm dừng và tiếp tục** — một lần quay vẫn là một file, thời gian tạm dừng được cắt khỏi video và đồng hồ đếm dừng lại khi tạm dừng.
-- **Trình phát sẵn trong app** — chạm vào bản ghi là phát ngay trong DenRecorder (phát/tạm dừng, tua, nhấn đúp để lùi hoặc tiến 10 giây), đúng video vừa chọn dù máy dùng ứng dụng thư viện nào.
-- **Chọn thư mục lưu** — mặc định `Movies/Screen Recorder`, có 5 gợi ý sẵn hoặc tự nhập.
+- **Trình phát sẵn trong app** — chạm vào bản ghi là phát ngay trong DenRecorder (phát/tạm dừng, tua, nhấn đúp để lùi hoặc tiến 10 giây, nút xoay màn hình hoạt động cả khi điện thoại đang khoá xoay), đúng video vừa chọn dù máy dùng ứng dụng thư viện nào.
+- **Chọn thư mục lưu** — mặc định `Movies/Screen Recorder`, có 5 gợi ý sẵn, duyệt thư mục bằng trình chọn của điện thoại, hoặc tự nhập.
 - **Hướng khi ghi hình** — tự động, dọc hoặc ngang: màn hình được khóa đúng hướng đó trong suốt lần quay (cài đặt xoay của máy được trả lại sau khi dừng), nên video không bị xoay giữa chừng.
 - **Quay dài** — thông báo dùng đồng hồ đếm của hệ thống (không đánh thức mỗi giây), kiểm tra dung lượng mỗi 15 giây và tự dừng trước khi đầy bộ nhớ.
 - **Song ngữ** — English và Tiếng Việt, lần đầu mở là tiếng Anh.
@@ -138,7 +148,7 @@ DenRecorder quay toàn bộ màn hình (kèm âm thanh thiết bị, micrô ho�
 
 ### Cài đặt
 
-1. Tải `DenRecorder-1.3.1.apk` ở mục [Releases](../../releases).
+1. Tải `DenRecorder-1.4.0.apk` ở mục [Releases](../../releases).
 2. Mở file trên điện thoại và cho phép cài đặt từ nguồn đó nếu được hỏi.
 3. Mở DenRecorder, cấp quyền khi được hỏi, có thể thêm nút vào Trung tâm điều khiển.
 
@@ -165,6 +175,16 @@ export ANDROID_HOME=$HOME/android-sdk
 `app.properties` chứa `versionCode`, `versionName`, `minSdk`.
 
 ### Có gì mới
+
+**1.4.0**
+
+- Giao diện: Tối, Sáng hoặc Tự động (theo chế độ tối của điện thoại).
+- Trình phát: nút xoay màn hình đưa video sang ngang dù điện thoại đang tắt tự xoay.
+- Khi dừng quay có thông báo "Đã lưu bản ghi" trên thanh thông báo, chạm vào mở ngay video vừa quay; toast vẫn giữ.
+- Icon ứng dụng mới kiểu Shadcn (màn hình nét mảnh kèm chấm đỏ).
+- Mục **Duyệt thư mục…** trong "Lưu vào": chọn thư mục bằng trình chọn thư mục của điện thoại.
+- Danh sách bản ghi hiện tên từng video, giữ vào rồi chọn **Đổi tên** để đổi.
+- Nút bắt đầu và dừng quay có thêm icon quay và icon dừng.
 
 **1.3.1**
 

@@ -192,4 +192,24 @@
     <string name="tile_recording">Đang quay…</string>
     <string name="tile_start_desc">Bắt đầu quay màn hình</string>
     <string name="tile_stop_desc">Dừng quay màn hình</string>
+
+    <string name="row_theme">Giao diện</string>
+    <string name="title_theme">Giao diện</string>
+    <string name="theme_dark">Tối</string>
+    <string name="theme_light">Sáng</string>
+    <string name="theme_auto">Tự động · theo điện thoại</string>
+    <string name="folder_browse">Duyệt thư mục…</string>
+    <string name="folder_browse_unavailable">Máy này không có trình duyệt thư mục</string>
+    <string name="folder_browse_unsupported_title">Không dùng được thư mục đó</string>
+    <string name="folder_browse_unsupported_body">Hãy chọn thư mục trong bộ nhớ của máy, ví dụ Download hoặc Movies. Thư mục trên thẻ nhớ hoặc trên cloud chưa được hỗ trợ.</string>
+    <string name="action_rename">Đổi tên</string>
+    <string name="rename_title">Đổi tên bản ghi</string>
+    <string name="rename_hint">Clip của tôi</string>
+    <string name="rename_invalid">Tên không được có / hoặc :</string>
+    <string name="rename_failed">Không đổi tên được video này</string>
+    <string name="rename_done">Đã đổi tên</string>
+    <string name="notification_channel_saved">Bản ghi đã lưu</string>
+    <string name="notification_saved_title">Đã lưu bản ghi</string>
+    <string name="notification_saved_text">Đã lưu trong %1$s</string>
+    <string name="player_rotate">Xoay màn hình</string>
 </resources>

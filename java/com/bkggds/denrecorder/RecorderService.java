@@ -72,6 +72,9 @@ public class RecorderService extends Service {
 
     private static final String CHANNEL_ID = "recording";
     private static final int NOTIF_ID = 4711;
+    /** A separate, dismissable notification that stays after the recording ends. */
+    private static final String CHANNEL_SAVED = "saved";
+    private static final int SAVED_ID = 4712;
 
     /** Do not start a recording with less free space than this. */
     private static final long MIN_FREE_BYTES = 400L * 1024 * 1024;
@@ -369,8 +372,10 @@ public class RecorderService extends Service {
                         refreshTile();
                         if (savedError != null) {
                             toast(savedError);
+                            notifySaved(null, savedError);
                         } else if (savedUri != null) {
                             toast(getString(R.string.toast_recording_saved));
+                            notifySaved(savedUri, null);
                         }
                         try { stopForeground(true); } catch (Exception ignored) { }
                         stopSelf();
@@ -438,6 +443,69 @@ public class RecorderService extends Service {
         channel.setSound(null, null);
         NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         nm.createNotificationChannel(channel);
+        createSavedChannel();
+    }
+
+    private void createSavedChannel() {
+        if (Build.VERSION.SDK_INT < 26) return;
+        NotificationChannel channel = new NotificationChannel(
+                CHANNEL_SAVED, getString(R.string.notification_channel_saved),
+                NotificationManager.IMPORTANCE_DEFAULT);
+        channel.setShowBadge(true);
+        NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        nm.createNotificationChannel(channel);
+    }
+
+    /**
+     * The recording notification goes away when the file is closed, so the stop
+     * is confirmed in the notification shade as well: tapping it opens the new
+     * video in the player.
+     */
+    private void notifySaved(Uri uri, String error) {
+        try {
+            createSavedChannel();
+            Intent open;
+            if (uri != null) {
+                open = new Intent(this, PlayerActivity.class)
+                        .setData(uri)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                                | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            } else {
+                open = new Intent(this, MainActivity.class)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            }
+            PendingIntent content = PendingIntent.getActivity(this, 4, open, pendingFlags());
+
+            Notification.Builder builder;
+            if (Build.VERSION.SDK_INT >= 26) {
+                builder = new Notification.Builder(this, CHANNEL_SAVED);
+            } else {
+                builder = new Notification.Builder(this);
+            }
+            String folder = getSharedPreferences("settings", MODE_PRIVATE)
+                    .getString("saveFolder", "Movies/Screen Recorder");
+            builder.setSmallIcon(uri != null ? R.drawable.ic_check
+                            : android.R.drawable.stat_notify_error)
+                    .setContentTitle(getString(uri != null
+                            ? R.string.notification_saved_title
+                            : R.string.failed_title))
+                    .setContentText(uri != null
+                            ? getString(R.string.notification_saved_text, folder)
+                            : String.valueOf(error))
+                    .setContentIntent(content)
+                    .setAutoCancel(true)
+                    .setShowWhen(true)
+                    .setWhen(System.currentTimeMillis())
+                    .setCategory(Notification.CATEGORY_STATUS)
+                    .setPriority(Notification.PRIORITY_DEFAULT);
+            if (uri != null && lastSummary != null) {
+                builder.setStyle(new Notification.BigTextStyle()
+                        .bigText(getString(R.string.notification_saved_text, folder)
+                                + " · " + lastSummary));
+            }
+            NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+            nm.notify(SAVED_ID, builder.build());
+        } catch (Exception ignored) { }
     }
 
     private int pendingFlags() {

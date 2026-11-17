@@ -68,23 +68,27 @@ public class MainActivity extends Activity {
     private static final int REQ_PERMISSIONS = 1002;
     private static final int REQ_WRITE_SETTINGS = 1003;
     private static final int REQ_OVERLAY = 1004;
+    private static final int REQ_FOLDER = 1005;
 
     /** Every file DenRecorder writes starts with this name. */
     private static final String SCREEN_RECORDING_PREFIX = "DenRecorder_";
 
     // Shadcn-style palette (zinc scale).
-    private static final int BG = Color.parseColor("#09090B");
-    private static final int CARD = Color.parseColor("#111113");
-    private static final int BORDER = Color.parseColor("#27272A");
-    private static final int TEXT = Color.parseColor("#FAFAFA");
-    private static final int MUTED = Color.parseColor("#A1A1AA");
-    private static final int FAINT = Color.parseColor("#71717A");
-    private static final int PRIMARY = Color.parseColor("#FAFAFA");
-    private static final int PRIMARY_FG = Color.parseColor("#09090B");
-    private static final int RED = Color.parseColor("#EF4444");
-    private static final int GREEN = Color.parseColor("#22C55E");
-    private static final int NAV = Color.parseColor("#18181B");
-    private static final int NAV_ACTIVE = Color.parseColor("#27272A");
+    // Shadcn palettes. The dark one is the original look; Settings → Theme
+    // switches to the light one or follows the system.
+    private int BG;
+    private int CARD;
+    private int BORDER;
+    private int TEXT;
+    private int MUTED;
+    private int FAINT;
+    private int PRIMARY;
+    private int PRIMARY_FG;
+    private int RED;
+    private int GREEN;
+    private int NAV;
+    private int NAV_ACTIVE;
+    private boolean lightTheme;
 
     private static final int MATCH = LinearLayout.LayoutParams.MATCH_PARENT;
     private static final int WRAP = LinearLayout.LayoutParams.WRAP_CONTENT;
@@ -113,6 +117,7 @@ public class MainActivity extends Activity {
     private TextView batteryValueView;
     private TextView tileValueView;
     private TextView languageValueView;
+    private TextView themeValueView;
     private TextView storageValueView;
     private TextView orientationValueView;
     private TextView drawValueView;
@@ -150,6 +155,7 @@ public class MainActivity extends Activity {
     private int bitrateMbps = 32;
     private String codec = "avc";
     private String language = "en";
+    private String theme = "auto";
     private String orientation = "auto";
     private boolean drawOverlay = true;
     private int drawSize = 1;
@@ -166,6 +172,64 @@ public class MainActivity extends Activity {
     private final LruCache<String, Bitmap> thumbCache = new LruCache<String, Bitmap>(48);
 
     /** The folder recordings are saved in, relative to shared storage. */
+    /** Reads the theme choice and fills the palette that matches it. */
+    private void applyTheme() {
+        String mode = prefs == null ? "auto" : prefs.getString("theme", "auto");
+        boolean light = "light".equals(mode) || ("auto".equals(mode) && systemIsLight());
+        lightTheme = light;
+        if (light) {
+            BG = Color.parseColor("#FFFFFF");
+            CARD = Color.parseColor("#FFFFFF");
+            BORDER = Color.parseColor("#E4E4E7");
+            TEXT = Color.parseColor("#09090B");
+            MUTED = Color.parseColor("#52525B");
+            FAINT = Color.parseColor("#71717A");
+            PRIMARY = Color.parseColor("#18181B");
+            PRIMARY_FG = Color.parseColor("#FAFAFA");
+            RED = Color.parseColor("#DC2626");
+            GREEN = Color.parseColor("#16A34A");
+            NAV = Color.parseColor("#FFFFFF");
+            NAV_ACTIVE = Color.parseColor("#F4F4F5");
+        } else {
+            BG = Color.parseColor("#09090B");
+            CARD = Color.parseColor("#111113");
+            BORDER = Color.parseColor("#27272A");
+            TEXT = Color.parseColor("#FAFAFA");
+            MUTED = Color.parseColor("#A1A1AA");
+            FAINT = Color.parseColor("#71717A");
+            PRIMARY = Color.parseColor("#FAFAFA");
+            PRIMARY_FG = Color.parseColor("#09090B");
+            RED = Color.parseColor("#EF4444");
+            GREEN = Color.parseColor("#22C55E");
+            NAV = Color.parseColor("#18181B");
+            NAV_ACTIVE = Color.parseColor("#27272A");
+        }
+    }
+
+    private boolean systemIsLight() {
+        try {
+            int mode = getResources().getConfiguration().uiMode
+                    & android.content.res.Configuration.UI_MODE_NIGHT_MASK;
+            return mode != android.content.res.Configuration.UI_MODE_NIGHT_YES;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /** Status and navigation bars follow the theme, icons included. */
+    private void styleSystemBars() {
+        getWindow().setStatusBarColor(BG);
+        getWindow().setNavigationBarColor(BG);
+        int flags = 0;
+        if (Build.VERSION.SDK_INT >= 23) {
+            flags |= lightTheme ? View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR : 0;
+        }
+        if (Build.VERSION.SDK_INT >= 26) {
+            flags |= lightTheme ? View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR : 0;
+        }
+        getWindow().getDecorView().setSystemUiVisibility(flags);
+    }
+
     private String saveFolder() {
         String folder = prefs.getString("saveFolder", "Movies/Screen Recorder");
         if (folder == null) folder = "Movies/Screen Recorder";
@@ -189,16 +253,17 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        getWindow().setStatusBarColor(BG);
-        getWindow().setNavigationBarColor(BG);
-
         prefs = getSharedPreferences(LocaleHelper.PREFS, MODE_PRIVATE);
+        applyTheme();
+        styleSystemBars();
+
         audioSource = prefs.getInt("audio", ScreenRecorder.AUDIO_INTERNAL);
         resWidth = prefs.getInt("resWidth", 0);
         videoFps = prefs.getInt("fps", 60);
         bitrateMbps = prefs.getInt("bitrateMbps", 32);
         codec = prefs.getString("codec", "avc");
         language = prefs.getString(LocaleHelper.KEY, "en");
+        theme = prefs.getString("theme", "auto");
         orientation = prefs.getString("orientation", "auto");
         perfMode = prefs.getBoolean("perfMode", true);
         drawOverlay = prefs.getBoolean("drawOverlay", true);
@@ -238,6 +303,14 @@ public class MainActivity extends Activity {
                 }
             }
         }, 300);
+    }
+
+    @Override
+    public void onConfigurationChanged(android.content.res.Configuration configuration) {
+        super.onConfigurationChanged(configuration);
+        if (!"auto".equals(prefs.getString("theme", "auto"))) return;
+        boolean wasLight = lightTheme;
+        if (wasLight != systemIsLight()) recreate();
     }
 
     @Override
@@ -422,12 +495,12 @@ public class MainActivity extends Activity {
 
         mainButton = new Button(this);
         mainButton.setAllCaps(false);
-        mainButton.setText(getString(R.string.start_recording));
         mainButton.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
         mainButton.setTextColor(PRIMARY_FG);
         mainButton.setTypeface(Typeface.DEFAULT_BOLD);
         mainButton.setStateListAnimator(null);
         styleButton(mainButton, PRIMARY);
+        setMainButton(false);
         mainButton.setOnClickListener(v -> onMainButton());
         pressEffect(mainButton);
         list.addView(mainButton, lp(MATCH, dp(52), 0, 16, 0, 0));
@@ -477,6 +550,9 @@ public class MainActivity extends Activity {
         divider(generalCard);
         languageValueView = addRow(generalCard, R.drawable.ic_language, R.string.row_language,
                 "", true, this::chooseLanguage);
+        divider(generalCard);
+        themeValueView = addRow(generalCard, R.drawable.ic_theme, R.string.row_theme,
+                "", true, this::chooseTheme);
         divider(generalCard);
         storageValueView = addRow(generalCard, R.drawable.ic_folder, R.string.row_storage,
                 saveFolder(), true, this::chooseSaveFolder);
@@ -685,10 +761,12 @@ public class MainActivity extends Activity {
         LinearLayout texts = new LinearLayout(this);
         texts.setOrientation(LinearLayout.VERTICAL);
         row.addView(texts, new LinearLayout.LayoutParams(0, WRAP, 1f));
-        texts.addView(label(item.title(), 14, TEXT, false),
-                new LinearLayout.LayoutParams(MATCH, WRAP));
+        TextView nameView = label(item.displayName(), 14, TEXT, false);
+        nameView.setMaxLines(1);
+        nameView.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        texts.addView(nameView, new LinearLayout.LayoutParams(MATCH, WRAP));
 
-        TextView meta = label(item.meta(), 12, FAINT, false);
+        TextView meta = label(item.dateLabel() + "  ·  " + item.meta(), 12, FAINT, false);
         texts.addView(meta, lp(MATCH, WRAP, 0, 3, 0, 0));
 
         // Where the video lives, so a changed save folder is easy to spot.
@@ -851,18 +929,64 @@ public class MainActivity extends Activity {
         String[] items = {
                 getString(R.string.action_open),
                 getString(R.string.action_share),
+                getString(R.string.action_rename),
                 getString(R.string.action_delete)
         };
-        showChoices(item.title(), items, -1, which -> {
+        showChoices(item.displayName(), items, -1, which -> {
             if (which == 0) playRecording(item);
             else if (which == 1) shareRecording(item.uri);
+            else if (which == 2) renameRecording(item);
             else confirmDelete(item);
         });
     }
 
+    /** Renaming keeps the "DenRecorder_" prefix, which is how the list finds videos. */
+    private void renameRecording(final Recording item) {
+        final EditText input = new EditText(this);
+        input.setText(item.displayName());
+        input.setHint(getString(R.string.rename_hint));
+        input.setTextColor(TEXT);
+        input.setHintTextColor(FAINT);
+        input.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
+        input.setBackground(round(NAV_ACTIVE, 10, BORDER));
+        input.setPadding(dp(14), dp(12), dp(14), dp(12));
+        input.setSingleLine(true);
+        input.setInputType(android.text.InputType.TYPE_CLASS_TEXT
+                | android.text.InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+        input.setSelection(input.getText().length());
+
+        showCustomCard(getString(R.string.rename_title), input,
+                getString(R.string.dialog_save),
+                () -> {
+                    String value = input.getText().toString().trim();
+                    value = value.replace('/', '-').replace(':', '-').replace('\\', '-');
+                    if (value.isEmpty() || value.contains("..")) {
+                        Toast.makeText(this, R.string.rename_invalid, Toast.LENGTH_SHORT).show();
+                        return false;
+                    }
+                    String fileName = value.startsWith(SCREEN_RECORDING_PREFIX)
+                            ? value : SCREEN_RECORDING_PREFIX + value;
+                    if (!fileName.toLowerCase(Locale.US).endsWith(".mp4")) fileName += ".mp4";
+                    android.content.ContentValues values = new android.content.ContentValues();
+                    values.put(MediaStore.MediaColumns.DISPLAY_NAME, fileName);
+                    boolean ok = false;
+                    try {
+                        ok = getContentResolver().update(item.uri, values, null, null) > 0;
+                    } catch (Exception ignored) { }
+                    if (!ok) {
+                        Toast.makeText(this, R.string.rename_failed, Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(this, R.string.rename_done, Toast.LENGTH_SHORT).show();
+                    }
+                    loadRecordings();
+                    return true;
+                },
+                getString(R.string.dialog_cancel), null);
+    }
+
     private void confirmDelete(final Recording item) {
         showCard(getString(R.string.delete_title),
-                getString(R.string.delete_body, item.title()),
+                getString(R.string.delete_body, item.displayName()),
                 getString(R.string.dialog_delete),
                 () -> {
                     try {
@@ -875,7 +999,7 @@ public class MainActivity extends Activity {
 
     private void playRecording(Recording item) {
         try {
-            PlayerActivity.open(this, item.uri, item.title());
+            PlayerActivity.open(this, item.uri, item.displayName());
         } catch (Exception e) {
             status(R.string.player_open_failed, RED);
         }
@@ -945,7 +1069,19 @@ public class MainActivity extends Activity {
             this.folder = folder == null ? "" : folder;
         }
 
-        String title() {
+        /** The file name the user sees and can rename, without prefix or ".mp4". */
+        String displayName() {
+            String out = name;
+            if (out.toLowerCase(Locale.US).endsWith(".mp4")) {
+                out = out.substring(0, out.length() - 4);
+            }
+            if (out.startsWith(SCREEN_RECORDING_PREFIX)) {
+                out = out.substring(SCREEN_RECORDING_PREFIX.length());
+            }
+            return out.isEmpty() ? name : out;
+        }
+
+        String dateLabel() {
             return new SimpleDateFormat("dd/MM/yyyy · HH:mm", Locale.getDefault())
                     .format(new Date(added * 1000L));
         }
@@ -982,6 +1118,7 @@ public class MainActivity extends Activity {
             updateBatteryValue();
             updateTileValue();
             updateLanguageValue();
+            updateThemeValue();
             updateStorageValue();
             updateOrientationValue();
             updateDrawValue();
@@ -1145,6 +1282,24 @@ public class MainActivity extends Activity {
         view.setTextColor(color);
         if (bold) view.setTypeface(Typeface.DEFAULT_BOLD);
         return view;
+    }
+
+    /** Start and stop keep the same button, with the icon that fits it. */
+    private void setMainButton(boolean recording) {
+        if (mainButton == null) return;
+        mainButton.setText(recording ? R.string.stop_recording : R.string.start_recording);
+        styleButton(mainButton, recording ? RED : PRIMARY);
+        int icon = recording ? R.drawable.ic_stop : R.drawable.ic_record;
+        int tint = recording ? Color.WHITE : PRIMARY_FG;
+        try {
+            android.graphics.drawable.Drawable drawable =
+                    getResources().getDrawable(icon, getTheme()).mutate();
+            drawable.setTint(tint);
+            int size = dp(18);
+            drawable.setBounds(0, 0, size, size);
+            mainButton.setCompoundDrawables(drawable, null, null, null);
+            mainButton.setCompoundDrawablePadding(dp(10));
+        } catch (Exception ignored) { }
     }
 
     private void styleButton(Button button, int background) {
@@ -1653,20 +1808,55 @@ public class MainActivity extends Activity {
                 "Movies",
                 "Download"
         };
-        final String[] items = new String[presets.length + 1];
+        final String[] items = new String[presets.length + 2];
         int checked = -1;
         for (int i = 0; i < presets.length; i++) {
             items[i] = presets[i];
             if (presets[i].equals(saveFolder())) checked = i;
         }
-        items[presets.length] = getString(R.string.folder_custom);
+        items[presets.length] = getString(R.string.folder_browse);
+        items[presets.length + 1] = getString(R.string.folder_custom);
         showChoices(getString(R.string.title_folder), items, checked, which -> {
             if (which < presets.length) {
                 applySaveFolder(presets[which]);
+            } else if (which == presets.length) {
+                openFolderPicker();
             } else {
                 showFolderInput();
             }
         });
+    }
+
+    /** The phone's own folder browser, so no folder has to be typed by hand. */
+    private void openFolderPicker() {
+        try {
+            Intent pick = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
+                    .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION
+                            | Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                            | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
+            startActivityForResult(pick, REQ_FOLDER);
+        } catch (Exception e) {
+            status(R.string.folder_browse_unavailable, RED);
+        }
+    }
+
+    /**
+     * Turns the picked folder into the relative path MediaStore writes to.
+     * Only the phone's own storage has one; a card or a cloud folder has not.
+     */
+    private String folderFromTree(Uri tree) {
+        try {
+            String docId = android.provider.DocumentsContract.getTreeDocumentId(tree);
+            if (docId == null) return null;
+            int colon = docId.indexOf(':');
+            String root = colon < 0 ? docId : docId.substring(0, colon);
+            String path = colon < 0 ? "" : docId.substring(colon + 1);
+            if (!"primary".equalsIgnoreCase(root)) return null;
+            path = path.replaceAll("^/+", "").replaceAll("/+$", "");
+            return path.isEmpty() ? null : path;
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private void showFolderInput() {
@@ -1932,6 +2122,34 @@ public class MainActivity extends Activity {
                 });
     }
 
+    private void chooseTheme() {
+        final String[] values = {"dark", "light", "auto"};
+        final String[] names = {
+                getString(R.string.theme_dark),
+                getString(R.string.theme_light),
+                getString(R.string.theme_auto)
+        };
+        int checked = 0;
+        for (int i = 0; i < values.length; i++) {
+            if (values[i].equals(theme)) checked = i;
+        }
+        showChoices(getString(R.string.title_theme), names, checked, which -> {
+            theme = values[which];
+            // Come back to the settings screen after the new palette is applied.
+            prefs.edit().putString("theme", theme)
+                    .putBoolean("openSettingsNext", true).apply();
+            recreate();
+        });
+    }
+
+    private void updateThemeValue() {
+        if (themeValueView == null) return;
+        int res = "light".equals(theme) ? R.string.theme_light
+                : "dark".equals(theme) ? R.string.theme_dark
+                : R.string.theme_auto;
+        themeValueView.setText(res);
+    }
+
     private boolean blockWhileRecording() {
         if (!RecorderService.isRecording) return false;
         status(R.string.status_stop_first, MUTED);
@@ -2057,6 +2275,18 @@ public class MainActivity extends Activity {
                     : R.string.draw_permission_off, MUTED);
             return;
         }
+        if (requestCode == REQ_FOLDER) {
+            if (resultCode != RESULT_OK || data == null || data.getData() == null) return;
+            String folder = folderFromTree(data.getData());
+            if (folder == null) {
+                showCard(getString(R.string.folder_browse_unsupported_title),
+                        getString(R.string.folder_browse_unsupported_body),
+                        getString(R.string.dialog_ok), null, null, null);
+                return;
+            }
+            applySaveFolder(folder);
+            return;
+        }
         if (requestCode == REQ_WRITE_SETTINGS) {
             updateOrientationValue();
             status(RotationLock.canWrite(this)
@@ -2103,8 +2333,7 @@ public class MainActivity extends Activity {
             stopDetectedAt = 0;
             if (!uiRecording) {
                 uiRecording = true;
-                mainButton.setText(R.string.stop_recording);
-                styleButton(mainButton, RED);
+                setMainButton(true);
                 startDotAnimation();
             }
             long elapsed = RecorderService.elapsedMs();
@@ -2116,8 +2345,7 @@ public class MainActivity extends Activity {
         } else {
             if (uiRecording) {
                 uiRecording = false;
-                mainButton.setText(R.string.start_recording);
-                styleButton(mainButton, PRIMARY);
+                setMainButton(false);
                 heroTitle.setText(R.string.hero_ready_title);
                 stopDotAnimation();
             }

@@ -4,11 +4,21 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+    <!-- Lucide-style monitor outline, the "screen" that is being recorded. -->
     <path
-        android:pathData="M54,30 A 24,24 0 1,1 53.9,30"
-        android:strokeColor="#F2F4F7"
-        android:strokeWidth="5" />
+        android:pathData="M37,38 H71 A 5,5 0 0,1 76,43 V63 A 5,5 0 0,1 71,68 H37 A 5,5 0 0,1 32,63 V43 A 5,5 0 0,1 37,38 Z"
+        android:strokeColor="#FAFAFA"
+        android:strokeWidth="4.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <!-- Stand -->
     <path
-        android:fillColor="#FF3B30"
-        android:pathData="M54,41 A 13,13 0 1,1 53.9,41" />
+        android:pathData="M54,68 V75 M45,76.5 H63"
+        android:strokeColor="#FAFAFA"
+        android:strokeWidth="4.5"
+        android:strokeLineCap="round" />
+    <!-- Record dot -->
+    <path
+        android:fillColor="#EF4444"
+        android:pathData="M54,46 A 7,7 0 1,1 53.99,46" />
 </vector>
