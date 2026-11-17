@@ -212,4 +212,37 @@
     <string name="notification_saved_title">Đã lưu bản ghi</string>
     <string name="notification_saved_text">Đã lưu trong %1$s</string>
     <string name="player_rotate">Xoay màn hình</string>
+
+    <string name="section_beta">BẢN BETA</string>
+    <string name="row_island">Super Island</string>
+    <string name="hint_island_beta">Bản beta, chỉ trên máy Xiaomi. Hiện bản ghi trên Super Island của HyperOS; cần Shizuku một lần để cấp quyền.</string>
+    <string name="island_value_off">Tắt · beta</string>
+    <string name="island_value_on">Đang bật · beta</string>
+    <string name="island_value_need">Cần Shizuku</string>
+    <string name="island_title">Super Island (beta)</string>
+    <string name="island_body">HyperOS hiện bản ghi ngay trên Super Island: đồng hồ đếm và tên ứng dụng, chạm vào để quay lại app. HyperOS chỉ vẽ ứng dụng nó tin, và quyền đó chỉ cấp được qua Shizuku. Bật lên rồi quay thử một video là thấy.</string>
+    <string name="island_body_on">Đảo sẽ hiện mọi bản ghi. Tắt ở đây nếu đảo trống hoặc bạn không muốn dùng; thông báo thường vẫn giữ nguyên.</string>
+    <string name="island_enable">Bật bằng Shizuku</string>
+    <string name="island_disable">Tắt</string>
+    <string name="island_need_shizuku_title">Cần Shizuku</string>
+    <string name="island_need_shizuku_body">Super Island là bản beta và chỉ có trên máy Xiaomi. Android không cho ứng dụng thường xin quyền hiện đảo, nên DenRecorder cần Shizuku một lần. Cài Shizuku, khởi động nó (qua gỡ lỗi không dây hoặc root) rồi quay lại đây.</string>
+    <string name="island_install_shizuku">Tải Shizuku</string>
+    <string name="island_waiting_shizuku">Đã cài Shizuku nhưng nó chưa chạy. Mở Shizuku, khởi động dịch vụ rồi bấm Bật lại.</string>
+    <string name="island_open_shizuku">Mở Shizuku</string>
+    <string name="island_allow_in_shizuku">Chọn Cho phép trong hộp thoại của Shizuku</string>
+    <string name="island_granting">Đang cấp quyền hiện đảo…</string>
+    <string name="island_done_title">Đã bật Super Island</string>
+    <string name="island_done_body">Một mục thử nhỏ sẽ hiện trên đảo. Nếu không thấy, bản HyperOS này chỉ cho ứng dụng hệ thống hiện đảo; thông báo quay vẫn hoạt động như cũ.</string>
+    <string name="island_failed_title">Chưa cấp được quyền hiện đảo</string>
+    <string name="island_failed_body">SystemUI vẫn không cho DenRecorder hiện trên đảo. Nhiều bản ROM chỉ cấp quyền này khi Shizuku chạy bằng root. Shizuku trả lời: %1$s</string>
+    <string name="island_denied_body">Shizuku chưa cho phép DenRecorder. Bấm Bật lại rồi chọn Cho phép trong hộp thoại của Shizuku.</string>
+    <string name="island_request_again">Thử lại</string>
+    <string name="island_no_xiaomi">Super Island chỉ có trên điện thoại Xiaomi</string>
+    <string name="island_no_browser">Không có trình duyệt để mở trang Shizuku</string>
+    <string name="island_off_toast">Đã tắt Super Island</string>
+    <string name="island_channel">Thử Super Island</string>
+    <string name="island_test_title">Thử đảo</string>
+    <string name="island_test_text">Nếu đảo hiện dòng này thì Super Island đã chạy</string>
+    <string name="island_recording">Đang quay</string>
+    <string name="island_paused">Tạm dừng</string>
 </resources>

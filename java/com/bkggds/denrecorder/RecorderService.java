@@ -570,7 +570,17 @@ public class RecorderService extends Service {
         }
         builder.addAction(holdAction);
         builder.addAction(stopAction);
-        return builder.build();
+        Notification notification = builder.build();
+        // Beta: the same notification can live in Xiaomi's Super Island.
+        if (Island.enabled(this) && Island.allowed(this)) {
+            long elapsed = elapsedMs();
+            String time = String.format(java.util.Locale.US, "%02d:%02d",
+                    elapsed / 60000L, (elapsed / 1000L) % 60L);
+            Island.apply(this, notification,
+                    getString(isPaused ? R.string.island_paused : R.string.island_recording),
+                    time, startedAt, isPaused);
+        }
+        return notification;
     }
 
     private void updateNotification() {

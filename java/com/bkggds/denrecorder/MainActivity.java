@@ -69,6 +69,7 @@ public class MainActivity extends Activity {
     private static final int REQ_WRITE_SETTINGS = 1003;
     private static final int REQ_OVERLAY = 1004;
     private static final int REQ_FOLDER = 1005;
+    private static final int REQ_SHIZUKU = 1006;
 
     /** Every file DenRecorder writes starts with this name. */
     private static final String SCREEN_RECORDING_PREFIX = "DenRecorder_";
@@ -120,6 +121,9 @@ public class MainActivity extends Activity {
     private TextView tileValueView;
     private TextView languageValueView;
     private TextView themeValueView;
+    private TextView islandValueView;
+    /** Set while the Shizuku permission request is on its way. */
+    private boolean islandRequestPending;
     private TextView storageValueView;
     private TextView orientationValueView;
     private TextView drawValueView;
@@ -271,6 +275,9 @@ public class MainActivity extends Activity {
         drawOverlay = prefs.getBoolean("drawOverlay", true);
         drawSize = prefs.getInt("drawSize", 1);
         handler = new Handler(Looper.getMainLooper());
+        try {
+            rikka.shizuku.Shizuku.addRequestPermissionResultListener(islandPermissionListener);
+        } catch (Throwable ignored) { }
 
         buildUi();
         boolean openSettings = prefs.getBoolean("openSettingsNext", false);
@@ -331,6 +338,9 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        try {
+            rikka.shizuku.Shizuku.removeRequestPermissionResultListener(islandPermissionListener);
+        } catch (Throwable ignored) { }
         if (dotAnimator != null) {
             dotAnimator.cancel();
             dotAnimator = null;
@@ -578,6 +588,17 @@ public class MainActivity extends Activity {
         divider(generalCard);
         drawSizeValueView = addRow(generalCard, R.drawable.ic_rect, R.string.row_draw_size,
                 "", true, this::chooseDrawSize);
+
+        // Super Island is a Xiaomi feature, so the row only exists there.
+        if (Island.isXiaomi()) {
+            list.addView(sectionLabel(R.string.section_beta), lp(MATCH, WRAP, 0, 22, 0, 0));
+            LinearLayout betaCard = card();
+            list.addView(betaCard, lp(MATCH, WRAP, 0, 8, 0, 0));
+            islandValueView = addRow(betaCard, R.drawable.ic_tile, R.string.row_island,
+                    "", true, this::chooseIsland);
+            divider(betaCard);
+            addHint(betaCard, R.string.hint_island_beta);
+        }
 
         list.addView(sectionLabel(R.string.section_about), lp(MATCH, WRAP, 0, 22, 0, 0));
         LinearLayout aboutCard = card();
@@ -1140,6 +1161,7 @@ public class MainActivity extends Activity {
             updateTileValue();
             updateLanguageValue();
             updateThemeValue();
+            updateIslandValue();
             updateStorageValue();
             updateOrientationValue();
             updateDrawValue();
@@ -2155,6 +2177,146 @@ public class MainActivity extends Activity {
                     .putBoolean("openSettingsNext", true).apply();
             recreate();
         });
+    }
+
+    // ---------- Super Island (beta) ----------
+
+    /** Shizuku answers here after the user allows DenRecorder in its dialog. */
+    private final rikka.shizuku.Shizuku.OnRequestPermissionResultListener islandPermissionListener =
+            new rikka.shizuku.Shizuku.OnRequestPermissionResultListener() {
+                @Override
+                public void onRequestPermissionResult(int requestCode, int grantResult) {
+                    if (requestCode != REQ_SHIZUKU || !islandRequestPending) return;
+                    islandRequestPending = false;
+                    handler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (grantResult == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                                grantIslandPermission();
+                            } else {
+                                showCard(getString(R.string.island_failed_title),
+                                        getString(R.string.island_denied_body),
+                                        getString(R.string.island_request_again),
+                                        MainActivity.this::askShizukuPermission,
+                                        getString(R.string.dialog_cancel), null);
+                            }
+                        }
+                    });
+                }
+            };
+
+    private void chooseIsland() {
+        final boolean on = Island.enabled(this);
+        String body = getString(R.string.island_body);
+        if (on) body = getString(R.string.island_body_on);
+        showCard(getString(R.string.island_title), body,
+                getString(on ? R.string.island_disable : R.string.island_enable),
+                on ? this::disableIsland : this::askShizukuPermission,
+                getString(R.string.dialog_cancel), null);
+    }
+
+    private void updateIslandValue() {
+        if (islandValueView == null) return;
+        int res;
+        if (!Island.enabled(this)) res = R.string.island_value_off;
+        else if (Island.allowed(this)) res = R.string.island_value_on;
+        else res = R.string.island_value_need;
+        islandValueView.setText(res);
+    }
+
+    private void disableIsland() {
+        Island.setEnabled(this, false);
+        Island.hideTest(this);
+        updateIslandValue();
+        Toast.makeText(this, R.string.island_off_toast, Toast.LENGTH_SHORT).show();
+    }
+
+    /** Shizuku: installed, running, allowed, then the one permission, then a test. */
+    private void askShizukuPermission() {
+        if (!Island.isXiaomi()) {
+            Toast.makeText(this, R.string.island_no_xiaomi, Toast.LENGTH_LONG).show();
+            return;
+        }
+        if (!ShizukuBridge.installed(this)) {
+            showCard(getString(R.string.island_need_shizuku_title),
+                    getString(R.string.island_need_shizuku_body),
+                    getString(R.string.island_install_shizuku), this::openShizukuDownload,
+                    getString(R.string.dialog_cancel), null);
+            return;
+        }
+        if (!ShizukuBridge.running()) {
+            showCard(getString(R.string.island_need_shizuku_title),
+                    getString(R.string.island_waiting_shizuku),
+                    getString(R.string.island_open_shizuku), this::openShizukuApp,
+                    getString(R.string.dialog_cancel), null);
+            return;
+        }
+        if (ShizukuBridge.allowed()) {
+            grantIslandPermission();
+            return;
+        }
+        islandRequestPending = true;
+        Toast.makeText(this, R.string.island_allow_in_shizuku, Toast.LENGTH_LONG).show();
+        ShizukuBridge.requestPermission(REQ_SHIZUKU);
+    }
+
+    private void grantIslandPermission() {
+        Toast.makeText(this, R.string.island_granting, Toast.LENGTH_SHORT).show();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                final String output = ShizukuBridge.grantIslandPermission(MainActivity.this);
+                Island.forgetVerdict();
+                final boolean ok = Island.allowed(MainActivity.this);
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (ok) {
+                            Island.setEnabled(MainActivity.this, true);
+                            updateIslandValue();
+                            Island.showTest(MainActivity.this);
+                            handler.postDelayed(new Runnable() {
+                                @Override
+                                public void run() {
+                                    Island.hideTest(MainActivity.this);
+                                }
+                            }, 15_000);
+                            showCard(getString(R.string.island_done_title),
+                                    getString(R.string.island_done_body),
+                                    getString(R.string.dialog_ok), null, null, null);
+                        } else {
+                            showCard(getString(R.string.island_failed_title),
+                                    getString(R.string.island_failed_body, output),
+                                    getString(R.string.island_request_again),
+                                    MainActivity.this::askShizukuPermission,
+                                    getString(R.string.dialog_cancel), null);
+                        }
+                    }
+                });
+            }
+        }, "island-grant").start();
+    }
+
+    private void openShizukuApp() {
+        Intent intent = getPackageManager().getLaunchIntentForPackage(ShizukuBridge.PACKAGE);
+        if (intent == null) {
+            openShizukuDownload();
+            return;
+        }
+        try {
+            startActivity(intent);
+        } catch (Exception e) {
+            openShizukuDownload();
+        }
+    }
+
+    private void openShizukuDownload() {
+        try {
+            startActivity(new Intent(Intent.ACTION_VIEW,
+                    Uri.parse("https://shizuku.rikka.app/download/")));
+        } catch (Exception e) {
+            Toast.makeText(this, R.string.island_no_browser, Toast.LENGTH_LONG).show();
+        }
     }
 
     private void updateThemeValue() {

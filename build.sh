@@ -44,12 +44,19 @@ aapt2 link -I "$SDK_JAR" --manifest "$P/AndroidManifest.xml" \
   "${ASSETS[@]}" --java "$OUT/gen" -o "$OUT/base.apk" "${RES[@]}"
 
 echo "2/5 Java"
-javac --release 8 -classpath "$SDK_JAR" -Xlint:-options -encoding UTF-8 -nowarn \
+# Extra libraries (the Shizuku client the beta Super Island switch needs).
+LIBS=()
+if [ -d "$P/libs" ]; then
+  for jar in "$P"/libs/*.jar; do [ -e "$jar" ] && LIBS+=("$jar"); done
+fi
+CP="$SDK_JAR"
+for jar in "${LIBS[@]:-}"; do [ -n "$jar" ] && CP="$CP:$jar"; done
+javac --release 8 -classpath "$CP" -Xlint:-options -encoding UTF-8 -nowarn \
   -d "$OUT/classes" $(find "$P/java" "$OUT/gen" -name '*.java')
 
 echo "3/5 Dex"
 d8 --release --min-api "$MINSDK" --lib "$SDK_JAR" --output "$OUT/dex" \
-  $(find "$OUT/classes" -name '*.class')
+  $(find "$OUT/classes" -name '*.class') "${LIBS[@]:-}"
 
 echo "4/5 Package"
 python3 - "$OUT/base.apk" "$OUT/dex/classes.dex" "$OUT/aligned.apk" <<'EOF'

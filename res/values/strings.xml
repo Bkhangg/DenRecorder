@@ -212,4 +212,37 @@
     <string name="notification_saved_title">Recording saved</string>
     <string name="notification_saved_text">Saved in %1$s</string>
     <string name="player_rotate">Rotate screen</string>
+
+    <string name="section_beta">BETA</string>
+    <string name="row_island">Super Island</string>
+    <string name="hint_island_beta">Beta, Xiaomi only. Shows the recording in HyperOS\'s Super Island; Shizuku is needed once to grant the permission.</string>
+    <string name="island_value_off">Off · beta</string>
+    <string name="island_value_on">On · beta</string>
+    <string name="island_value_need">Needs Shizuku</string>
+    <string name="island_title">Super Island (beta)</string>
+    <string name="island_body">HyperOS shows the recording in its Super Island: the timer and the app, tap it to come back. HyperOS only draws apps it trusts, and that permission can only be given through Shizuku. Turn it on and start a recording to try it.</string>
+    <string name="island_body_on">The island shows every recording. Turn it off here if the island stays empty or you do not want it; the normal notification stays either way.</string>
+    <string name="island_enable">Enable with Shizuku</string>
+    <string name="island_disable">Turn off</string>
+    <string name="island_need_shizuku_title">Shizuku is needed</string>
+    <string name="island_need_shizuku_body">Super Island is beta and only works on Xiaomi phones. Android does not let a normal app ask for the island permission, so DenRecorder needs Shizuku once. Install Shizuku, start it (wireless debugging or root), then come back here.</string>
+    <string name="island_install_shizuku">Get Shizuku</string>
+    <string name="island_waiting_shizuku">Shizuku is installed but not running. Open it and start the service, then tap Enable again.</string>
+    <string name="island_open_shizuku">Open Shizuku</string>
+    <string name="island_allow_in_shizuku">Allow DenRecorder in Shizuku\'s dialog</string>
+    <string name="island_granting">Granting the island permission…</string>
+    <string name="island_done_title">Super Island is on</string>
+    <string name="island_done_body">A small test entry should appear in the island now. If it does not, this HyperOS build keeps the island for system apps; the recording notification still works as before.</string>
+    <string name="island_failed_title">The island permission was not granted</string>
+    <string name="island_failed_body">SystemUI still does not let DenRecorder draw in the island. On many builds only root can grant this. Shizuku said: %1$s</string>
+    <string name="island_denied_body">Shizuku did not allow DenRecorder. Tap Enable again and choose Allow in Shizuku\'s dialog.</string>
+    <string name="island_request_again">Try again</string>
+    <string name="island_no_xiaomi">Super Island only exists on Xiaomi phones</string>
+    <string name="island_no_browser">No browser to open the Shizuku page</string>
+    <string name="island_off_toast">Super Island turned off</string>
+    <string name="island_channel">Super Island test</string>
+    <string name="island_test_title">Island test</string>
+    <string name="island_test_text">If the island shows this, Super Island works</string>
+    <string name="island_recording">Recording</string>
+    <string name="island_paused">Paused</string>
 </resources>

@@ -3,6 +3,10 @@
     package="com.bkggds.denrecorder">
 
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- Beta: Shizuku grants this app the Xiaomi focus-notification (Super
+         Island) permission, which a normal install can not get. -->
+    <uses-permission android:name="miui.permission.USE_FOCUS_NOTIFICATION" />
+    <uses-permission android:name="moe.shizuku.manager.permission.API_V23" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
@@ -59,6 +63,18 @@
             android:name=".RecorderService"
             android:exported="false"
             android:foregroundServiceType="mediaProjection|microphone" />
+
+        <!-- Shizuku hands its binder to the app through this provider. -->
+        <provider
+            android:name="rikka.shizuku.ShizukuProvider"
+            android:authorities="com.bkggds.denrecorder.shizuku"
+            android:enabled="true"
+            android:exported="true"
+            android:multiprocess="false"
+            android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
+        <meta-data
+            android:name="moe.shizuku.client.V3_SUPPORT"
+            android:value="true" />
 
         <service
             android:name=".QsTileService"
