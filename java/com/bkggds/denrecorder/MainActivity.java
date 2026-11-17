@@ -107,7 +107,9 @@ public class MainActivity extends Activity {
     private TextView heroTitle;
     private TextView heroBody;
     private TextView statusView;
-    private Button mainButton;
+    private LinearLayout mainButton;
+    private ImageView mainIcon;
+    private TextView mainLabel;
 
     private TextView resolutionValueView;
     private TextView bitrateValueView;
@@ -493,13 +495,22 @@ public class MainActivity extends Activity {
         statusView.setLineSpacing(dp(2), 1f);
         hero.addView(statusView, lp(MATCH, WRAP, 0, 14, 0, 0));
 
-        mainButton = new Button(this);
-        mainButton.setAllCaps(false);
-        mainButton.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
-        mainButton.setTextColor(PRIMARY_FG);
-        mainButton.setTypeface(Typeface.DEFAULT_BOLD);
-        mainButton.setStateListAnimator(null);
-        styleButton(mainButton, PRIMARY);
+        // Icon and label sit together in the middle: a Button would push the
+        // icon to its edge, far from the text.
+        mainButton = new LinearLayout(this);
+        mainButton.setOrientation(LinearLayout.HORIZONTAL);
+        mainButton.setGravity(Gravity.CENTER);
+        mainButton.setClickable(true);
+        mainButton.setFocusable(true);
+
+        mainIcon = new ImageView(this);
+        mainButton.addView(mainIcon, new LinearLayout.LayoutParams(dp(20), dp(20)));
+
+        mainLabel = label("", 16, PRIMARY_FG, true);
+        LinearLayout.LayoutParams labelParams = new LinearLayout.LayoutParams(WRAP, WRAP);
+        labelParams.setMargins(dp(10), 0, 0, 0);
+        mainButton.addView(mainLabel, labelParams);
+
         setMainButton(false);
         mainButton.setOnClickListener(v -> onMainButton());
         pressEffect(mainButton);
@@ -662,6 +673,13 @@ public class MainActivity extends Activity {
         if (Build.VERSION.SDK_INT >= 29) {
             readRecordings(items, MediaStore.Downloads.EXTERNAL_CONTENT_URI, "video/mp4");
         }
+        // A video saved in Download shows up in both collections; keep it once.
+        java.util.LinkedHashMap<String, Recording> unique = new java.util.LinkedHashMap<>();
+        for (Recording item : items) {
+            String key = item.name + "|" + item.size;
+            if (!unique.containsKey(key)) unique.put(key, item);
+        }
+        items = new ArrayList<>(unique.values());
         java.util.Collections.sort(items, (a, b) -> Long.compare(b.added, a.added));
         if (items.size() > 500) items = items.subList(0, 500);
 
@@ -784,8 +802,11 @@ public class MainActivity extends Activity {
             }
         });
         row.setOnLongClickListener(v -> {
-            if (!recordingsSelectMode) setSelectMode(true);
-            toggleSelection(item, dot);
+            if (recordingsSelectMode) {
+                toggleSelection(item, dot);
+            } else {
+                showRecordingActions(item);
+            }
             return true;
         });
     }
@@ -1287,19 +1308,13 @@ public class MainActivity extends Activity {
     /** Start and stop keep the same button, with the icon that fits it. */
     private void setMainButton(boolean recording) {
         if (mainButton == null) return;
-        mainButton.setText(recording ? R.string.stop_recording : R.string.start_recording);
-        styleButton(mainButton, recording ? RED : PRIMARY);
-        int icon = recording ? R.drawable.ic_stop : R.drawable.ic_record;
-        int tint = recording ? Color.WHITE : PRIMARY_FG;
-        try {
-            android.graphics.drawable.Drawable drawable =
-                    getResources().getDrawable(icon, getTheme()).mutate();
-            drawable.setTint(tint);
-            int size = dp(18);
-            drawable.setBounds(0, 0, size, size);
-            mainButton.setCompoundDrawables(drawable, null, null, null);
-            mainButton.setCompoundDrawablePadding(dp(10));
-        } catch (Exception ignored) { }
+        int background = recording ? RED : PRIMARY;
+        int foreground = recording ? Color.WHITE : PRIMARY_FG;
+        mainButton.setBackground(round(background, 12, 0));
+        mainLabel.setText(recording ? R.string.stop_recording : R.string.start_recording);
+        mainLabel.setTextColor(foreground);
+        mainIcon.setImageResource(recording ? R.drawable.ic_stop : R.drawable.ic_record);
+        mainIcon.setColorFilter(foreground);
     }
 
     private void styleButton(Button button, int background) {

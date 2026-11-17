@@ -134,7 +134,7 @@
     <string name="status_tile_failed">Thêm trong Trung tâm điều khiển › Sửa nút</string>
     <string name="status_folder_changed">Video mới sẽ lưu vào %1$s</string>
     <string name="hint_home">Độ phân giải, tốc độ khung hình (tới 120 fps), chất lượng và bộ mã hóa nằm trong Cài đặt. Thanh nổi bên dưới để chuyển giữa quay, bản ghi và cài đặt.</string>
-    <string name="hint_recordings">Các bản ghi của DenRecorder. Chạm để xem, giữ để chia sẻ hoặc xóa. Video mới lưu vào %1$s.</string>
+    <string name="hint_recordings">Các bản ghi của DenRecorder. Chạm để xem, giữ để xem/chia sẻ/đổi tên/xóa, hoặc bấm Chọn để xóa nhiều video. Video mới lưu vào %1$s.</string>
 
     <string name="title_resolution">Độ phân giải</string>
     <string name="title_quality">Chất lượng video</string>

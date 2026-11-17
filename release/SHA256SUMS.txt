@@ -1,1 +1,1 @@
-cbbf07a2ca3d11bc8d18501c39775ecccda5999e6b1745a16860e4d179755d23  DenRecorder-1.4.0.apk
+940c793eccc9d6df93018cb1fe2ee8e8c66a7b89f9ca2feeb47d363bb66b6508  DenRecorder-1.4.1.apk

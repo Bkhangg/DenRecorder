@@ -31,7 +31,7 @@ DenRecorder records the whole screen (and the device audio, the microphone or no
 
 ### Install
 
-1. Download `DenRecorder-1.4.0.apk` from the [Releases](../../releases) page.
+1. Download `DenRecorder-1.4.1.apk` from the [Releases](../../releases) page.
 2. Open it on the phone and allow installing apps from that source if asked.
 3. Open DenRecorder, allow the permissions it asks for, and optionally let it add the Quick Settings tile.
 
@@ -76,6 +76,12 @@ res/                    strings (EN + VI), icons, launcher icons
 ```
 
 ### What's new
+
+**1.4.1**
+
+- The icon on the start/stop button sits right next to the label now.
+- A video no longer appears twice in the list when it is saved in Download.
+- Long-press a recording for play, share, rename or delete; **Select** still deletes several at once.
 
 **1.4.0**
 
@@ -148,7 +154,7 @@ DenRecorder quay toàn bộ màn hình (kèm âm thanh thiết bị, micrô ho�
 
 ### Cài đặt
 
-1. Tải `DenRecorder-1.4.0.apk` ở mục [Releases](../../releases).
+1. Tải `DenRecorder-1.4.1.apk` ở mục [Releases](../../releases).
 2. Mở file trên điện thoại và cho phép cài đặt từ nguồn đó nếu được hỏi.
 3. Mở DenRecorder, cấp quyền khi được hỏi, có thể thêm nút vào Trung tâm điều khiển.
 
@@ -175,6 +181,12 @@ export ANDROID_HOME=$HOME/android-sdk
 `app.properties` chứa `versionCode`, `versionName`, `minSdk`.
 
 ### Có gì mới
+
+**1.4.1**
+
+- Icon trên nút Bắt đầu/Dừng quay nằm sát chữ, không còn bị đẩy ra xa.
+- Video lưu trong Download không còn hiện hai lần trong danh sách.
+- Giữ vào một bản ghi để xem/chia sẻ/đổi tên/xóa; nút **Chọn** vẫn dùng để xóa nhiều video.
 
 **1.4.0**
 

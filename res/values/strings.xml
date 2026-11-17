@@ -134,7 +134,7 @@
     <string name="status_tile_failed">Add it from Control Center › Edit tiles</string>
     <string name="status_folder_changed">New recordings go to %1$s</string>
     <string name="hint_home">Resolution, frame rate (up to 120 fps), quality and codec live in Settings. The floating bar below switches between recording, your videos and settings.</string>
-    <string name="hint_recordings">Recordings made with DenRecorder. Tap one to play it, hold it to share or delete. New videos go to %1$s.</string>
+    <string name="hint_recordings">Recordings made with DenRecorder. Tap one to play it, hold it to play, share, rename or delete, or use Select to delete several. New videos go to %1$s.</string>
 
     <string name="title_resolution">Resolution</string>
     <string name="title_quality">Video quality</string>
