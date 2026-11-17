@@ -29,7 +29,7 @@ DenRecorder records the whole screen (and the device audio, the microphone or no
 
 ### Install
 
-1. Download `DenRecorder-1.1.0.apk` from the [Releases](../../releases) page.
+1. Download `DenRecorder-1.1.1.apk` from the [Releases](../../releases) page.
 2. Open it on the phone and allow installing apps from that source if asked.
 3. Open DenRecorder, allow the permissions it asks for, and optionally let it add the Quick Settings tile.
 
@@ -75,7 +75,7 @@ res/                    strings (EN + VI), icons, launcher icons
 
 ### What's new
 
-**1.1.0**
+**1.1.1**
 
 - Videos open in DenRecorder's own player, so tapping a recording always plays that recording.
 - 4K and 2K recordings are kept inside what phone decoders handle (long side ≤ 3840 px, H.264 level 5.1 frame size), so they play in the gallery and in every player.
@@ -116,7 +116,7 @@ DenRecorder quay toàn bộ màn hình (kèm âm thanh thiết bị, micrô ho�
 
 ### Cài đặt
 
-1. Tải `DenRecorder-1.1.0.apk` ở mục [Releases](../../releases).
+1. Tải `DenRecorder-1.1.1.apk` ở mục [Releases](../../releases).
 2. Mở file trên điện thoại và cho phép cài đặt từ nguồn đó nếu được hỏi.
 3. Mở DenRecorder, cấp quyền khi được hỏi, có thể thêm nút vào Trung tâm điều khiển.
 
@@ -144,7 +144,7 @@ export ANDROID_HOME=$HOME/android-sdk
 
 ### Có gì mới
 
-**1.1.0**
+**1.1.1**
 
 - Video mở bằng trình phát của chính DenRecorder, chạm bản ghi nào phát đúng bản ghi đó.
 - Bản ghi 4K và 2K được giữ trong giới hạn bộ giải mã điện thoại (cạnh dài ≤ 3840 px, khung hình H.264 level 5.1) nên phát được trong thư viện và mọi trình phát.

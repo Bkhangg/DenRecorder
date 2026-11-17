@@ -101,7 +101,7 @@ public class PlayerActivity extends Activity {
         FrameLayout.LayoutParams topParams = new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.WRAP_CONTENT, Gravity.TOP);
-        topParams.setMargins(dp(10), dp(10), dp(10), 0);
+        topParams.setMargins(dp(10), statusBarHeight() + dp(6), dp(10), 0);
         root.addView(topBar, topParams);
 
         bottomBar = createBottomBar();
@@ -313,6 +313,11 @@ public class PlayerActivity extends Activity {
         drawable.setColor(color);
         drawable.setCornerRadius(dp(radius));
         return drawable;
+    }
+
+    private int statusBarHeight() {
+        int id = getResources().getIdentifier("status_bar_height", "dimen", "android");
+        return id > 0 ? getResources().getDimensionPixelSize(id) : dp(24);
     }
 
     private int dp(float value) {
