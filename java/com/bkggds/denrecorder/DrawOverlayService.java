@@ -238,6 +238,18 @@ public class DrawOverlayService extends Service {
 
         bubble.setOnTouchListener(new DragListener());
 
+        // Picking a colour or a tool then touching the screen itself should hide
+        // the bar and draw right away, without a second tap.
+        layer.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View view, MotionEvent event) {
+                if (panelOpen && event.getActionMasked() == MotionEvent.ACTION_DOWN) {
+                    closePanel();
+                }
+                return false;
+            }
+        });
+
         // A soft pop-in instead of the button just being there.
         bubble.setScaleX(0.5f);
         bubble.setScaleY(0.5f);
@@ -290,7 +302,9 @@ public class DrawOverlayService extends Service {
             RecorderService.requestStop(this);
             stopSelf();
         }));
-        toolbar.addView(toolButton(R.drawable.ic_collapse, R.string.overlay_hide, button, v -> stopSelf()));
+        // The chevron hides the bar and nothing else: the picked tool stays on,
+        // so the next touch draws instead of tapping around on the screen.
+        toolbar.addView(toolButton(R.drawable.ic_collapse, R.string.overlay_hide, button, v -> closePanel()));
 
         // The ink colour is pickable at any time while recording: a row of
         // colour dots sits under the tools and new shapes use the last pick.
@@ -389,15 +403,10 @@ public class DrawOverlayService extends Service {
     private void pickTool(int tool) {
         boolean same = layer.getTool() == tool;
         layer.setTool(same ? DrawLayer.TOOL_NONE : tool);
-        updateLayerTouchable();
-        updateToolHighlight();
+        // Hide the bar first, so the layer's touchability is worked out from
+        // the new tool and not from the bar being open.
         panelOpen = false; // the next touch draws on the screen
         panel.setVisibility(View.GONE);
-    }
-
-    private void stopDrawing() {
-        if (layer == null) return;
-        layer.setTool(DrawLayer.TOOL_NONE);
         updateLayerTouchable();
         updateToolHighlight();
     }
@@ -415,7 +424,9 @@ public class DrawOverlayService extends Service {
 
     private void updateLayerTouchable() {
         if (layer == null || layerParams == null) return;
-        boolean drawing = layer.getTool() != DrawLayer.TOOL_NONE;
+        // While the bar is open the layer takes the touches too: a tap beside
+        // the bar closes it, and (with a tool picked) starts the stroke at once.
+        boolean drawing = layer.getTool() != DrawLayer.TOOL_NONE || panelOpen;
         int flags = layerParams.flags;
         if (drawing) {
             flags &= ~WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE;
@@ -478,29 +489,38 @@ public class DrawOverlayService extends Service {
     }
 
     private void togglePanel() {
-        panelOpen = !panelOpen;
         if (panelOpen) {
-            updatePauseButton();
-            updateToolHighlight();
-            updatePalette();
-            measurePanel();
-            movePanel();
-            panel.setVisibility(View.VISIBLE);
-            panel.setAlpha(0f);
-            panel.setScaleX(0.9f);
-            panel.setScaleY(0.9f);
-            panel.setTranslationY(dp(8));
-            panel.animate()
-                    .alpha(1f)
-                    .scaleX(1f)
-                    .scaleY(1f)
-                    .translationY(0f)
-                    .setDuration(170)
-                    .setInterpolator(new android.view.animation.DecelerateInterpolator())
-                    .start();
-        } else {
-            panel.setVisibility(View.GONE);
+            closePanel();
+            return;
         }
+        panelOpen = true;
+        updatePauseButton();
+        updateToolHighlight();
+        updatePalette();
+        measurePanel();
+        movePanel();
+        updateLayerTouchable();
+        panel.setVisibility(View.VISIBLE);
+        panel.setAlpha(0f);
+        panel.setScaleX(0.9f);
+        panel.setScaleY(0.9f);
+        panel.setTranslationY(dp(8));
+        panel.animate()
+                .alpha(1f)
+                .scaleX(1f)
+                .scaleY(1f)
+                .translationY(0f)
+                .setDuration(170)
+                .setInterpolator(new android.view.animation.DecelerateInterpolator())
+                .start();
+    }
+
+    /** Hides the bar without touching the picked tool. */
+    private void closePanel() {
+        if (!panelOpen) return;
+        panelOpen = false;
+        if (panel != null) panel.setVisibility(View.GONE);
+        updateLayerTouchable();
     }
 
     /**

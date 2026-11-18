@@ -17,11 +17,11 @@ DenRecorder records the whole screen (and the device audio, the microphone or no
 - **15–50 Mbps** variable bitrate, **H.264 AVC** or **H.265 HEVC**, up to **120 fps**.
 - **Audio** — internal device audio (Android 10+), microphone, or silent.
 - **Quick Settings tile** — start and stop without opening the app, with a toast when the recording starts or is saved.
-- **One tap to record (optional, Shizuku)** — Android asks for the screen-capture permission every time; with Shizuku running, DenRecorder can press that button itself, so the start button or the tile begins recording straight away. The system dialog still flashes by, and the option can be turned off again in Settings.
+- **One tap to record (optional, Shizuku)** — Android asks for the screen-capture permission every time; with Shizuku running, DenRecorder presses that button itself as soon as the dialog is up, at the place it found the first time, so recording starts at once. Android 16 gives an app no way to skip the dialog completely, even with the app-op set; the dialog is gone in well under a second. The option can be turned off again in Settings.
 - **Xiaomi Super Island (beta, Xiaomi only)** — the running recording shows up in HyperOS's island as a small icon with its timer, and a tap on it gives **pause, resume and stop** right on the bar (the stop button is a filled square, not a cross); it can be hidden entirely, and HyperOS hides it by itself whenever the status bar is pulled down (the notification there carries the same buttons). Needs Shizuku once to grant the island permission.
 - **Game performance mode** — caps the recorder at 60 fps and runs the encoder in realtime priority, so a game next to it keeps its frame rate.
 - **Recordings screen** — recent/all lists with real thumbnails, the video's own name and the folder it is saved in; tap to play, long-press for play/share/**rename**/delete, or tap **Select** to pick several videos and delete them at once.
-- **Draw on screen** — a floating button while recording: pencil, rectangle or circle drawn straight onto the screen (they end up in the video), pause and stop from the same bar. A tool stays picked, so several shapes can be drawn one after another, and the bar carries the whole palette (12 colours): the colour can be changed in the middle of a recording, and every shape keeps the colour it was drawn with. The button's size is picked in settings.
+- **Draw on screen** — a floating button while recording: pencil, rectangle or circle drawn straight onto the screen (they end up in the video), pause and stop from the same bar. A tool stays picked, so several shapes can be drawn one after another, and the bar carries the whole palette (12 colours): the colour can be changed in the middle of a recording, and every shape keeps the colour it was drawn with. The down-arrow hides the bar and keeps the tool on, and touching the screen beside the bar hides it and starts the shape there and then. The button's size is picked in settings.
 - **Pause and resume** — one recording stays one file; the paused time is cut out of the video and the timer stops while paused.
 - **Built-in player** — a recording opens in DenRecorder's own player (play/pause, seek, double-tap to jump 10 s back or forward, and a rotate button that turns the video even when the phone's rotation is locked), so the video you tap is the video you get, whatever gallery app is installed.
 - **Choose where videos go** — `Movies/Screen Recorder` by default, five presets, the phone's own folder browser, or a typed path, including `Download` (videos land in the Downloads collection so MIUI keeps them there).
@@ -33,7 +33,7 @@ DenRecorder records the whole screen (and the device audio, the microphone or no
 
 ### Install
 
-1. Download `DenRecorder-1.9.0.apk` from the [Releases](../../releases) page.
+1. Download `DenRecorder-1.9.1.apk` from the [Releases](../../releases) page.
 2. Open it on the phone and allow installing apps from that source if asked.
 3. Open DenRecorder, allow the permissions it asks for, and optionally let it add the Quick Settings tile.
 
@@ -81,6 +81,14 @@ res/                    strings (EN + VI), icons, launcher icons
 ```
 
 ### What's new
+
+**1.9.1**
+
+- The down-arrow in the drawing bar now only hides the bar: the tool you picked stays on, so the next touch draws instead of tapping buttons.
+- Touching the screen beside the bar hides it and draws right away: pick a tool, pick a colour, tap the screen, done.
+- The drawing colour is picked only where it is used — in the bar, while recording — so its row is gone from Settings.
+- **Start without asking** is much quicker: the first time it looks for Android's "share screen" button and remembers it, afterwards it taps that spot as soon as the dialog has the focus, so the dialog disappears in a fraction of a second instead of seconds.
+- Android 16 has no way to skip the capture dialog for a normal app (the PROJECT_MEDIA app-op does not bypass it; tested), so the dialog still shows for a moment as the consent itself.
 
 **1.9.0**
 
@@ -179,11 +187,11 @@ DenRecorder quay toàn bộ màn hình (kèm âm thanh thiết bị, micrô ho�
 - **15–50 Mbps**, **H.264 AVC** hoặc **H.265 HEVC**, tới **120 fps**.
 - **Âm thanh** — âm thanh trong máy (Android 10 trở lên), micrô, hoặc không có.
 - **Nút trên Trung tâm điều khiển** — bắt đầu và dừng quay mà không cần mở ứng dụng, có toast thông báo khi bắt đầu và khi đã lưu.
-- **Một chạm là quay (tùy chọn, cần Shizuku)** — Android hỏi quyền quay màn hình mỗi lần; khi Shizuku đang chạy, DenRecorder tự bấm nút đó, nên bấm nút quay hay nút Trung tâm điều khiển là ghi ngay. Hộp thoại của hệ thống vẫn hiện qua, và có thể tắt lại trong Cài đặt.
+- **Một chạm là quay (tùy chọn, cần Shizuku)** — Android hỏi quyền quay màn hình mỗi lần; khi Shizuku đang chạy, DenRecorder tự bấm nút đó ngay khi hộp thoại vừa hiện, đúng chỗ tìm được lần đầu, nên ghi gần như tức thì. Android 16 không cho ứng dụng thường bỏ hẳn hộp thoại (đặt app-op PROJECT_MEDIA cũng không qua được, đã thử); hộp thoại chỉ loé lên dưới một giây. Có thể tắt lại trong Cài đặt.
 - **Super Island của Xiaomi (beta, chỉ máy Xiaomi)** — bản ghi đang chạy hiện trên đảo của HyperOS dưới dạng một biểu tượng nhỏ kèm đồng hồ đếm, chạm vào đảo là **tạm dừng, tiếp tục và dừng** ngay trên thanh đó; có thể tắt hẳn, và HyperOS tự ẩn đảo khi bạn kéo thanh trạng thái xuống (thông báo ở đó có đúng các nút này). Cần Shizuku một lần để cấp quyền hiện đảo.
 - **Chế độ hiệu năng khi chơi game** — giới hạn 60 fps và ưu tiên thời gian thực cho bộ mã hóa, để game đang chạy bên cạnh vẫn mượt.
 - **Màn Bản ghi** — danh sách Gần đây/Tất cả kèm ảnh thu nhỏ thật, tên video và thư mục lưu; chạm để xem, giữ để xem/chia sẻ/**đổi tên**/xóa, hoặc bấm **Chọn** để chọn nhiều bản ghi và xóa một lần.
-- **Vẽ trên màn hình** — nút nổi khi đang quay: bút chì, hình chữ nhật hoặc khoanh tròn vẽ thẳng lên màn hình (có trong video), tạm dừng và dừng quay ngay trên thanh đó. Chọn công cụ một lần là vẽ được nhiều hình liên tiếp, và thanh vẽ có sẵn đủ bảng màu (12 màu): đang quay vẫn đổi màu được, mỗi hình giữ đúng màu lúc vẽ. Kích thước nút nổi chỉnh trong Cài đặt.
+- **Vẽ trên màn hình** — nút nổi khi đang quay: bút chì, hình chữ nhật hoặc khoanh tròn vẽ thẳng lên màn hình (có trong video), tạm dừng và dừng quay ngay trên thanh đó. Chọn công cụ một lần là vẽ được nhiều hình liên tiếp, và thanh vẽ có sẵn đủ bảng màu (12 màu): đang quay vẫn đổi màu được, mỗi hình giữ đúng màu lúc vẽ. Mũi tên xuống chỉ ẩn thanh, công cụ vẫn bật; chạm ra ngoài thanh là thanh ẩn và vẽ ngay tại chỗ đó. Kích thước nút nổi chỉnh trong Cài đặt.
 - **Tạm dừng và tiếp tục** — một lần quay vẫn là một file, thời gian tạm dừng được cắt khỏi video và đồng hồ đếm dừng lại khi tạm dừng.
 - **Trình phát sẵn trong app** — chạm vào bản ghi là phát ngay trong DenRecorder (phát/tạm dừng, tua, nhấn đúp để lùi hoặc tiến 10 giây, nút xoay màn hình hoạt động cả khi điện thoại đang khoá xoay), đúng video vừa chọn dù máy dùng ứng dụng thư viện nào.
 - **Chọn thư mục lưu** — mặc định `Movies/Screen Recorder`, có 5 gợi ý sẵn, duyệt thư mục bằng trình chọn của điện thoại, hoặc tự nhập.
@@ -195,7 +203,7 @@ DenRecorder quay toàn bộ màn hình (kèm âm thanh thiết bị, micrô ho�
 
 ### Cài đặt
 
-1. Tải `DenRecorder-1.9.0.apk` ở mục [Releases](../../releases).
+1. Tải `DenRecorder-1.9.1.apk` ở mục [Releases](../../releases).
 2. Mở file trên điện thoại và cho phép cài đặt từ nguồn đó nếu được hỏi.
 3. Mở DenRecorder, cấp quyền khi được hỏi, có thể thêm nút vào Trung tâm điều khiển.
 
@@ -222,6 +230,14 @@ export ANDROID_HOME=$HOME/android-sdk
 `app.properties` chứa `versionCode`, `versionName`, `minSdk`.
 
 ### Có gì mới
+
+**1.9.1**
+
+- Mũi tên xuống trên thanh vẽ giờ chỉ ẩn thanh: công cụ đang chọn vẫn bật, nên chạm tiếp là vẽ chứ không bấm nhầm nút.
+- Chạm ra ngoài thanh là thanh ẩn và vẽ ngay: chọn công cụ, chọn màu, chạm màn hình là xong.
+- Màu vẽ chỉ chọn ở nơi dùng nó — trên thanh vẽ khi đang quay — nên dòng màu trong Cài đặt đã bỏ.
+- **Quay không cần hỏi** nhanh hơn hẳn: lần đầu tìm nút "Chia sẻ màn hình" của Android rồi nhớ vị trí, các lần sau bấm đúng chỗ đó ngay khi hộp thoại nhận focus, nên hộp thoại biến mất trong tích tắc thay vì vài giây.
+- Android 16 không có cách bỏ hẳn hộp thoại với ứng dụng thường (đặt app-op PROJECT_MEDIA cũng không qua được, đã thử), nên hộp thoại vẫn loé lên như chính sự đồng ý.
 
 **1.9.0**
 

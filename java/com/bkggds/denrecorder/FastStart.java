@@ -18,6 +18,8 @@ public final class FastStart {
     private static final String TAG = "FastStart";
     private static final String KEY = "fastStart";
     private static final String DUMP = "/data/local/tmp/denrecorder_ui.xml";
+    /** Where the dialog's button was last time, tapped before looking again. */
+    private static final String KEY_POINT = "fastStartPoint";
 
     /** Labels of the button that lets the capture start. */
     private static final String[] YES = {
@@ -67,12 +69,39 @@ public final class FastStart {
     public static void arm(Context context) {
         if (!enabled(context)) return;
         final boolean ok = available();
+        final Context app = context.getApplicationContext();
         Thread thread = new Thread(new Runnable() {
             @Override
             public void run() {
                 if (!ok) return;
+                // The button sits in the same place every time, so tap there
+                // straight away instead of dumping the dialog first: the
+                // dialog is gone before it can be seen. Looking for it is only
+                // the fallback, for the first time and if the tap missed.
+                int[] known = savedPoint(app);
+                if (known != null) {
+                    // Wait only until the dialog's window really is up (a
+                    // dumpsys line, much quicker than dumping the UI), then
+                    // tap where the button was last time.
+                    for (int attempt = 0; attempt < 14; attempt++) {
+                        if (dialogFocused()) {
+                            // The dialog only takes touches once it has focus;
+                            // a moment later the tap cannot fall through to the
+                            // app underneath.
+                            sleep(120);
+                            ShizukuBridge.run("input", "tap",
+                                    String.valueOf(known[0]), String.valueOf(known[1]));
+                            for (int i = 0; i < 12; i++) {
+                                sleep(200);
+                                if (RecorderService.isRecording) return;
+                            }
+                            break;
+                        }
+                        sleep(100);
+                    }
+                }
                 for (int attempt = 0; attempt < 6; attempt++) {
-                    sleep(attempt == 0 ? 300 : 450);
+                    sleep(known != null ? 150 : (attempt == 0 ? 300 : 450));
                     String xml = ShizukuBridge.run("sh", "-c",
                             "uiautomator dump " + DUMP + " >/dev/null 2>&1; cat " + DUMP + " 2>/dev/null");
                     int[] point = confirmPoint(xml);
@@ -80,6 +109,7 @@ public final class FastStart {
                     String out = ShizukuBridge.run("input", "tap",
                             String.valueOf(point[0]), String.valueOf(point[1]));
                     Log.i(TAG, "tapped " + point[0] + "," + point[1] + " -> " + out);
+                    savePoint(app, point);
                     return;
                 }
                 Log.i(TAG, "the capture dialog was not found");
@@ -87,6 +117,52 @@ public final class FastStart {
         }, "fast-start");
         thread.setDaemon(true);
         thread.start();
+    }
+
+    /**
+     * Whether the capture dialog has the focus, so a tap goes to it. A window
+     * that merely exists can still be drawing, and a tap then lands on the app
+     * behind it.
+     */
+    private static boolean dialogFocused() {
+        try {
+            String out = ShizukuBridge.run("sh", "-c",
+                    "dumpsys window | grep -m1 mCurrentFocus");
+            return out != null && out.toLowerCase(Locale.ROOT).contains("mediaprojection");
+        } catch (Throwable e) {
+            return false;
+        }
+    }
+
+    /**
+     * The remembered button position, for this screen size and rotation: the
+     * dialog moves with both, so a different size means look again.
+     */
+    private static int[] savedPoint(Context context) {
+        try {
+            String value = prefs(context).getString(KEY_POINT, "");
+            String[] parts = value.split(" ");
+            if (parts.length != 4) return null;
+            int x = Integer.parseInt(parts[0]);
+            int y = Integer.parseInt(parts[1]);
+            int width = Integer.parseInt(parts[2]);
+            int height = Integer.parseInt(parts[3]);
+            android.util.DisplayMetrics metrics =
+                    context.getResources().getDisplayMetrics();
+            if (width != metrics.widthPixels || height != metrics.heightPixels) return null;
+            return new int[]{x, y};
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private static void savePoint(Context context, int[] point) {
+        try {
+            android.util.DisplayMetrics metrics =
+                    context.getResources().getDisplayMetrics();
+            prefs(context).edit().putString(KEY_POINT, point[0] + " " + point[1] + " "
+                    + metrics.widthPixels + " " + metrics.heightPixels).apply();
+        } catch (Exception ignored) { }
     }
 
     private static void sleep(long ms) {

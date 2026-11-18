@@ -82,8 +82,6 @@
     <string name="draw_size_medium">Medium</string>
     <string name="draw_size_large">Large</string>
     <string name="draw_size_huge">Extra large</string>
-    <string name="row_draw_color">Drawing colour</string>
-    <string name="title_draw_color">Drawing colour</string>
     <string name="draw_color_rose">Rose</string>
     <string name="draw_color_red">Red</string>
     <string name="draw_color_orange">Orange</string>

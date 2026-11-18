@@ -82,8 +82,6 @@
     <string name="draw_size_medium">Vừa</string>
     <string name="draw_size_large">Lớn</string>
     <string name="draw_size_huge">Rất lớn</string>
-    <string name="row_draw_color">Màu vẽ</string>
-    <string name="title_draw_color">Màu vẽ</string>
     <string name="draw_color_rose">Hồng đào</string>
     <string name="draw_color_red">Đỏ</string>
     <string name="draw_color_orange">Cam</string>
