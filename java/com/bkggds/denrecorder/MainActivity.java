@@ -147,6 +147,11 @@ public class MainActivity extends Activity {
     private TextView allTab;
     private boolean showAllRecordings;
     private boolean recordingsSelectMode;
+    /** What the rows on screen were built from, to skip needless rebuilds. */
+    private String recordingsSignature = "";
+    private boolean recordingsLoaded;
+    private boolean recordingsQuerying;
+    private boolean recordingsQueryAgain;
     private final java.util.LinkedHashSet<String> selectedRecordings =
             new java.util.LinkedHashSet<>();
     private TextView selectButton;
@@ -256,7 +261,10 @@ public class MainActivity extends Activity {
         @Override
         public void run() {
             updateUi();
-            handler.postDelayed(this, 1000);
+            // A second is only needed for the timer; with nothing recording the
+            // screen is static and a slower check costs nothing.
+            handler.postDelayed(this, RecorderService.isRecording || sawRecording
+                    ? 1_000 : 2_500);
         }
     };
 
@@ -345,12 +353,41 @@ public class MainActivity extends Activity {
         // Keep the phone's own rotation at hand, so a game that turns the
         // screen sideways can be undone when the recording ends.
         RotationLock.rememberUserLock(this);
+        // A recording that went on while another app was in front: bring the
+        // pulsing dot back now that this screen is the one in front again.
+        if (uiRecording && RecorderService.isRecording) startDotAnimation();
     }
 
     @Override
     protected void onPause() {
         super.onPause();
+        // Nothing here has to run while another app is in front: the recording
+        // carries on in the service, and the poll and the dot (a 60 fps
+        // animation of its own) are put away so a game and the shade stay
+        // smooth.
         handler.removeCallbacks(poll);
+        stopDotAnimation();
+    }
+
+    /**
+     * The notification shade, the capture dialog or a floating window takes the
+     * focus away without pausing this screen. The pulsing dot is a redraw every
+     * frame, so it is stopped for as long as something else is on top.
+     */
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (!hasFocus) {
+            // The shade, the capture dialog or a floating window is on top:
+            // nothing on this screen is visible, so neither the refresh nor the
+            // pulsing dot (a redraw every frame) has to run.
+            handler.removeCallbacks(poll);
+            stopDotAnimation();
+        } else {
+            handler.removeCallbacks(poll);
+            handler.post(poll);
+            if (uiRecording && RecorderService.isRecording) startDotAnimation();
+        }
     }
 
     @Override
@@ -456,9 +493,10 @@ public class MainActivity extends Activity {
         content.addView(recordingsScroll, new FrameLayout.LayoutParams(MATCH, MATCH));
         recordingsScroll.setVisibility(View.GONE);
 
+        // Only the screen that opens first is built here. Settings and the
+        // recordings are built the first time they are opened: building all
+        // three made the app take a noticeable moment to show its window.
         buildHome();
-        buildSettings();
-        buildRecordings();
 
         // Floating bottom navigation bar
         LinearLayout nav = new LinearLayout(this);
@@ -706,23 +744,57 @@ public class MainActivity extends Activity {
         allTab.setTextColor(showAllRecordings ? TEXT : FAINT);
     }
 
+    /**
+     * Shows the recordings screen. Opening the tab never waits for MediaStore:
+     * the list already read is drawn at once, and a background read only
+     * rebuilds the rows when something really changed.
+     */
     private void loadRecordings() {
         if (recordingsList == null) return;
         styleTabs();
-        recordingsList.removeAllViews();
-        String folder = saveFolder();
         if (recordingsHint != null) {
-            recordingsHint.setText(getString(R.string.hint_recordings, folder));
+            recordingsHint.setText(getString(R.string.hint_recordings, saveFolder()));
         }
+        if (!recordingsLoaded) {
+            // First visit: the rows arrive with the read below in a moment, so
+            // there is nothing to draw (and no "no recordings" flash).
+            if (recordingsSummary != null) recordingsSummary.setText("");
+        }
+        queryRecordings();
+    }
 
+    /** Reads the list off the UI thread; asking again while it runs reads once more. */
+    private void queryRecordings() {
+        if (recordingsQuerying) {
+            recordingsQueryAgain = true;
+            return;
+        }
+        recordingsQuerying = true;
+        new Thread(() -> {
+            final List<Recording> items = readAllRecordings();
+            handler.post(() -> {
+                recordingsQuerying = false;
+                renderRecordings(items);
+                if (recordingsQueryAgain) {
+                    recordingsQueryAgain = false;
+                    queryRecordings();
+                }
+            });
+        }, "rec-query").start();
+    }
+
+    /** Every recording MediaStore knows about, newest first. */
+    private List<Recording> readAllRecordings() {
         List<Recording> items = new ArrayList<>();
         // Recordings are found by their name, not by the folder, so the list
         // keeps showing everything after "Save to" was changed. "Download" goes
         // into MediaStore's downloads collection, everything else into videos.
-        readRecordings(items, MediaStore.Video.Media.EXTERNAL_CONTENT_URI, null);
-        if (Build.VERSION.SDK_INT >= 29) {
-            readRecordings(items, MediaStore.Downloads.EXTERNAL_CONTENT_URI, "video/mp4");
-        }
+        try {
+            readRecordings(items, MediaStore.Video.Media.EXTERNAL_CONTENT_URI, null);
+            if (Build.VERSION.SDK_INT >= 29) {
+                readRecordings(items, MediaStore.Downloads.EXTERNAL_CONTENT_URI, "video/mp4");
+            }
+        } catch (Exception ignored) { }
         // A video saved in Download shows up in both collections; keep it once.
         java.util.LinkedHashMap<String, Recording> unique = new java.util.LinkedHashMap<>();
         for (Recording item : items) {
@@ -731,7 +803,31 @@ public class MainActivity extends Activity {
         }
         items = new ArrayList<>(unique.values());
         java.util.Collections.sort(items, (a, b) -> Long.compare(b.added, a.added));
-        if (items.size() > 500) items = items.subList(0, 500);
+        if (items.size() > 500) items = new ArrayList<>(items.subList(0, 500));
+        return items;
+    }
+
+    /** What a row shows, so an unchanged read does not touch the views at all. */
+    private static String signatureOf(List<Recording> items) {
+        StringBuilder out = new StringBuilder(items.size() * 48);
+        for (Recording item : items) {
+            out.append(item.name).append('|').append(item.size).append('|')
+                    .append(item.duration).append('|').append(item.added).append('|')
+                    .append(item.width).append('x').append(item.height).append(';');
+        }
+        return out.toString();
+    }
+
+    /** Fills the list, unless the same videos are already on screen. */
+    private void renderRecordings(List<Recording> items) {
+        if (recordingsList == null) return;
+        String signature = signatureOf(items);
+        if (recordingsLoaded && signature.equals(recordingsSignature)) return;
+        recordingsSignature = signature;
+        recordingsLoaded = true;
+
+        styleTabs();
+        recordingsList.removeAllViews();
 
         // A selection only lasts as long as the video exists.
         java.util.LinkedHashSet<String> alive = new java.util.LinkedHashSet<>();
@@ -744,8 +840,10 @@ public class MainActivity extends Activity {
 
         long totalSize = 0;
         for (Recording item : items) totalSize += item.size;
-        recordingsSummary.setText(getString(R.string.recordings_count,
-                items.size(), formatSize(totalSize)));
+        if (recordingsSummary != null) {
+            recordingsSummary.setText(getString(R.string.recordings_count,
+                    items.size(), formatSize(totalSize)));
+        }
         updateSelectBar();
 
         int shown = showAllRecordings ? items.size() : Math.min(10, items.size());
@@ -1178,6 +1276,9 @@ public class MainActivity extends Activity {
 
     private void showScreen(int index) {
         screen = index;
+        // The two other screens are built on their first visit.
+        if (index == 1 && settingsList == null) buildSettings();
+        else if (index == 2 && recordingsPageList == null) buildRecordings();
         homeScroll.setVisibility(index == 0 ? View.VISIBLE : View.GONE);
         settingsScroll.setVisibility(index == 1 ? View.VISIBLE : View.GONE);
         recordingsScroll.setVisibility(index == 2 ? View.VISIBLE : View.GONE);
@@ -2678,6 +2779,11 @@ public class MainActivity extends Activity {
         try {
             startRecorderService(intent);
             status(R.string.status_starting, MUTED);
+            // The service is starting right now: look again in a moment so the
+            // screen switches to "recording" at once instead of waiting for the
+            // slower idle poll.
+            handler.removeCallbacks(poll);
+            handler.postDelayed(poll, 200);
         } catch (Exception e) {
             status(getString(R.string.status_start_failed, String.valueOf(e.getMessage())), RED);
         }
@@ -2713,10 +2819,12 @@ public class MainActivity extends Activity {
                 startDotAnimation();
             }
             long elapsed = RecorderService.elapsedMs();
-            heroTitle.setText(getString(RecorderService.isPaused
+            String title = getString(RecorderService.isPaused
                     ? R.string.hero_paused_title
                     : R.string.hero_recording_title)
-                    + "  " + formatDuration(elapsed));
+                    + "  " + formatDuration(elapsed);
+            // Setting the same text again would re-lay out the row for nothing.
+            if (!title.contentEquals(heroTitle.getText())) heroTitle.setText(title);
             statusView.setVisibility(View.GONE);
         } else {
             if (uiRecording) {

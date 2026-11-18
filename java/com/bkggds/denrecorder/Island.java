@@ -145,7 +145,11 @@ public final class Island {
      * fill the pill and looks big. Drawing it into a bitmap with a wide
      * transparent margin keeps the same box but a much smaller glyph.
      */
+    private static Icon smallIconCached;
+
     private static Icon smallIcon(Context context) {
+        if (smallIconCached != null) return smallIconCached;
+        Icon icon;
         try {
             int box = 192;
             int glyph = Math.round(box * 0.46f);
@@ -158,10 +162,12 @@ public final class Island {
             int left = (box - glyph) / 2;
             drawable.setBounds(left, left, left + glyph, left + glyph);
             drawable.draw(canvas);
-            return Icon.createWithBitmap(bitmap);
+            icon = Icon.createWithBitmap(bitmap);
         } catch (Throwable e) {
-            return Icon.createWithResource(context, R.drawable.ic_video);
+            icon = Icon.createWithResource(context, R.drawable.ic_video);
         }
+        smallIconCached = icon;
+        return icon;
     }
 
     /**

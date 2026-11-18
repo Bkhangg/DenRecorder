@@ -84,7 +84,12 @@ public class RecorderService extends Service {
     private ScreenRecorder recorder;
     private MediaProjection projection;
     private Handler handler;
-    private boolean finishing;
+    /** The once-a-second island timer gets a thread of its own: building a
+     * notification and handing it to SystemUI must not take a frame away from
+     * the app's own screens (or from the game the video is of). */
+    private Handler islandHandler;
+    private android.os.HandlerThread islandThread;
+    private volatile boolean finishing;
     private volatile boolean selfStop;
 
     /**
@@ -103,7 +108,8 @@ public class RecorderService extends Service {
             if (!isRecording) return;
             if (!Island.enabled(RecorderService.this)) return;
             if (Island.allowed(RecorderService.this)) updateNotification();
-            handler.postDelayed(this, 1_000);
+            Handler self = islandHandler;
+            if (self != null) self.postDelayed(this, 1_000);
         }
     };
 
@@ -135,6 +141,9 @@ public class RecorderService extends Service {
         super.onCreate();
         instance = this;
         handler = new Handler(Looper.getMainLooper());
+        islandThread = new android.os.HandlerThread("island-tick");
+        islandThread.start();
+        islandHandler = new Handler(islandThread.getLooper());
         createChannel();
     }
 
@@ -300,7 +309,7 @@ public class RecorderService extends Service {
         resetTimer();
         isRecording = true;
         handler.post(ticker);
-        if (Island.enabled(this)) handler.post(islandTicker);
+        if (Island.enabled(this) && islandHandler != null) islandHandler.post(islandTicker);
 
         try {
             int resWidth = prefs.getInt("resWidth", 0);
@@ -343,7 +352,7 @@ public class RecorderService extends Service {
         finishing = true;
         isRecording = false;
         handler.removeCallbacks(ticker);
-        handler.removeCallbacks(islandTicker);
+        if (islandHandler != null) islandHandler.removeCallbacks(islandTicker);
 
         final ScreenRecorder active = recorder;
         recorder = null;
@@ -442,7 +451,12 @@ public class RecorderService extends Service {
     @Override
     public void onDestroy() {
         handler.removeCallbacks(ticker);
-        handler.removeCallbacks(islandTicker);
+        if (islandHandler != null) islandHandler.removeCallbacks(islandTicker);
+        if (islandThread != null) {
+            islandThread.quitSafely();
+            islandThread = null;
+            islandHandler = null;
+        }
         isRecording = false;
         isPaused = false;
         DrawOverlayService.stop(this);
@@ -612,12 +626,17 @@ public class RecorderService extends Service {
     }
 
     private void updateNotification() {
-        if (!isRecording || recorder == null) return;
+        if (!isRecording || recorder == null || finishing) return;
         NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         try {
-            nm.notify(NOTIF_ID, buildNotification(
+            Notification notification = buildNotification(
                     (isPaused ? getString(R.string.notification_paused) + " · " : "")
-                            + recorder.describeSettings()));
+                            + recorder.describeSettings());
+            // The island timer updates on its own thread, so a stop can land
+            // between building this and showing it: never leave a "recording"
+            // notification behind after the recording ended.
+            if (finishing || !isRecording) return;
+            nm.notify(NOTIF_ID, notification);
         } catch (Exception ignored) { }
     }
 

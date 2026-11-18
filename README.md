@@ -33,7 +33,7 @@ DenRecorder records the whole screen (and the device audio, the microphone or no
 
 ### Install
 
-1. Download `DenRecorder-1.9.3.apk` from the [Releases](../../releases) page.
+1. Download `DenRecorder-1.9.4.apk` from the [Releases](../../releases) page.
 2. Open it on the phone and allow installing apps from that source if asked.
 3. Open DenRecorder, allow the permissions it asks for, and optionally let it add the Quick Settings tile.
 
@@ -81,6 +81,13 @@ res/                    strings (EN + VI), icons, launcher icons
 ```
 
 ### What's new
+
+**1.9.4**
+
+- Smoother while it records: as soon as another window is in front — a game, the notification shade, the capture dialog — the recording screen stops its once-a-second refresh and its pulsing red dot, both of which were being drawn behind the game, and the island's timer is built on a thread of its own instead of the one that draws the app. Pulling the quick settings down during a recording no longer stutters.
+- Smoother in the app: the recordings list is read in the background and the rows are rebuilt only when the videos really changed, so switching tabs is instant instead of waiting on the gallery's database every time.
+- The recording screen also returns to "recording" at once after the capture dialog, instead of up to a couple of seconds later.
+- The app opens faster: Settings and Recordings are built the first time they are opened instead of at launch, together with the screen that opens first.
 
 **1.9.3**
 
@@ -213,7 +220,7 @@ DenRecorder quay toàn bộ màn hình (kèm âm thanh thiết bị, micrô ho�
 
 ### Cài đặt
 
-1. Tải `DenRecorder-1.9.3.apk` ở mục [Releases](../../releases).
+1. Tải `DenRecorder-1.9.4.apk` ở mục [Releases](../../releases).
 2. Mở file trên điện thoại và cho phép cài đặt từ nguồn đó nếu được hỏi.
 3. Mở DenRecorder, cấp quyền khi được hỏi, có thể thêm nút vào Trung tâm điều khiển.
 
@@ -240,6 +247,13 @@ export ANDROID_HOME=$HOME/android-sdk
 `app.properties` chứa `versionCode`, `versionName`, `minSdk`.
 
 ### Có gì mới
+
+**1.9.4**
+
+- Mượt hơn trong lúc quay: ngay khi có cửa sổ khác ở phía trước — game, thanh thông báo, hộp thoại quay màn hình — màn hình quay ngừng cập nhật mỗi giây và ngừng vẽ chấm đỏ nhấp nháy (hai thứ vẫn chạy phía sau game), còn đồng hồ trên Super Island được dựng ở luồng riêng thay vì luồng vẽ giao diện. Kéo thanh cài đặt nhanh trong lúc quay sẽ không còn giật.
+- Mượt hơn trong app: danh sách bản ghi được đọc ở nền và chỉ dựng lại khi danh sách video thật sự thay đổi, nên chuyển tab là hiện ngay, không phải chờ truy vấn thư viện mỗi lần.
+- Sau khi cấp quyền quay, màn hình cũng chuyển sang "Đang quay" ngay thay vì chờ vài giây.
+- App mở nhanh hơn: Cài đặt và Bản ghi chỉ được dựng khi mở lần đầu, không dựng sẵn ngay lúc khởi động.
 
 **1.9.3**
 
