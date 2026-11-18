@@ -150,6 +150,8 @@ public class MainActivity extends Activity {
     /** What the rows on screen were built from, to skip needless rebuilds. */
     private String recordingsSignature = "";
     private boolean recordingsLoaded;
+    /** The last list read, so changing the mode can redraw without a read. */
+    private final List<Recording> recordingsCache = new ArrayList<>();
     private boolean recordingsQuerying;
     private boolean recordingsQueryAgain;
     private final java.util.LinkedHashSet<String> selectedRecordings =
@@ -820,9 +822,24 @@ public class MainActivity extends Activity {
 
     /** Fills the list, unless the same videos are already on screen. */
     private void renderRecordings(List<Recording> items) {
+        renderRecordings(items, false);
+    }
+
+    /**
+     * Fills the list. "force" draws the very same videos again, which the
+     * select mode needs: the rows show different things (selection circles)
+     * without the list itself having changed.
+     */
+    private void renderRecordings(List<Recording> items, boolean force) {
         if (recordingsList == null) return;
         String signature = signatureOf(items);
-        if (recordingsLoaded && signature.equals(recordingsSignature)) return;
+        // The cached list is handed in again to redraw it; copying it onto
+        // itself would empty it, so it is only replaced by another list.
+        if (items != recordingsCache) {
+            recordingsCache.clear();
+            recordingsCache.addAll(items);
+        }
+        if (!force && recordingsLoaded && signature.equals(recordingsSignature)) return;
         recordingsSignature = signature;
         recordingsLoaded = true;
 
@@ -1040,6 +1057,11 @@ public class MainActivity extends Activity {
     private void setSelectMode(boolean on) {
         recordingsSelectMode = on;
         selectedRecordings.clear();
+        updateSelectBar();
+        // The rows themselves change (selection circles appear or go), so the
+        // list is drawn again right away from the videos already read instead
+        // of waiting for the next read to notice something.
+        if (recordingsLoaded) renderRecordings(recordingsCache, true);
         loadRecordings();
     }
 
@@ -1072,16 +1094,30 @@ public class MainActivity extends Activity {
     private void updateSelectBar() {
         if (selectButton == null) return;
         int count = selectedRecordings.size();
-        selectButton.setText(getString(recordingsSelectMode
-                ? R.string.dialog_cancel : R.string.select_recordings));
+        setButtonText(selectButton, getString(recordingsSelectMode
+                ? R.string.dialog_cancel : R.string.select_recordings),
+                recordingsSelectMode ? R.drawable.ic_close : R.drawable.ic_check,
+                TEXT);
         deleteSelectedButton.setVisibility(
                 recordingsSelectMode && count > 0 ? View.VISIBLE : View.GONE);
         if (count > 0) {
-            deleteSelectedButton.setText(getString(R.string.delete_selected, count));
+            setButtonText(deleteSelectedButton,
+                    getString(R.string.delete_selected, count), R.drawable.ic_trash, RED);
         }
         if (recordingsSelectMode) {
             recordingsSummary.setText(getString(R.string.selected_count, count));
         }
+    }
+
+    /** A small icon in front of a text button, tinted like its text. */
+    private void setButtonText(TextView view, CharSequence text, int iconRes, int color) {
+        view.setText(text);
+        android.graphics.drawable.Drawable icon =
+                getResources().getDrawable(iconRes, getTheme()).mutate();
+        icon.setColorFilter(color, android.graphics.PorterDuff.Mode.SRC_IN);
+        icon.setBounds(0, 0, dp(14), dp(14));
+        view.setCompoundDrawables(icon, null, null, null);
+        view.setCompoundDrawablePadding(dp(6));
     }
 
     private void confirmDeleteSelected() {
@@ -1097,7 +1133,13 @@ public class MainActivity extends Activity {
                             getContentResolver().delete(uri, null, null);
                         } catch (Exception ignored) { }
                     }
-                    setSelectMode(false);
+                    selectedRecordings.clear();
+                    recordingsSelectMode = false;
+                    updateSelectBar();
+                    // The videos are gone, so the list has to be read again and
+                    // drawn from scratch rather than from the cached list.
+                    recordingsSignature = "";
+                    queryRecordings();
                 },
                 getString(R.string.dialog_cancel), null);
     }

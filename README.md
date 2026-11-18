@@ -33,7 +33,7 @@ DenRecorder records the whole screen (and the device audio, the microphone or no
 
 ### Install
 
-1. Download `DenRecorder-1.9.5.apk` from the [Releases](../../releases) page.
+1. Download `DenRecorder-1.9.6.apk` from the [Releases](../../releases) page.
 2. Open it on the phone and allow installing apps from that source if asked.
 3. Open DenRecorder, allow the permissions it asks for, and optionally let it add the Quick Settings tile.
 
@@ -81,6 +81,11 @@ res/                    strings (EN + VI), icons, launcher icons
 ```
 
 ### What's new
+
+**1.9.6**
+
+- Fix: the Select button on the recordings screen did nothing useful — no circles to tick and the label never changed — because the list was not drawn again when the mode changed. Selecting videos and deleting them in one go works again.
+- The buttons in that row now carry icons: a tick on **Select**, a cross on **Cancel** and a bin on **Delete (n)**.
 
 **1.9.5**
 
@@ -224,7 +229,7 @@ DenRecorder quay toàn bộ màn hình (kèm âm thanh thiết bị, micrô ho�
 
 ### Cài đặt
 
-1. Tải `DenRecorder-1.9.5.apk` ở mục [Releases](../../releases).
+1. Tải `DenRecorder-1.9.6.apk` ở mục [Releases](../../releases).
 2. Mở file trên điện thoại và cho phép cài đặt từ nguồn đó nếu được hỏi.
 3. Mở DenRecorder, cấp quyền khi được hỏi, có thể thêm nút vào Trung tâm điều khiển.
 
@@ -251,6 +256,11 @@ export ANDROID_HOME=$HOME/android-sdk
 `app.properties` chứa `versionCode`, `versionName`, `minSdk`.
 
 ### Có gì mới
+
+**1.9.6**
+
+- Sửa lỗi: nút **Chọn** ở màn Bản ghi bấm vào không có tác dụng — không hiện ô tròn để tích, chữ cũng không đổi — vì danh sách không được vẽ lại khi đổi chế độ. Chọn nhiều video rồi xóa một lần đã chạy lại bình thường.
+- Hàng nút đó giờ có icon: dấu tích ở **Chọn**, dấu X ở **Hủy** và thùng rác ở **Xóa (n)**.
 
 **1.9.5**
 
