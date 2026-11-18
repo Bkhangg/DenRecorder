@@ -399,14 +399,14 @@ public class DrawOverlayService extends Service {
         return button;
     }
 
-    /** Picks a tool and keeps it, so several shapes can be drawn in a row. */
+    /**
+     * Picks a tool and keeps it. The bar stays open, so a colour can be picked
+     * right after; tapping the screen beside the bar (or the chevron) hides it
+     * and the touch draws straight away.
+     */
     private void pickTool(int tool) {
         boolean same = layer.getTool() == tool;
         layer.setTool(same ? DrawLayer.TOOL_NONE : tool);
-        // Hide the bar first, so the layer's touchability is worked out from
-        // the new tool and not from the bar being open.
-        panelOpen = false; // the next touch draws on the screen
-        panel.setVisibility(View.GONE);
         updateLayerTouchable();
         updateToolHighlight();
     }

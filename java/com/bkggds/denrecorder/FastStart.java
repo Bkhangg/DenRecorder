@@ -64,7 +64,8 @@ public final class FastStart {
 
     /**
      * Called right after the capture dialog was asked for. On a background
-     * thread it dumps the dialog and taps its positive button once.
+     * thread it waits for the dialog to take the focus, then taps its positive
+     * button, at the place that button was last time.
      */
     public static void arm(Context context) {
         if (!enabled(context)) return;
@@ -74,34 +75,25 @@ public final class FastStart {
             @Override
             public void run() {
                 if (!ok) return;
-                // The button sits in the same place every time, so tap there
-                // straight away instead of dumping the dialog first: the
-                // dialog is gone before it can be seen. Looking for it is only
-                // the fallback, for the first time and if the tap missed.
+                long began = System.currentTimeMillis();
+                // The button sits in the same place every time. Waiting for the
+                // focus line and tapping there keeps the whole thing under a
+                // second; dumping the dialog is only the fallback, for the
+                // first time and if the remembered tap missed.
                 int[] known = savedPoint(app);
-                if (known != null) {
-                    // Wait only until the dialog's window really is up (a
-                    // dumpsys line, much quicker than dumping the UI), then
-                    // tap where the button was last time.
-                    for (int attempt = 0; attempt < 14; attempt++) {
-                        if (dialogFocused()) {
-                            // The dialog only takes touches once it has focus;
-                            // a moment later the tap cannot fall through to the
-                            // app underneath.
-                            sleep(120);
-                            ShizukuBridge.run("input", "tap",
-                                    String.valueOf(known[0]), String.valueOf(known[1]));
-                            for (int i = 0; i < 12; i++) {
-                                sleep(200);
-                                if (RecorderService.isRecording) return;
-                            }
-                            break;
+                if (known != null && tapWhenFocused(known[0], known[1])) {
+                    for (int i = 0; i < 12; i++) {
+                        if (RecorderService.isRecording) {
+                            Log.i(TAG, "recording after "
+                                    + (System.currentTimeMillis() - began) + " ms");
+                            return;
                         }
                         sleep(100);
                     }
+                    Log.w(TAG, "the remembered tap missed, looking for the button");
                 }
                 for (int attempt = 0; attempt < 6; attempt++) {
-                    sleep(known != null ? 150 : (attempt == 0 ? 300 : 450));
+                    sleep(known != null ? 120 : (attempt == 0 ? 300 : 450));
                     String xml = ShizukuBridge.run("sh", "-c",
                             "uiautomator dump " + DUMP + " >/dev/null 2>&1; cat " + DUMP + " 2>/dev/null");
                     int[] point = confirmPoint(xml);
@@ -120,16 +112,32 @@ public final class FastStart {
     }
 
     /**
-     * Whether the capture dialog has the focus, so a tap goes to it. A window
-     * that merely exists can still be drawing, and a tap then lands on the app
-     * behind it.
+     * Waits inside one shell process until the capture dialog is the resumed
+     * activity and holds the window focus, then taps (x, y). The focus line
+     * names only the package (com.android.systemui), so the activity line is
+     * what tells the capture dialog apart from other system windows. Once the
+     * tap landed the dialog is gone; if it is still there the tap went in too
+     * early, so it is repeated.
      */
-    private static boolean dialogFocused() {
+    private static boolean tapWhenFocused(int x, int y) {
+        String focus = "dumpsys window displays | grep -m1 mCurrentFocus"
+                + " | grep -q 'com.android.systemui'";
+        String dialog = "dumpsys activity activities"
+                + " | grep -m1 'topResumedActivity=' | grep -q mediaprojection";
+        String command = "n=0; t=0; while [ $n -lt 24 ]; do n=$((n+1)); "
+                + "if " + focus + " && " + dialog + "; then sleep 0.12; "
+                + "input tap " + x + " " + y + " >/dev/null 2>&1; "
+                + "t=$((t+1)); echo TAPPED; sleep 0.28; "
+                + "[ $t -ge 3 ] && break; "
+                + dialog + " || break; "
+                + "else sleep 0.04; fi; done; echo END";
         try {
-            String out = ShizukuBridge.run("sh", "-c",
-                    "dumpsys window | grep -m1 mCurrentFocus");
-            return out != null && out.toLowerCase(Locale.ROOT).contains("mediaprojection");
+            String out = ShizukuBridge.run("sh", "-c", command);
+            boolean tapped = out != null && out.contains("TAPPED");
+            if (!tapped) Log.i(TAG, "dialog never came up: " + out);
+            return tapped;
         } catch (Throwable e) {
+            Log.w(TAG, "focus check failed", e);
             return false;
         }
     }
