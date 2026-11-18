@@ -33,7 +33,7 @@ DenRecorder records the whole screen (and the device audio, the microphone or no
 
 ### Install
 
-1. Download `DenRecorder-1.9.1.apk` from the [Releases](../../releases) page.
+1. Download `DenRecorder-1.9.2.apk` from the [Releases](../../releases) page.
 2. Open it on the phone and allow installing apps from that source if asked.
 3. Open DenRecorder, allow the permissions it asks for, and optionally let it add the Quick Settings tile.
 
@@ -81,6 +81,10 @@ res/                    strings (EN + VI), icons, launcher icons
 ```
 
 ### What's new
+
+**1.9.2**
+
+- Fix: after a landscape recording the screen could stay turned that way, so the gallery opened sideways even with rotation lock on. The phone's own rotation setting is now restored even when closing the recording fails, when the app is closed while recording, and the next time the app is opened after an update or a force-stop. The rotation is only written back when it was really changed, and only once the write went through.
 
 **1.9.1**
 
@@ -203,7 +207,7 @@ DenRecorder quay toàn bộ màn hình (kèm âm thanh thiết bị, micrô ho�
 
 ### Cài đặt
 
-1. Tải `DenRecorder-1.9.1.apk` ở mục [Releases](../../releases).
+1. Tải `DenRecorder-1.9.2.apk` ở mục [Releases](../../releases).
 2. Mở file trên điện thoại và cho phép cài đặt từ nguồn đó nếu được hỏi.
 3. Mở DenRecorder, cấp quyền khi được hỏi, có thể thêm nút vào Trung tâm điều khiển.
 
@@ -230,6 +234,10 @@ export ANDROID_HOME=$HOME/android-sdk
 `app.properties` chứa `versionCode`, `versionName`, `minSdk`.
 
 ### Có gì mới
+
+**1.9.2**
+
+- Sửa lỗi: quay xong video ngang, màn hình có thể bị giữ ngang luôn nên vào thư viện là bị xoay ngang dù điện thoại đang khoá xoay. Giờ cài đặt xoay của máy được trả lại cả khi đóng bản ghi bị lỗi, khi app bị tắt giữa lúc quay, và tự sửa lại ngay lần mở app sau đó (sau khi cập nhật hay bị buộc dừng). Chỉ ghi lại khi thật sự có thay đổi, và chỉ coi là xong khi đã ghi được.
 
 **1.9.1**
 

@@ -359,10 +359,11 @@ public class RecorderService extends Service {
                     }
                 } catch (Exception e) {
                     Log.w(TAG, "Error while stopping", e);
+                } finally {
+                    // The recording is closed (or failed): give the user their
+                    // rotation back, whatever happened while closing it.
+                    RotationLock.release(RecorderService.this);
                 }
-
-                // The recording is closed: give the user their rotation back.
-                RotationLock.release(RecorderService.this);
 
                 Uri uri = active == null ? null : active.getOutputUri();
                 lastUri = uri;

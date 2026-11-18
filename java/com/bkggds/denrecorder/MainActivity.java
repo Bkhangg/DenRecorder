@@ -269,6 +269,10 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         prefs = getSharedPreferences(LocaleHelper.PREFS, MODE_PRIVATE);
+        // A recording that was killed (update, force-stop, low memory) can leave
+        // the screen rotation locked where it recorded; opening the app puts the
+        // user's own setting back.
+        RotationLock.restoreIfStale(this);
         applyTheme();
         styleSystemBars();
 
