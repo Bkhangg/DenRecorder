@@ -342,6 +342,9 @@ public class MainActivity extends Activity {
         handler.removeCallbacks(poll);
         handler.post(poll);
         updateBatteryValue();
+        // Keep the phone's own rotation at hand, so a game that turns the
+        // screen sideways can be undone when the recording ends.
+        RotationLock.rememberUserLock(this);
     }
 
     @Override
@@ -2113,7 +2116,7 @@ public class MainActivity extends Activity {
             orientation = values[which];
             prefs.edit().putString("orientation", orientation).apply();
             updateOrientationValue();
-            if (!"auto".equals(orientation) && !RotationLock.canWrite(this)) {
+            if (!"auto".equals(orientation) && !RotationLock.usable(this)) {
                 showCard(getString(R.string.orientation_permission_title),
                         getString(R.string.orientation_permission_body),
                         getString(R.string.orientation_permission_grant),
@@ -2530,7 +2533,7 @@ public class MainActivity extends Activity {
     private void beginStart() {
         // A locked orientation only works with the "modify system settings"
         // grant; offer it here instead of silently recording unlocked.
-        if (!"auto".equals(orientation) && !RotationLock.canWrite(this)) {
+        if (!"auto".equals(orientation) && !RotationLock.usable(this)) {
             showCard(getString(R.string.orientation_permission_title),
                     getString(R.string.orientation_permission_body),
                     getString(R.string.orientation_permission_grant),

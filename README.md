@@ -33,7 +33,7 @@ DenRecorder records the whole screen (and the device audio, the microphone or no
 
 ### Install
 
-1. Download `DenRecorder-1.9.2.apk` from the [Releases](../../releases) page.
+1. Download `DenRecorder-1.9.3.apk` from the [Releases](../../releases) page.
 2. Open it on the phone and allow installing apps from that source if asked.
 3. Open DenRecorder, allow the permissions it asks for, and optionally let it add the Quick Settings tile.
 
@@ -46,7 +46,7 @@ DenRecorder records the whole screen (and the device audio, the microphone or no
 | Notifications | the ongoing "recording" notification, Android 13+ |
 | Storage (Android 9 and older) | to write the MP4 into the folder you picked |
 | Ignore battery optimizations (optional) | keeps long recordings and the tile reliable |
-| Modify system settings (optional) | only if you pick a fixed recording rotation, so the screen can be locked while it records |
+| Modify system settings (optional) | only if you pick a fixed recording rotation, so the screen can be locked while it records; with Shizuku it is not needed |
 
 ### Build from source
 
@@ -81,6 +81,12 @@ res/                    strings (EN + VI), icons, launcher icons
 ```
 
 ### What's new
+
+**1.9.3**
+
+- Fix: with rotation set to **Auto**, recording a game that turns the screen sideways left the phone turned that way, so the gallery and other apps opened sideways even with the phone's rotation lock on. DenRecorder now keeps the rotation setting the phone had before the game and puts it back when the recording ends — with the "modify system settings" grant, or through Shizuku without it.
+- A fixed recording rotation (Portrait/Landscape) also works through Shizuku, so the extra grant is only a fallback now.
+- Recording a game in **Portrait** gives a portrait video with the game fitted inside, with black bars above and below.
 
 **1.9.2**
 
@@ -207,7 +213,7 @@ DenRecorder quay toàn bộ màn hình (kèm âm thanh thiết bị, micrô ho�
 
 ### Cài đặt
 
-1. Tải `DenRecorder-1.9.2.apk` ở mục [Releases](../../releases).
+1. Tải `DenRecorder-1.9.3.apk` ở mục [Releases](../../releases).
 2. Mở file trên điện thoại và cho phép cài đặt từ nguồn đó nếu được hỏi.
 3. Mở DenRecorder, cấp quyền khi được hỏi, có thể thêm nút vào Trung tâm điều khiển.
 
@@ -220,7 +226,7 @@ DenRecorder quay toàn bộ màn hình (kèm âm thanh thiết bị, micrô ho�
 | Thông báo | thông báo "đang quay", Android 13 trở lên |
 | Bộ nhớ (Android 9 trở xuống) | ghi file MP4 vào thư mục đã chọn |
 | Bỏ tối ưu pin (tùy chọn) | giúp quay dài và nút Trung tâm điều khiển ổn định |
-| Sửa cài đặt hệ thống (tùy chọn) | chỉ khi chọn khóa hướng ghi hình, để khóa màn hình trong lúc quay |
+| Sửa cài đặt hệ thống (tùy chọn) | chỉ khi chọn khóa hướng ghi hình, để khóa màn hình trong lúc quay; có Shizuku thì không cần |
 
 ### Tự build
 
@@ -234,6 +240,12 @@ export ANDROID_HOME=$HOME/android-sdk
 `app.properties` chứa `versionCode`, `versionName`, `minSdk`.
 
 ### Có gì mới
+
+**1.9.3**
+
+- Sửa lỗi: khi để hướng màn hình **Tự động**, quay game làm màn hình xoay ngang thì sau khi dừng, máy bị kẹt ngang nên thư viện và ứng dụng khác cũng mở ngang dù đã khóa xoay. DenRecorder giờ ghi nhớ hướng xoay của máy trước khi vào game và trả lại khi dừng quay — dùng quyền "Sửa cài đặt hệ thống" hoặc qua Shizuku mà không cần quyền đó.
+- Khóa hướng ghi hình (Dọc/Ngang) cũng chạy được qua Shizuku, quyền hệ thống chỉ còn là phương án dự phòng.
+- Quay game khi chọn **Dọc** sẽ ra video dọc, hình game nằm gọn bên trong với viền đen trên dưới.
 
 **1.9.2**
 
