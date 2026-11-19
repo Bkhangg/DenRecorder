@@ -20,6 +20,9 @@
     <string name="region_hint">Drag the frame over what to record, then tap Save</string>
     <string name="region_save">Save</string>
     <string name="region_saved">Area saved · %1$d × %2$d</string>
+    <string name="region_ball">Frame picker</string>
+    <string name="region_hide">Hide frame</string>
+    <string name="region_hint_ball">Tap the ball to hide the frame, switch app, then open it again</string>
     <string name="region_failed">The area could not be shown</string>
     <string name="region_need_overlay">Allow "display over other apps" so the frame can be placed over the app you want to record.</string>
     <string name="row_resolution">Resolution</string>

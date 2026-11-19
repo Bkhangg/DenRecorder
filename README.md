@@ -25,6 +25,7 @@ DenRecorder records the whole screen (and the device audio, the microphone or no
 - **Pause and resume** — one recording stays one file; the paused time is cut out of the video and the timer stops while paused.
 - **Built-in player** — a recording opens in DenRecorder's own player (play/pause, seek, double-tap to jump 10 s back or forward, and a rotate button that turns the video even when the phone's rotation is locked), so the video you tap is the video you get, whatever gallery app is installed.
 - **Choose where videos go** — `Movies/Screen Recorder` by default, five presets, the phone's own folder browser, or a typed path, including `Download` (videos land in the Downloads collection so MIUI keeps them there).
+- **Record a part of the screen** — Settings → Recording area → Choose an area… floats a frame over whatever app you are in. A small round button always stays on top: hide the frame with it (or with Hide frame) to switch apps, then tap it again to move the frame over the app you want to record and Save.
 - **Recording rotation** — automatic, portrait or landscape: the screen is locked to that rotation for the whole recording (your phone's own rotation setting comes back afterwards), so the video never turns halfway through.
 - **Long recordings** — the notification uses the system chronometer (no wake-ups every second), storage is checked every 15 s, recording stops safely before the card fills up.
 - **Bilingual** — English and Vietnamese, English on first launch.
@@ -33,7 +34,7 @@ DenRecorder records the whole screen (and the device audio, the microphone or no
 
 ### Install
 
-1. Download `DenRecorder-1.10.0.apk` from the [Releases](../../releases) page.
+1. Download `DenRecorder-1.10.1.apk` from the [Releases](../../releases) page.
 2. Open it on the phone and allow installing apps from that source if asked.
 3. Open DenRecorder, allow the permissions it asks for, and optionally let it add the Quick Settings tile.
 
@@ -81,6 +82,10 @@ res/                    strings (EN + VI), icons, launcher icons
 ```
 
 ### What's new
+
+**1.10.1**
+
+- The area frame now comes with a **floating ball**: tap "Hide frame" (or the ball) to fold the frame into a round button, so the whole screen is free to switch to the app or game you want, then tap the ball again to open the frame on top of it. The ball can be dragged and remembers where you left it.
 
 **1.10.0**
 
@@ -235,7 +240,7 @@ DenRecorder quay toàn bộ màn hình (kèm âm thanh thiết bị, micrô ho�
 
 ### Cài đặt
 
-1. Tải `DenRecorder-1.10.0.apk` ở mục [Releases](../../releases).
+1. Tải `DenRecorder-1.10.1.apk` ở mục [Releases](../../releases).
 2. Mở file trên điện thoại và cho phép cài đặt từ nguồn đó nếu được hỏi.
 3. Mở DenRecorder, cấp quyền khi được hỏi, có thể thêm nút vào Trung tâm điều khiển.
 
@@ -262,6 +267,10 @@ export ANDROID_HOME=$HOME/android-sdk
 `app.properties` chứa `versionCode`, `versionName`, `minSdk`.
 
 ### Có gì mới
+
+**1.10.1**
+
+- Khung chọn vùng giờ có **bóng nổi**: bấm "Ẩn khung" (hoặc chạm bóng) là khung thu về một nút tròn, cả màn hình dùng được để chuyển sang app hay game khác; chạm bóng lần nữa để mở lại khung ngay trên app đó. Bóng kéo được và nhớ chỗ đã đặt.
 
 **1.10.0**
 

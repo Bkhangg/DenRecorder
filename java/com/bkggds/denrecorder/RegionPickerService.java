@@ -20,6 +20,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -46,9 +47,17 @@ public class RegionPickerService extends Service {
 
     private static volatile boolean running;
 
+    private static final int BUBBLE_DP = 54;
+
     private WindowManager windowManager;
-    private View overlay;
+    private ImageView bubble;
+    private FrameLayout editor;
     private RegionView regionView;
+    private WindowManager.LayoutParams bubbleParams;
+    private WindowManager.LayoutParams editorParams;
+    private boolean editorOpen;
+    private int bubbleX;
+    private int bubbleY;
     private int screenWidth;
     private int screenHeight;
 
@@ -81,7 +90,7 @@ public class RegionPickerService extends Service {
             stopSelf();
             return START_NOT_STICKY;
         }
-        if (overlay == null) show();
+        if (bubble == null) show();
         return START_NOT_STICKY;
     }
 
@@ -93,11 +102,18 @@ public class RegionPickerService extends Service {
     @Override
     public void onDestroy() {
         running = false;
-        if (overlay != null && windowManager != null) {
-            try { windowManager.removeView(overlay); } catch (Exception ignored) { }
+        if (windowManager != null) {
+            try {
+                if (editorOpen && editor != null) windowManager.removeViewImmediate(editor);
+            } catch (Exception ignored) { }
+            try {
+                if (bubble != null) windowManager.removeViewImmediate(bubble);
+            } catch (Exception ignored) { }
         }
-        overlay = null;
+        bubble = null;
+        editor = null;
         regionView = null;
+        editorOpen = false;
         super.onDestroy();
     }
 
@@ -110,6 +126,59 @@ public class RegionPickerService extends Service {
         screenWidth = Math.max(1, dm.widthPixels);
         screenHeight = Math.max(1, dm.heightPixels);
 
+        // Bóng nổi: chạm để mở/ẩn khung, kéo để dời. Nhờ nó mà khi khung đang
+        // ẩn, cả màn hình vẫn dùng được để chuyển sang app cần quay.
+        int size = dp(BUBBLE_DP);
+        bubble = new ImageView(this);
+        bubble.setImageResource(R.drawable.ic_rect);
+        bubble.setColorFilter(TEXT);
+        bubble.setContentDescription(getString(R.string.region_ball));
+        bubble.setPadding(size / 4, size / 4, size / 4, size / 4);
+        bubble.setBackground(circle(PANEL, size / 2));
+
+        android.content.SharedPreferences prefs =
+                getSharedPreferences("settings", MODE_PRIVATE);
+        bubbleX = prefs.getInt("regionBallX", screenWidth - dp(18 + BUBBLE_DP));
+        bubbleY = prefs.getInt("regionBallY", Math.round(screenHeight * 0.62f));
+        bubbleX = Math.max(0, Math.min(bubbleX, screenWidth - size));
+        bubbleY = Math.max(0, Math.min(bubbleY, screenHeight - size));
+        bubbleParams = overlayParams(size, size);
+        bubbleParams.x = bubbleX;
+        bubbleParams.y = bubbleY;
+
+        editorParams = overlayParams(
+                WindowManager.LayoutParams.MATCH_PARENT,
+                WindowManager.LayoutParams.MATCH_PARENT);
+
+        try {
+            windowManager.addView(bubble, bubbleParams);
+            running = true;
+        } catch (Exception e) {
+            running = false;
+            Toast.makeText(this, R.string.region_failed, Toast.LENGTH_SHORT).show();
+            stopSelf();
+            return;
+        }
+        bubble.setOnTouchListener(new DragListener());
+
+        // Mở khung ngay để thấy việc cần làm; bóng vẫn nằm trên để ẩn đi khi
+        // muốn chuyển app.
+        openEditor();
+
+        bubble.setScaleX(0.5f);
+        bubble.setScaleY(0.5f);
+        bubble.setAlpha(0f);
+        bubble.animate()
+                .scaleX(1f)
+                .scaleY(1f)
+                .alpha(1f)
+                .setDuration(220)
+                .setInterpolator(new android.view.animation.OvershootInterpolator(1.5f))
+                .start();
+    }
+
+    /** Khung chọn vùng: lớp phủ tối, viền đỏ và thanh Huỷ / Ẩn / Lưu. */
+    private FrameLayout buildEditor() {
         FrameLayout root = new FrameLayout(this);
         regionView = new RegionView(this);
         root.addView(regionView, new FrameLayout.LayoutParams(
@@ -122,11 +191,17 @@ public class RegionPickerService extends Service {
 
         TextView cancel = chip(getString(R.string.dialog_cancel), TEXT);
         cancel.setOnClickListener(v -> stopSelf());
-        bar.addView(cancel, new LinearLayout.LayoutParams(dp(96), dp(44)));
+        bar.addView(cancel, new LinearLayout.LayoutParams(dp(84), dp(44)));
+
+        TextView hide = chip(getString(R.string.region_hide), TEXT);
+        hide.setOnClickListener(v -> closeEditor());
+        LinearLayout.LayoutParams hideLp = new LinearLayout.LayoutParams(dp(104), dp(44));
+        hideLp.leftMargin = dp(6);
+        bar.addView(hide, hideLp);
 
         TextView save = chip(getString(R.string.region_save), BORDER);
         save.setOnClickListener(v -> save());
-        LinearLayout.LayoutParams saveLp = new LinearLayout.LayoutParams(dp(110), dp(44));
+        LinearLayout.LayoutParams saveLp = new LinearLayout.LayoutParams(dp(96), dp(44));
         saveLp.leftMargin = dp(6);
         bar.addView(save, saveLp);
 
@@ -135,27 +210,120 @@ public class RegionPickerService extends Service {
         barLp.gravity = Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL;
         barLp.bottomMargin = dp(40);
         root.addView(bar, barLp);
+        return root;
+    }
 
+    private void openEditor() {
+        if (editorOpen || windowManager == null || bubble == null) return;
+        if (editor == null) editor = buildEditor();
+        try {
+            windowManager.addView(editor, editorParams);
+            // Bóng được thêm lại sau cùng để luôn nằm trên khung và chạm được.
+            windowManager.removeViewImmediate(bubble);
+            windowManager.addView(bubble, bubbleParams);
+            editorOpen = true;
+            updateBubble();
+        } catch (Exception e) {
+            editorOpen = false;
+            try {
+                if (editor != null) windowManager.removeViewImmediate(editor);
+            } catch (Exception ignored) { }
+            Toast.makeText(this, R.string.region_failed, Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void closeEditor() {
+        if (!editorOpen || editor == null || windowManager == null) return;
+        try {
+            windowManager.removeViewImmediate(editor);
+        } catch (Exception ignored) { }
+        editorOpen = false;
+        updateBubble();
+    }
+
+    private void toggleEditor() {
+        if (editorOpen) closeEditor();
+        else openEditor();
+    }
+
+    /** Đổi hình trên bóng: đang mở khung thì là mũi tên thu nhỏ. */
+    private void updateBubble() {
+        if (bubble == null) return;
+        bubble.setImageResource(editorOpen ? R.drawable.ic_collapse : R.drawable.ic_rect);
+        bubble.setContentDescription(getString(
+                editorOpen ? R.string.region_hide : R.string.region_ball));
+    }
+
+    private GradientDrawable circle(int color, int radius) {
+        GradientDrawable shape = new GradientDrawable();
+        shape.setShape(GradientDrawable.OVAL);
+        shape.setColor(color);
+        shape.setStroke(dp(1), Color.parseColor("#3F3F46"));
+        shape.setSize(radius * 2, radius * 2);
+        return shape;
+    }
+
+    private WindowManager.LayoutParams overlayParams(int width, int height) {
+        int type = Build.VERSION.SDK_INT >= 26
+                ? WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+                : WindowManager.LayoutParams.TYPE_PHONE;
         WindowManager.LayoutParams params = new WindowManager.LayoutParams(
-                WindowManager.LayoutParams.MATCH_PARENT,
-                WindowManager.LayoutParams.MATCH_PARENT,
-                Build.VERSION.SDK_INT >= 26
-                        ? WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-                        : WindowManager.LayoutParams.TYPE_PHONE,
-                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
+                width, height, type,
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+                        | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
                         | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
-                        | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
+                        | WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR,
                 PixelFormat.TRANSLUCENT);
         params.gravity = Gravity.TOP | Gravity.START;
+        return params;
+    }
 
-        try {
-            windowManager.addView(root, params);
-            overlay = root;
-            running = true;
-        } catch (Exception e) {
-            running = false;
-            Toast.makeText(this, R.string.region_failed, Toast.LENGTH_SHORT).show();
-            stopSelf();
+    /** Kéo bóng đi chỗ khác; chạm (không kéo) thì mở hoặc ẩn khung. */
+    private final class DragListener implements View.OnTouchListener {
+        private float downRawX;
+        private float downRawY;
+        private int startX;
+        private int startY;
+        private boolean moved;
+
+        @Override
+        public boolean onTouch(View view, MotionEvent event) {
+            switch (event.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN:
+                    downRawX = event.getRawX();
+                    downRawY = event.getRawY();
+                    startX = bubbleParams.x;
+                    startY = bubbleParams.y;
+                    moved = false;
+                    return true;
+                case MotionEvent.ACTION_MOVE:
+                    int dx = Math.round(event.getRawX() - downRawX);
+                    int dy = Math.round(event.getRawY() - downRawY);
+                    if (Math.abs(dx) > dp(6) || Math.abs(dy) > dp(6)) moved = true;
+                    if (!moved) return true;
+                    bubbleX = Math.max(0, Math.min(startX + dx,
+                            screenWidth - bubbleParams.width));
+                    bubbleY = Math.max(0, Math.min(startY + dy,
+                            screenHeight - bubbleParams.height));
+                    bubbleParams.x = bubbleX;
+                    bubbleParams.y = bubbleY;
+                    try {
+                        windowManager.updateViewLayout(bubble, bubbleParams);
+                    } catch (Exception ignored) { }
+                    return true;
+                case MotionEvent.ACTION_UP:
+                    if (!moved) {
+                        toggleEditor();
+                    } else {
+                        getSharedPreferences("settings", MODE_PRIVATE).edit()
+                                .putInt("regionBallX", bubbleParams.x)
+                                .putInt("regionBallY", bubbleParams.y)
+                                .apply();
+                    }
+                    return true;
+                default:
+                    return false;
+            }
         }
     }
 
@@ -311,6 +479,8 @@ public class RegionPickerService extends Service {
 
             canvas.drawText(getString(R.string.region_hint),
                     getWidth() / 2f, dp(60) + dp(24), hint);
+            canvas.drawText(getString(R.string.region_hint_ball),
+                    getWidth() / 2f, dp(60) + dp(48), hint);
         }
 
         @Override
