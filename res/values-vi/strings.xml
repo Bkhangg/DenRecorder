@@ -12,6 +12,16 @@
     <string name="section_general">CHUNG</string>
     <string name="section_about">THÔNG TIN</string>
 
+    <string name="row_region">Vùng quay</string>
+    <string name="value_region_full">Toàn màn hình</string>
+    <string name="value_region_custom">Vùng tự chọn · %1$d × %2$d</string>
+    <string name="title_region">Vùng quay</string>
+    <string name="region_pick">Chọn vùng quay…</string>
+    <string name="region_hint">Kéo khung lên phần màn hình muốn quay, rồi bấm Lưu</string>
+    <string name="region_save">Lưu</string>
+    <string name="region_saved">Đã lưu vùng quay · %1$d × %2$d</string>
+    <string name="region_failed">Không mở được khung chọn vùng</string>
+    <string name="region_need_overlay">Cần cho phép "hiển thị trên ứng dụng khác" để đặt khung lên ứng dụng bạn muốn quay.</string>
     <string name="row_resolution">Độ phân giải</string>
     <string name="row_quality">Chất lượng video</string>
     <string name="row_fps">Tốc độ khung hình</string>

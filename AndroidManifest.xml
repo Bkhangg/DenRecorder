@@ -65,6 +65,10 @@
             android:exported="false" />
 
         <service
+            android:name=".RegionPickerService"
+            android:exported="false" />
+
+        <service
             android:name=".RecorderService"
             android:exported="false"
             android:foregroundServiceType="mediaProjection|microphone" />

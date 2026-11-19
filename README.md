@@ -33,7 +33,7 @@ DenRecorder records the whole screen (and the device audio, the microphone or no
 
 ### Install
 
-1. Download `DenRecorder-1.9.6.apk` from the [Releases](../../releases) page.
+1. Download `DenRecorder-1.10.0.apk` from the [Releases](../../releases) page.
 2. Open it on the phone and allow installing apps from that source if asked.
 3. Open DenRecorder, allow the permissions it asks for, and optionally let it add the Quick Settings tile.
 
@@ -81,6 +81,12 @@ res/                    strings (EN + VI), icons, launcher icons
 ```
 
 ### What's new
+
+**1.10.0**
+
+- New: **record just a part of the screen**. Settings → Recorded area → Choose an area opens a frame that floats over everything; go to the app or game you want to record, drag the frame (or a corner) over the part to keep, and tap Save. The video then holds only that part, at its own size, with the frame rate, bitrate and codec you picked.
+- The area is stored as parts of the screen rather than pixels, so it still fits when the phone is sideways. The resolution setting keeps choosing the size of whole-screen recordings; an area is recorded at its own size.
+- Choosing an area needs the "display over other apps" permission; the app asks for it the first time.
 
 **1.9.6**
 
@@ -229,7 +235,7 @@ DenRecorder quay toàn bộ màn hình (kèm âm thanh thiết bị, micrô ho�
 
 ### Cài đặt
 
-1. Tải `DenRecorder-1.9.6.apk` ở mục [Releases](../../releases).
+1. Tải `DenRecorder-1.10.0.apk` ở mục [Releases](../../releases).
 2. Mở file trên điện thoại và cho phép cài đặt từ nguồn đó nếu được hỏi.
 3. Mở DenRecorder, cấp quyền khi được hỏi, có thể thêm nút vào Trung tâm điều khiển.
 
@@ -256,6 +262,12 @@ export ANDROID_HOME=$HOME/android-sdk
 `app.properties` chứa `versionCode`, `versionName`, `minSdk`.
 
 ### Có gì mới
+
+**1.10.0**
+
+- Mới: **quay một vùng màn hình**. Cài đặt → Vùng quay → Chọn vùng quay… sẽ mở một khung nổi trên mọi ứng dụng; bạn mở app hay game muốn quay, kéo khung (hoặc kéo góc) lên phần cần giữ rồi bấm Lưu. Video sau đó chỉ chứa phần đó, đúng kích thước của nó, với tốc độ khung hình, bitrate và bộ mã hóa bạn đã chọn.
+- Vùng được lưu theo tỉ lệ màn hình chứ không theo điểm ảnh, nên khi quay ngang vẫn đúng chỗ. Mục Độ phân giải vẫn dùng cho quay toàn màn hình; quay vùng thì lấy đúng kích thước vùng.
+- Chọn vùng cần quyền "hiển thị trên ứng dụng khác"; lần đầu app sẽ xin quyền này.
 
 **1.9.6**
 

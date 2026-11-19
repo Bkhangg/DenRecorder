@@ -324,13 +324,26 @@ public class RecorderService extends Service {
             // In performance mode the video never grows past the screen: an
             // upscaled 4K frame costs the GPU the game needs.
             boolean capToScreen = perfMode;
+            // A chosen area is recorded instead of the whole screen.
+            float[] region = null;
+            if (prefs.getBoolean("regionOn", false)) {
+                float left = prefs.getFloat("regionX", 0f);
+                float top = prefs.getFloat("regionY", 0f);
+                float width = prefs.getFloat("regionW", 1f);
+                float height = prefs.getFloat("regionH", 1f);
+                if (width > 0.02f && height > 0.02f) {
+                    region = new float[]{left, top, width, height};
+                }
+            }
             recorder = new ScreenRecorder(getApplicationContext(), projection, audio,
                     resWidth, fps, bitrate,
                     "hevc".equals(codec) ? ScreenRecorder.CODEC_HEVC : ScreenRecorder.CODEC_AVC,
-                    rotationLocked ? orientation : "auto", capToScreen);
+                    rotationLocked ? orientation : "auto", capToScreen, region);
             recorder.start();
             updateNotification();
             refreshTile();
+            // The frame that picks the recorded area has done its job.
+            if (RegionPickerService.isRunning()) RegionPickerService.stop(this);
             if (prefs.getBoolean("drawOverlay", true)) {
                 DrawOverlayService.start(this);
             }

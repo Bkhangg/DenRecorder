@@ -12,6 +12,16 @@
     <string name="section_general">GENERAL</string>
     <string name="section_about">ABOUT</string>
 
+    <string name="row_region">Recorded area</string>
+    <string name="value_region_full">Whole screen</string>
+    <string name="value_region_custom">Custom · %1$d × %2$d</string>
+    <string name="title_region">Recorded area</string>
+    <string name="region_pick">Choose an area…</string>
+    <string name="region_hint">Drag the frame over what to record, then tap Save</string>
+    <string name="region_save">Save</string>
+    <string name="region_saved">Area saved · %1$d × %2$d</string>
+    <string name="region_failed">The area could not be shown</string>
+    <string name="region_need_overlay">Allow "display over other apps" so the frame can be placed over the app you want to record.</string>
     <string name="row_resolution">Resolution</string>
     <string name="row_quality">Video quality</string>
     <string name="row_fps">Frame rate</string>

@@ -71,6 +71,7 @@ public class MainActivity extends Activity {
     private static final int REQ_FOLDER = 1005;
     private static final int REQ_SHIZUKU = 1006;
     private static final int REQ_SHIZUKU_FAST = 1011;
+    private static final int REQ_REGION_OVERLAY = 1012;
 
     /** Every file DenRecorder writes starts with this name. */
     private static final String SCREEN_RECORDING_PREFIX = "DenRecorder_";
@@ -119,6 +120,9 @@ public class MainActivity extends Activity {
     private TextView mainLabel;
 
     private TextView resolutionValueView;
+    private TextView regionValueView;
+    /** Set when the area frame was asked for but the overlay permission is missing. */
+    private boolean pendingRegionPick;
     private TextView bitrateValueView;
     private TextView fpsValueView;
     private TextView codecValueView;
@@ -355,6 +359,7 @@ public class MainActivity extends Activity {
         // Keep the phone's own rotation at hand, so a game that turns the
         // screen sideways can be undone when the recording ends.
         RotationLock.rememberUserLock(this);
+        updateRegionValue();
         // A recording that went on while another app was in front: bring the
         // pulsing dot back now that this screen is the one in front again.
         if (uiRecording && RecorderService.isRecording) startDotAnimation();
@@ -603,6 +608,9 @@ public class MainActivity extends Activity {
         list.addView(qualityCard, lp(MATCH, WRAP, 0, 8, 0, 0));
         resolutionValueView = addRow(qualityCard, R.drawable.ic_screen, R.string.row_resolution,
                 "", true, this::chooseResolution);
+        divider(qualityCard);
+        regionValueView = addRow(qualityCard, R.drawable.ic_rect, R.string.row_region,
+                "", true, this::chooseRegion);
         divider(qualityCard);
         bitrateValueView = addRow(qualityCard, R.drawable.ic_video, R.string.row_quality,
                 "", true, this::chooseBitrate);
@@ -1691,12 +1699,17 @@ public class MainActivity extends Activity {
     }
 
     private String summaryLine() {
-        return dims(resWidth) + " · " + effectiveFps() + " fps · "
+        // The chosen area is what the video holds, whatever the resolution is.
+        String size = prefs.getBoolean("regionOn", false)
+                ? getString(R.string.value_region_custom, regionSize()[0], regionSize()[1])
+                : dims(resWidth);
+        return size + " · " + effectiveFps() + " fps · "
                 + (hevc() ? "H.265" : "H.264") + " · " + bitrateMbps + " Mbps";
     }
 
     private void updateQualityValues() {
         setValue(resolutionValueView, resolutionLabel());
+        updateRegionValue();
         setValue(bitrateValueView, getString(R.string.value_mbps, bitrateMbps));
         setValue(fpsValueView, getString(R.string.value_fps, videoFps));
         setValue(codecValueView, codecLabel());
@@ -2113,6 +2126,55 @@ public class MainActivity extends Activity {
         status(R.string.status_tile_failed, MUTED);
     }
 
+    /** A whole-screen recording or just a chosen part of the screen. */
+    private void chooseRegion() {
+        if (blockWhileRecording()) return;
+        boolean on = prefs.getBoolean("regionOn", false);
+        String[] items = {
+                getString(R.string.value_region_full),
+                getString(R.string.region_pick)
+        };
+        showChoices(getString(R.string.title_region), items, on ? 1 : 0, which -> {
+            if (which == 0) {
+                prefs.edit().putBoolean("regionOn", false).apply();
+                updateRegionValue();
+                return;
+            }
+            if (!RegionPickerService.canDraw(this)) {
+                pendingRegionPick = true;
+                status(R.string.region_need_overlay, MUTED);
+                requestOverlayPermission(REQ_REGION_OVERLAY);
+                return;
+            }
+            RegionPickerService.start(this);
+            status(R.string.region_hint, MUTED);
+        });
+    }
+
+    /**
+     * The chosen area in pixels. It is stored as parts of the screen, so the
+     * same frame is meant after a rotation.
+     */
+    private int[] regionSize() {
+        int[] size = nativeSize();
+        float width = prefs.getFloat("regionW", 1f);
+        float height = prefs.getFloat("regionH", 1f);
+        return new int[]{
+                Math.max(2, Math.round(size[0] * width) & ~1),
+                Math.max(2, Math.round(size[1] * height) & ~1)
+        };
+    }
+
+    private void updateRegionValue() {
+        if (regionValueView == null) return;
+        if (!prefs.getBoolean("regionOn", false)) {
+            setValue(regionValueView, getString(R.string.value_region_full));
+            return;
+        }
+        int[] size = regionSize();
+        setValue(regionValueView, getString(R.string.value_region_custom, size[0], size[1]));
+    }
+
     private void chooseResolution() {
         if (blockWhileRecording()) return;
         final int[] widths = {0, 2160, 1440, 1080, 720, 480};
@@ -2338,10 +2400,14 @@ public class MainActivity extends Activity {
     }
 
     private void requestOverlayPermission() {
+        requestOverlayPermission(REQ_OVERLAY);
+    }
+
+    private void requestOverlayPermission(int requestCode) {
         try {
             startActivityForResult(new Intent(
                     android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                    Uri.parse("package:" + getPackageName())), REQ_OVERLAY);
+                    Uri.parse("package:" + getPackageName())), requestCode);
         } catch (Exception e) {
             status(R.string.draw_permission_unavailable, RED);
         }
@@ -2777,6 +2843,18 @@ public class MainActivity extends Activity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQ_REGION_OVERLAY) {
+            if (pendingRegionPick) {
+                pendingRegionPick = false;
+                if (RegionPickerService.canDraw(this)) {
+                    RegionPickerService.start(this);
+                    status(R.string.region_hint, MUTED);
+                } else {
+                    status(R.string.region_need_overlay, RED);
+                }
+            }
+            return;
+        }
         if (requestCode == REQ_OVERLAY) {
             updateDrawValue();
             status(DrawOverlayService.canDraw(this)

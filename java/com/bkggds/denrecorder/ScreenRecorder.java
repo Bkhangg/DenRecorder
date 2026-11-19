@@ -3,6 +3,7 @@ package com.bkggds.denrecorder;
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
+import android.graphics.Rect;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
 import android.media.AudioAttributes;
@@ -72,12 +73,17 @@ public class ScreenRecorder {
     private final String orientation;   // "auto", "portrait" or "landscape"
     /** Never record bigger than the screen: an upscale only costs the GPU. */
     private final boolean capToScreen;
+    /** {left, top, width, height} as parts of the screen, or null for it all. */
+    private final float[] region;
     private String codecLabel = "AVC";
 
     private MediaCodec videoCodec;
     private MediaCodec audioCodec;
     private Surface inputSurface;
     private VirtualDisplay virtualDisplay;
+    /** Set when only a part of the screen is recorded. */
+    private CropMirror cropMirror;
+    private Rect cropRegion;
     private AudioRecord audioRecord;
     private MediaMuxer muxer;
     private ParcelFileDescriptor outputFd;
@@ -149,6 +155,20 @@ public class ScreenRecorder {
     public ScreenRecorder(Context context, MediaProjection projection, int audioSource,
                           int requestedWidth, int requestedFps, int requestedBitrate,
                           String mime, String orientation, boolean capToScreen) {
+        this(context, projection, audioSource, requestedWidth, requestedFps, requestedBitrate,
+                mime, orientation, capToScreen, null);
+    }
+
+    /**
+     * @param region {left, top, width, height} as parts (0…1) of the screen to
+     *               record, or null to record all of it. The video then holds
+     *               only that part, at its own size.
+     */
+    public ScreenRecorder(Context context, MediaProjection projection, int audioSource,
+                          int requestedWidth, int requestedFps, int requestedBitrate,
+                          String mime, String orientation, boolean capToScreen,
+                          float[] region) {
+        this.region = region;
         this.capToScreen = capToScreen;
         this.orientation = orientation == null ? "auto" : orientation;
         this.context = context;
@@ -166,6 +186,7 @@ public class ScreenRecorder {
         if (paused || stopping || !started) return;
         pauseStartedUs = SystemClock.elapsedRealtime() * 1000L;
         paused = true;
+        if (cropMirror != null) cropMirror.setPaused(true);
         Log.i(TAG, "Paused at " + pauseStartedUs / 1000 + " ms");
     }
 
@@ -175,6 +196,7 @@ public class ScreenRecorder {
         long now = SystemClock.elapsedRealtime() * 1000L;
         if (now > pauseStartedUs) pausedUs.addAndGet(now - pauseStartedUs);
         paused = false;
+        if (cropMirror != null) cropMirror.setPaused(false);
         Log.i(TAG, "Resumed, paused so far " + pausedUs.get() / 1000 + " ms");
         requestSyncFrame();
     }
@@ -232,8 +254,14 @@ public class ScreenRecorder {
             }
         }
 
+        cropRegion = resolveRegion(nativeWidth, nativeHeight);
+        // A region is recorded at its own size, so the resolution setting only
+        // chooses the size of a full-screen recording.
+        int captureWidth = cropRegion != null ? cropRegion.width() : nativeWidth;
+        int captureHeight = cropRegion != null ? cropRegion.height() : nativeHeight;
+
         createOutput();
-        prepareVideo(nativeWidth, nativeHeight);
+        prepareVideo(captureWidth, captureHeight);
         prepareAudio();
 
         startNs = System.nanoTime();
@@ -252,11 +280,20 @@ public class ScreenRecorder {
             }
         }
 
-        virtualDisplay = projection.createVirtualDisplay(
-                "ScreenRecorder",
-                width, height, dpi,
-                DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
-                inputSurface, null, null);
+        if (cropRegion != null) {
+            // The whole screen is mirrored into GL and the chosen part of it is
+            // drawn onto the encoder's surface.
+            cropMirror = new CropMirror(projection, cropRegion,
+                    nativeWidth, nativeHeight, dpi,
+                    inputSurface, width, height, fps);
+            cropMirror.start();
+        } else {
+            virtualDisplay = projection.createVirtualDisplay(
+                    "ScreenRecorder",
+                    width, height, dpi,
+                    DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
+                    inputSurface, null, null);
+        }
 
         started = true;
         videoThread = new Thread(this::runVideo, "rec-video");
@@ -266,6 +303,27 @@ public class ScreenRecorder {
             audioThread.start();
         }
         Log.i(TAG, "Recording started: " + describeSettings());
+    }
+
+    /**
+     * The part of the screen to record, in screen pixels, or null for all of it.
+     * The rectangle is rounded to even numbers and kept inside the screen, and
+     * never smaller than a few dozen pixels, which no encoder would take.
+     */
+    private Rect resolveRegion(int screenWidth, int screenHeight) {
+        if (region == null || region.length < 4) return null;
+        int left = Math.round(region[0] * screenWidth);
+        int top = Math.round(region[1] * screenHeight);
+        int right = left + Math.round(region[2] * screenWidth);
+        int bottom = top + Math.round(region[3] * screenHeight);
+        left = Math.max(0, Math.min(screenWidth - 2, left)) & ~1;
+        top = Math.max(0, Math.min(screenHeight - 2, top)) & ~1;
+        right = Math.min(screenWidth, right) & ~1;
+        bottom = Math.min(screenHeight, bottom) & ~1;
+        if (right - left < 64) right = Math.min(screenWidth, left + 64) & ~1;
+        if (bottom - top < 64) bottom = Math.min(screenHeight, top + 64) & ~1;
+        if (right - left < 2 || bottom - top < 2) return null;
+        return new Rect(left, top, right, bottom);
     }
 
     private void createOutput() throws Exception {
@@ -421,8 +479,9 @@ public class ScreenRecorder {
         // to the encoder's alignment, the native screen, then whatever the encoder
         // claims to support.
         List<int[]> candidates = new ArrayList<>();
-        int[] target = requestedWidth > 0
-                ? scaledSize(screenWidth, screenHeight, requestedWidth)
+        int presetWidth = cropRegion != null ? 0 : requestedWidth;
+        int[] target = presetWidth > 0
+                ? scaledSize(screenWidth, screenHeight, presetWidth)
                 : new int[]{screenWidth & ~1, screenHeight & ~1};
         if (capToScreen && (target[0] > screenWidth || target[1] > screenHeight)) {
             // Same picture, less work: never encode more pixels than the screen
@@ -927,6 +986,12 @@ public class ScreenRecorder {
         stopping = true;
         Log.i(TAG, "Stopping recording");
 
+        if (cropMirror != null) {
+            // Its own display and GL surface have to be gone before the encoder
+            // is asked for the end of the stream.
+            cropMirror.stop();
+            cropMirror = null;
+        }
         try { if (virtualDisplay != null) virtualDisplay.release(); } catch (Exception ignored) { }
         virtualDisplay = null;
         try { if (videoCodec != null) videoCodec.signalEndOfInputStream(); } catch (Exception ignored) { }
