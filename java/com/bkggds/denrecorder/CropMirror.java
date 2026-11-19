@@ -93,6 +93,7 @@ final class CropMirror {
     private volatile boolean running;
     private volatile boolean paused;
     private long lastDrawNs;
+    private boolean loggedMatrix;
 
     CropMirror(MediaProjection projection, Rect crop, int screenWidth, int screenHeight,
                int dpi, Surface encoderSurface, int outWidth, int outHeight, int fps) {
@@ -235,13 +236,14 @@ final class CropMirror {
     private void buildQuad() {
         float w = Math.max(1, screenWidth);
         float h = Math.max(1, screenHeight);
-        // The mirrored screen reaches the texture bottom row first, so the
-        // rectangle reads from its top: with 1 - v the video came out upside
-        // down (and level, since only the rows are turned over).
+        // The producer hands the screen over flipped vertically (sy = -1), so
+        // texture row 0 is the screen's top row. The quad's bottom edge is GL
+        // v = 0, which therefore reads the crop's last row: measure both edges
+        // from the bottom of the screen, or the video starts too far down.
         float u0 = crop.left / w;
         float u1 = crop.right / w;
-        float v0 = crop.top / h;
-        float v1 = crop.bottom / h;
+        float v0 = 1f - crop.bottom / h;
+        float v1 = 1f - crop.top / h;
 
         float[] corners = {-1f, -1f, 1f, -1f, -1f, 1f, 1f, 1f};
         float[] tex = {u0, v0, u1, v0, u0, v1, u1, v1};
@@ -289,6 +291,13 @@ final class CropMirror {
 
         try {
             current.getTransformMatrix(texMatrix);
+            if (!loggedMatrix) {
+                loggedMatrix = true;
+                Log.i(TAG, "texMatrix sx=" + texMatrix[0] + " sy=" + texMatrix[5]
+                        + " tx=" + texMatrix[12] + " ty=" + texMatrix[13]
+                        + " crop=" + crop.left + "," + crop.top + "," + crop.right + ","
+                        + crop.bottom + " screen=" + screenWidth + "x" + screenHeight);
+            }
 
             GLES20.glViewport(0, 0, outWidth, outHeight);
             GLES20.glUseProgram(program);

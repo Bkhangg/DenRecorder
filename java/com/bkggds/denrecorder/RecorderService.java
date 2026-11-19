@@ -342,8 +342,12 @@ public class RecorderService extends Service {
             recorder.start();
             updateNotification();
             refreshTile();
-            // The frame that picks the recorded area has done its job.
-            if (RegionPickerService.isRunning()) RegionPickerService.stop(this);
+            // The frame that picks the recorded area did its job: its ball
+            // becomes the stop button for this recording.
+            if (RegionPickerService.isRunning()) {
+                if (region != null) RegionPickerService.recordingStarted(this);
+                else RegionPickerService.stop(this);
+            }
             if (prefs.getBoolean("drawOverlay", true)) {
                 DrawOverlayService.start(this);
             }
@@ -414,6 +418,8 @@ public class RecorderService extends Service {
                     public void run() {
                         finishing = false;
                         refreshTile();
+                        // The recording is over: the ball is a record button again.
+                        RegionPickerService.recordingStopped(RecorderService.this);
                         if (savedError != null) {
                             toast(savedError);
                             notifySaved(null, savedError);
@@ -472,6 +478,8 @@ public class RecorderService extends Service {
         }
         isRecording = false;
         isPaused = false;
+        // A killed service must not leave a "stop" ball behind on the screen.
+        RegionPickerService.recordingStopped(this);
         DrawOverlayService.stop(this);
         // Safety net: never leave the screen locked after a killed service.
         RotationLock.release(this);

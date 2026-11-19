@@ -25,7 +25,7 @@ DenRecorder records the whole screen (and the device audio, the microphone or no
 - **Pause and resume** — one recording stays one file; the paused time is cut out of the video and the timer stops while paused.
 - **Built-in player** — a recording opens in DenRecorder's own player (play/pause, seek, double-tap to jump 10 s back or forward, and a rotate button that turns the video even when the phone's rotation is locked), so the video you tap is the video you get, whatever gallery app is installed.
 - **Choose where videos go** — `Movies/Screen Recorder` by default, five presets, the phone's own folder browser, or a typed path, including `Download` (videos land in the Downloads collection so MIUI keeps them there).
-- **Record a part of the screen** — Settings → Recording area → Choose an area… floats a frame over whatever app you are in. A small round button always stays on top: hide the frame with it (or with Hide frame) to switch apps, then tap it again to move the frame over the app you want to record and Save.
+- **Record a part of the screen** — Settings → Recording area → Choose an area… floats a frame over whatever app you are in. After Save the same ball becomes the record button: tap it to start and tap again to stop from inside the app or game, hold it to change the frame. While recording it steps just outside the frame, so the video holds only the area itself.
 - **Recording rotation** — automatic, portrait or landscape: the screen is locked to that rotation for the whole recording (your phone's own rotation setting comes back afterwards), so the video never turns halfway through.
 - **Long recordings** — the notification uses the system chronometer (no wake-ups every second), storage is checked every 15 s, recording stops safely before the card fills up.
 - **Bilingual** — English and Vietnamese, English on first launch.
@@ -34,7 +34,7 @@ DenRecorder records the whole screen (and the device audio, the microphone or no
 
 ### Install
 
-1. Download `DenRecorder-1.10.1.apk` from the [Releases](../../releases) page.
+1. Download `DenRecorder-1.10.3.apk` from the [Releases](../../releases) page.
 2. Open it on the phone and allow installing apps from that source if asked.
 3. Open DenRecorder, allow the permissions it asks for, and optionally let it add the Quick Settings tile.
 
@@ -82,6 +82,13 @@ res/                    strings (EN + VI), icons, launcher icons
 ```
 
 ### What's new
+
+**1.10.3**
+
+- Fix: an area recording no longer starts lower than the frame. The screen reaches the recorder flipped, so the crop was taking the mirrored rows and the video began about 290 px too far down; it now takes exactly the rows inside the frame.
+- The ball is now the **record button**: tap to start, tap again to stop from inside the app or game, hold it to change the frame.
+- While recording the ball steps just outside the chosen area, so it never lands in the video, and it returns to where you keep it afterwards.
+- The chosen area stays ready with a small notification ("Ready to record the chosen area") whose **Turn off** action closes the ball; choosing Whole screen closes it too.
 
 **1.10.1**
 
@@ -232,6 +239,7 @@ DenRecorder quay toàn bộ màn hình (kèm âm thanh thiết bị, micrô ho�
 - **Tạm dừng và tiếp tục** — một lần quay vẫn là một file, thời gian tạm dừng được cắt khỏi video và đồng hồ đếm dừng lại khi tạm dừng.
 - **Trình phát sẵn trong app** — chạm vào bản ghi là phát ngay trong DenRecorder (phát/tạm dừng, tua, nhấn đúp để lùi hoặc tiến 10 giây, nút xoay màn hình hoạt động cả khi điện thoại đang khoá xoay), đúng video vừa chọn dù máy dùng ứng dụng thư viện nào.
 - **Chọn thư mục lưu** — mặc định `Movies/Screen Recorder`, có 5 gợi ý sẵn, duyệt thư mục bằng trình chọn của điện thoại, hoặc tự nhập.
+- **Quay một vùng màn hình** — Cài đặt → Vùng quay → Chọn vùng quay… mở một khung nổi trên app bạn đang dùng. Bấm Lưu xong, chính bóng đó thành nút quay: chạm để bắt đầu, chạm lần nữa để dừng ngay trong app hay game, giữ bóng để đổi khung. Đang quay thì bóng né ra ngoài khung nên video chỉ có đúng phần đã chọn.
 - **Hướng khi ghi hình** — tự động, dọc hoặc ngang: màn hình được khóa đúng hướng đó trong suốt lần quay (cài đặt xoay của máy được trả lại sau khi dừng), nên video không bị xoay giữa chừng.
 - **Quay dài** — thông báo dùng đồng hồ đếm của hệ thống (không đánh thức mỗi giây), kiểm tra dung lượng mỗi 15 giây và tự dừng trước khi đầy bộ nhớ.
 - **Song ngữ** — English và Tiếng Việt, lần đầu mở là tiếng Anh.
@@ -240,7 +248,7 @@ DenRecorder quay toàn bộ màn hình (kèm âm thanh thiết bị, micrô ho�
 
 ### Cài đặt
 
-1. Tải `DenRecorder-1.10.1.apk` ở mục [Releases](../../releases).
+1. Tải `DenRecorder-1.10.3.apk` ở mục [Releases](../../releases).
 2. Mở file trên điện thoại và cho phép cài đặt từ nguồn đó nếu được hỏi.
 3. Mở DenRecorder, cấp quyền khi được hỏi, có thể thêm nút vào Trung tâm điều khiển.
 
@@ -267,6 +275,13 @@ export ANDROID_HOME=$HOME/android-sdk
 `app.properties` chứa `versionCode`, `versionName`, `minSdk`.
 
 ### Có gì mới
+
+**1.10.3**
+
+- Sửa lỗi: quay vùng không còn bắt đầu thấp hơn khung. Màn hình được đưa vào bộ ghi ở dạng lật ngược nên phần cắt lấy nhầm các hàng đối xứng, video bị lệch xuống khoảng 290 px; giờ lấy đúng phần nằm trong khung.
+- Bóng nổi giờ là **nút quay**: chạm để bắt đầu, chạm lần nữa để dừng ngay trong app hay game, giữ bóng để đổi khung.
+- Đang quay thì bóng tự né ra ngoài vùng chọn nên không lọt vào video, quay xong bóng về đúng chỗ cũ.
+- Vùng đã chọn có thêm thông báo nhỏ ("Sẵn sàng quay vùng đã chọn"), nút **Tắt** trên đó đóng bóng; chọn Toàn màn hình cũng đóng bóng.
 
 **1.10.1**
 

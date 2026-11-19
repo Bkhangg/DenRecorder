@@ -2159,6 +2159,8 @@ public class MainActivity extends Activity {
             if (which == 0) {
                 prefs.edit().putBoolean("regionOn", false).apply();
                 updateRegionValue();
+                // Without a frame the floating record button has nothing to do.
+                RegionPickerService.stop(this);
                 return;
             }
             if (!RegionPickerService.canDraw(this)) {

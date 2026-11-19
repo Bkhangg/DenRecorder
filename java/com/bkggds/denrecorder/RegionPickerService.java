@@ -1,8 +1,13 @@
 package com.bkggds.denrecorder;
 
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ServiceInfo;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -12,12 +17,16 @@ import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 import android.util.DisplayMetrics;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -26,12 +35,14 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 /**
- * Chooses the part of the screen to record.
+ * Chooses the part of the screen to record, then records it.
  *
  * It is a floating frame rather than a screen of its own: the user opens it,
  * goes to the app or game they want, and drags the frame over what should end
  * up in the video. "Save" stores the frame as parts of the screen, so it still
- * fits when the recording is measured in another rotation.
+ * fits when the recording is measured in another rotation, and the ball turns
+ * into a record button: tap to start, tap again to stop, hold to change the
+ * frame. The ball is kept out of the video by securing its window.
  */
 public class RegionPickerService extends Service {
 
@@ -39,6 +50,12 @@ public class RegionPickerService extends Service {
     /** Sent when a frame was saved, so the settings row can show it at once. */
     public static final String ACTION_SAVED = "com.bkggds.denrecorder.region.SAVED";
     private static final String ACTION_STOP = "com.bkggds.denrecorder.region.STOP";
+    /** Recording started (true) or ended (false): the ball becomes a stop button. */
+    private static final String ACTION_RECORDING = "com.bkggds.denrecorder.region.RECORDING";
+    private static final String EXTRA_ON = "on";
+
+    private static final String CHANNEL_ID = "region";
+    private static final int NOTIF_ID = 42;
 
     private static final int PANEL = Color.parseColor("#EE111113");
     private static final int BORDER = Color.parseColor("#F43F5E");
@@ -49,6 +66,7 @@ public class RegionPickerService extends Service {
 
     private static final int BUBBLE_DP = 54;
 
+    private final Handler handler = new Handler(Looper.getMainLooper());
     private WindowManager windowManager;
     private ImageView bubble;
     private FrameLayout editor;
@@ -56,6 +74,11 @@ public class RegionPickerService extends Service {
     private WindowManager.LayoutParams bubbleParams;
     private WindowManager.LayoutParams editorParams;
     private boolean editorOpen;
+    private boolean recording;
+    private boolean foreground;
+    private boolean ballMoved;
+    private int savedBallX;
+    private int savedBallY;
     private int bubbleX;
     private int bubbleY;
     private int screenWidth;
@@ -84,13 +107,40 @@ public class RegionPickerService extends Service {
         } catch (Exception ignored) { }
     }
 
+    /** A recording began: the ball turns into the stop button. */
+    public static void recordingStarted(Context context) {
+        if (!running) return;
+        try {
+            context.startService(new Intent(context, RegionPickerService.class)
+                    .setAction(ACTION_RECORDING).putExtra(EXTRA_ON, true));
+        } catch (Exception ignored) { }
+    }
+
+    /** The recording ended: the ball is a record button again. */
+    public static void recordingStopped(Context context) {
+        if (!running) return;
+        try {
+            context.startService(new Intent(context, RegionPickerService.class)
+                    .setAction(ACTION_RECORDING).putExtra(EXTRA_ON, false));
+        } catch (Exception ignored) { }
+    }
+
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         if (intent != null && ACTION_STOP.equals(intent.getAction())) {
             stopSelf();
             return START_NOT_STICKY;
         }
-        if (bubble == null) show();
+        if (intent != null && ACTION_RECORDING.equals(intent.getAction())) {
+            setRecording(intent.getBooleanExtra(EXTRA_ON, true));
+            return START_NOT_STICKY;
+        }
+        if (bubble == null) {
+            show();
+        } else if (intent != null && ACTION_START.equals(intent.getAction())) {
+            // Started again from the settings row: show the frame to adjust.
+            openEditor();
+        }
         return START_NOT_STICKY;
     }
 
@@ -102,6 +152,7 @@ public class RegionPickerService extends Service {
     @Override
     public void onDestroy() {
         running = false;
+        handler.removeCallbacksAndMessages(null);
         if (windowManager != null) {
             try {
                 if (editorOpen && editor != null) windowManager.removeViewImmediate(editor);
@@ -114,6 +165,11 @@ public class RegionPickerService extends Service {
         editor = null;
         regionView = null;
         editorOpen = false;
+        recording = false;
+        if (foreground) {
+            foreground = false;
+            try { stopForeground(true); } catch (Exception ignored) { }
+        }
         super.onDestroy();
     }
 
@@ -126,8 +182,7 @@ public class RegionPickerService extends Service {
         screenWidth = Math.max(1, dm.widthPixels);
         screenHeight = Math.max(1, dm.heightPixels);
 
-        // Bóng nổi: chạm để mở/ẩn khung, kéo để dời. Nhờ nó mà khi khung đang
-        // ẩn, cả màn hình vẫn dùng được để chuyển sang app cần quay.
+        // Bóng nổi: sau khi lưu khung, chạm để quay/dừng và giữ để đổi khung.
         int size = dp(BUBBLE_DP);
         bubble = new ImageView(this);
         bubble.setImageResource(R.drawable.ic_rect);
@@ -149,6 +204,8 @@ public class RegionPickerService extends Service {
         editorParams = overlayParams(
                 WindowManager.LayoutParams.MATCH_PARENT,
                 WindowManager.LayoutParams.MATCH_PARENT);
+
+        startInForeground();
 
         try {
             windowManager.addView(bubble, bubbleParams);
@@ -177,6 +234,158 @@ public class RegionPickerService extends Service {
                 .start();
     }
 
+    /**
+     * A ball that must survive while the user records another app needs a
+     * foreground service: the system stops ordinary background services after
+     * a short while. The notification also says what the ball does.
+     */
+    private void startInForeground() {
+        try {
+            if (Build.VERSION.SDK_INT >= 26) {
+                NotificationManager nm =
+                        (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+                NotificationChannel channel = new NotificationChannel(CHANNEL_ID,
+                        getString(R.string.region_channel), NotificationManager.IMPORTANCE_LOW);
+                channel.setShowBadge(false);
+                channel.setSound(null, null);
+                nm.createNotificationChannel(channel);
+            }
+            Notification notification = buildNotification();
+            if (Build.VERSION.SDK_INT >= 34) {
+                startForeground(NOTIF_ID, notification,
+                        ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
+            } else {
+                startForeground(NOTIF_ID, notification);
+            }
+            foreground = true;
+        } catch (Exception ignored) {
+            // No notification permission: the ball still works while it lives.
+        }
+    }
+
+    private Notification buildNotification() {
+        PendingIntent open = PendingIntent.getActivity(this, 0,
+                new Intent(this, MainActivity.class), pendingFlags());
+        PendingIntent off = PendingIntent.getService(this, 1,
+                new Intent(this, RegionPickerService.class).setAction(ACTION_STOP),
+                pendingFlags());
+
+        Notification.Builder builder;
+        if (Build.VERSION.SDK_INT >= 26) {
+            builder = new Notification.Builder(this, CHANNEL_ID);
+        } else {
+            builder = new Notification.Builder(this);
+        }
+        builder.setSmallIcon(R.drawable.ic_rect)
+                .setContentTitle(getString(recording
+                        ? R.string.region_notification_recording
+                        : R.string.region_notification_ready))
+                .setContentText(getString(recording
+                        ? R.string.region_stop
+                        : R.string.region_notification_body))
+                .setOngoing(true)
+                .setOnlyAlertOnce(true)
+                .setContentIntent(open)
+                .setPriority(Notification.PRIORITY_LOW);
+        if (Build.VERSION.SDK_INT >= 23) {
+            builder.addAction(new Notification.Action.Builder(
+                    android.graphics.drawable.Icon.createWithResource(this, R.drawable.ic_close),
+                    getString(R.string.region_off), off).build());
+        } else {
+            builder.addAction(new Notification.Action.Builder(
+                    R.drawable.ic_close, getString(R.string.region_off), off).build());
+        }
+        return builder.build();
+    }
+
+    private int pendingFlags() {
+        int flags = PendingIntent.FLAG_UPDATE_CURRENT;
+        if (Build.VERSION.SDK_INT >= 23) flags |= PendingIntent.FLAG_IMMUTABLE;
+        return flags;
+    }
+
+    private void updateNotification() {
+        if (!foreground) return;
+        try {
+            NotificationManager nm =
+                    (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+            nm.notify(NOTIF_ID, buildNotification());
+        } catch (Exception ignored) { }
+    }
+
+    /** Recording state: the ball turns into the stop button and steps out of the frame. */
+    private void setRecording(boolean on) {
+        recording = on;
+        if (on) {
+            closeEditor();
+            moveBallOutOfRegion();
+        } else {
+            restoreBall();
+        }
+        updateBubble();
+        updateNotification();
+    }
+
+    /**
+     * The screen is captured as it is, so the ball would end up in the video.
+     * While recording it is placed just outside the chosen area; the area's
+     * edge is where it steps back in.
+     */
+    private void moveBallOutOfRegion() {
+        if (bubble == null || bubbleParams == null || windowManager == null) return;
+        if (ballMoved || !regionSaved()) return;
+        android.content.SharedPreferences prefs =
+                getSharedPreferences("settings", MODE_PRIVATE);
+        int left = Math.round(prefs.getFloat("regionX", 0f) * screenWidth);
+        int top = Math.round(prefs.getFloat("regionY", 0f) * screenHeight);
+        int right = left + Math.round(prefs.getFloat("regionW", 1f) * screenWidth);
+        int bottom = top + Math.round(prefs.getFloat("regionH", 1f) * screenHeight);
+
+        int size = bubbleParams.width;
+        int margin = dp(10);
+        int x = bubbleParams.x;
+        int y = bubbleParams.y;
+        // Already clear of the area: leave it where the user put it.
+        if (x + size <= left || x >= right || y + size <= top || y >= bottom) return;
+
+        int nx = x;
+        int ny = y;
+        if (screenHeight - bottom >= size + margin) {
+            ny = bottom + margin;              // under the area
+        } else if (top >= size + margin) {
+            ny = top - margin - size;          // over it
+        } else if (screenWidth - right >= size + margin) {
+            nx = right + margin;               // beside it
+        } else if (left >= size + margin) {
+            nx = left - margin - size;
+        } else {
+            // The area covers the whole screen: nothing to move to, the user
+            // can still drag the ball aside while it records.
+            return;
+        }
+        nx = Math.max(0, Math.min(nx, screenWidth - size));
+        ny = Math.max(0, Math.min(ny, screenHeight - size));
+        savedBallX = x;
+        savedBallY = y;
+        ballMoved = true;
+        bubbleParams.x = nx;
+        bubbleParams.y = ny;
+        try {
+            windowManager.updateViewLayout(bubble, bubbleParams);
+        } catch (Exception ignored) { }
+    }
+
+    /** Puts the ball back where the user keeps it. */
+    private void restoreBall() {
+        if (!ballMoved || bubbleParams == null || windowManager == null || bubble == null) return;
+        ballMoved = false;
+        bubbleParams.x = savedBallX;
+        bubbleParams.y = savedBallY;
+        try {
+            windowManager.updateViewLayout(bubble, bubbleParams);
+        } catch (Exception ignored) { }
+    }
+
     /** Khung chọn vùng: lớp phủ tối, viền đỏ và thanh Huỷ / Ẩn / Lưu. */
     private FrameLayout buildEditor() {
         FrameLayout root = new FrameLayout(this);
@@ -190,7 +399,12 @@ public class RegionPickerService extends Service {
         bar.setBackground(round(PANEL, 20));
 
         TextView cancel = chip(getString(R.string.dialog_cancel), TEXT);
-        cancel.setOnClickListener(v -> stopSelf());
+        cancel.setOnClickListener(v -> {
+            // Chỉ bỏ phần đang sửa: vùng đã lưu vẫn dùng được, bóng vẫn ở đó
+            // để quay. Chưa có vùng nào thì đóng hẳn.
+            if (regionSaved()) closeEditor();
+            else stopSelf();
+        });
         bar.addView(cancel, new LinearLayout.LayoutParams(dp(84), dp(44)));
 
         TextView hide = chip(getString(R.string.region_hide), TEXT);
@@ -238,20 +452,54 @@ public class RegionPickerService extends Service {
             windowManager.removeViewImmediate(editor);
         } catch (Exception ignored) { }
         editorOpen = false;
+        // Built again from what was saved, so a cancelled change is really gone.
+        editor = null;
+        regionView = null;
         updateBubble();
     }
 
-    private void toggleEditor() {
-        if (editorOpen) closeEditor();
-        else openEditor();
-    }
-
-    /** Đổi hình trên bóng: đang mở khung thì là mũi tên thu nhỏ. */
+    /** Đổi hình trên bóng theo việc nó đang làm. */
     private void updateBubble() {
         if (bubble == null) return;
-        bubble.setImageResource(editorOpen ? R.drawable.ic_collapse : R.drawable.ic_rect);
-        bubble.setContentDescription(getString(
-                editorOpen ? R.string.region_hide : R.string.region_ball));
+        int size = dp(BUBBLE_DP);
+        if (editorOpen) {
+            bubble.setImageResource(R.drawable.ic_collapse);
+            bubble.setBackground(circle(PANEL, size / 2));
+            bubble.setColorFilter(TEXT);
+            bubble.setContentDescription(getString(R.string.region_hide));
+        } else if (recording) {
+            bubble.setImageResource(R.drawable.ic_stop);
+            bubble.setBackground(circle(BORDER, size / 2));
+            bubble.setColorFilter(TEXT);
+            bubble.setContentDescription(getString(R.string.region_stop));
+        } else if (regionSaved()) {
+            // A saved frame: the ball is the record button now.
+            bubble.setImageResource(R.drawable.ic_record);
+            bubble.setBackground(circle(BORDER, size / 2));
+            bubble.setColorFilter(TEXT);
+            bubble.setContentDescription(getString(R.string.region_record));
+        } else {
+            bubble.setImageResource(R.drawable.ic_rect);
+            bubble.setBackground(circle(PANEL, size / 2));
+            bubble.setColorFilter(TEXT);
+            bubble.setContentDescription(getString(R.string.region_ball));
+        }
+    }
+
+    private boolean regionSaved() {
+        return getSharedPreferences("settings", MODE_PRIVATE)
+                .getBoolean("regionOn", false);
+    }
+
+    /** Starts a recording from the ball, without opening the app. */
+    private void startRecording() {
+        Intent intent = new Intent(this, CapturePromptActivity.class)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        try {
+            startActivity(intent);
+        } catch (Exception e) {
+            Toast.makeText(this, R.string.region_failed, Toast.LENGTH_SHORT).show();
+        }
     }
 
     private GradientDrawable circle(int color, int radius) {
@@ -278,13 +526,27 @@ public class RegionPickerService extends Service {
         return params;
     }
 
-    /** Kéo bóng đi chỗ khác; chạm (không kéo) thì mở hoặc ẩn khung. */
+    /** Kéo bóng đi chỗ khác; chạm để quay/dừng, giữ để mở lại khung. */
     private final class DragListener implements View.OnTouchListener {
         private float downRawX;
         private float downRawY;
         private int startX;
         private int startY;
         private boolean moved;
+        private boolean held;
+
+        private final Runnable longPress = new Runnable() {
+            @Override
+            public void run() {
+                if (moved) return;
+                held = true;
+                if (bubble != null) {
+                    bubble.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+                }
+                // While recording the frame stays as it is: it is in use.
+                if (!recording) openEditor();
+            }
+        };
 
         @Override
         public boolean onTouch(View view, MotionEvent event) {
@@ -295,11 +557,16 @@ public class RegionPickerService extends Service {
                     startX = bubbleParams.x;
                     startY = bubbleParams.y;
                     moved = false;
+                    held = false;
+                    handler.postDelayed(longPress, ViewConfiguration.getLongPressTimeout());
                     return true;
                 case MotionEvent.ACTION_MOVE:
                     int dx = Math.round(event.getRawX() - downRawX);
                     int dy = Math.round(event.getRawY() - downRawY);
-                    if (Math.abs(dx) > dp(6) || Math.abs(dy) > dp(6)) moved = true;
+                    if (Math.abs(dx) > dp(6) || Math.abs(dy) > dp(6)) {
+                        moved = true;
+                        handler.removeCallbacks(longPress);
+                    }
                     if (!moved) return true;
                     bubbleX = Math.max(0, Math.min(startX + dx,
                             screenWidth - bubbleParams.width));
@@ -312,18 +579,37 @@ public class RegionPickerService extends Service {
                     } catch (Exception ignored) { }
                     return true;
                 case MotionEvent.ACTION_UP:
-                    if (!moved) {
-                        toggleEditor();
-                    } else {
+                    handler.removeCallbacks(longPress);
+                    if (moved) {
                         getSharedPreferences("settings", MODE_PRIVATE).edit()
                                 .putInt("regionBallX", bubbleParams.x)
                                 .putInt("regionBallY", bubbleParams.y)
                                 .apply();
+                        // The user placed it here: keep it there afterwards.
+                        ballMoved = false;
+                    } else if (!held) {
+                        onTap();
                     }
+                    return true;
+                case MotionEvent.ACTION_CANCEL:
+                    handler.removeCallbacks(longPress);
                     return true;
                 default:
                     return false;
             }
+        }
+    }
+
+    /** One tap on the ball: fold the frame, record, or stop the recording. */
+    private void onTap() {
+        if (editorOpen) {
+            closeEditor();
+        } else if (recording) {
+            RecorderService.requestStop(this);
+        } else if (regionSaved()) {
+            startRecording();
+        } else {
+            openEditor();
         }
     }
 
@@ -345,7 +631,10 @@ public class RegionPickerService extends Service {
         try {
             sendBroadcast(new Intent(ACTION_SAVED).setPackage(getPackageName()));
         } catch (Exception ignored) { }
-        stopSelf();
+        // The frame is done; the ball now records and stops with one tap.
+        closeEditor();
+        updateBubble();
+        updateNotification();
     }
 
     private TextView chip(String text, int color) {

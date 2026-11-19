@@ -22,7 +22,15 @@
     <string name="region_saved">Đã lưu vùng quay · %1$d × %2$d</string>
     <string name="region_ball">Chọn khung quay</string>
     <string name="region_hide">Ẩn khung</string>
-    <string name="region_hint_ball">Chạm bóng để ẩn khung, chuyển sang app khác rồi mở lại</string>
+    <string name="region_hint_ball">Chạm bóng để ẩn; sau khi Lưu, chạm bóng để quay</string>
+    <string name="region_record">Bắt đầu quay</string>
+    <string name="region_stop">Dừng quay</string>
+    <string name="region_channel">Vùng quay</string>
+    <string name="region_notification_ready">Sẵn sàng quay vùng đã chọn</string>
+    <string name="region_notification_recording">Đang quay vùng đã chọn</string>
+    <string name="region_notification_body">Chạm bóng để quay · giữ bóng để đổi khung</string>
+    <string name="region_off">Tắt</string>
+
     <string name="region_failed">Không mở được khung chọn vùng</string>
     <string name="region_need_overlay">Cần cho phép "hiển thị trên ứng dụng khác" để đặt khung lên ứng dụng bạn muốn quay.</string>
     <string name="row_resolution">Độ phân giải</string>

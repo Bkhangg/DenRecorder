@@ -255,6 +255,9 @@ public class ScreenRecorder {
         }
 
         cropRegion = resolveRegion(nativeWidth, nativeHeight);
+        Log.i(TAG, "recording " + (cropRegion == null ? "whole screen" : "region " + cropRegion)
+                + " screen " + nativeWidth + "x" + nativeHeight
+                + " dpi " + dpi + " orientation " + orientation);
         // A region is recorded at its own size, so the resolution setting only
         // chooses the size of a full-screen recording.
         int captureWidth = cropRegion != null ? cropRegion.width() : nativeWidth;
