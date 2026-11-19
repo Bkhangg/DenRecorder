@@ -35,6 +35,8 @@ import android.widget.Toast;
 public class RegionPickerService extends Service {
 
     private static final String ACTION_START = "com.bkggds.denrecorder.region.START";
+    /** Sent when a frame was saved, so the settings row can show it at once. */
+    public static final String ACTION_SAVED = "com.bkggds.denrecorder.region.SAVED";
     private static final String ACTION_STOP = "com.bkggds.denrecorder.region.STOP";
 
     private static final int PANEL = Color.parseColor("#EE111113");
@@ -172,6 +174,9 @@ public class RegionPickerService extends Service {
         Toast.makeText(this,
                 getString(R.string.region_saved, rect.width(), rect.height()),
                 Toast.LENGTH_SHORT).show();
+        try {
+            sendBroadcast(new Intent(ACTION_SAVED).setPackage(getPackageName()));
+        } catch (Exception ignored) { }
         stopSelf();
     }
 

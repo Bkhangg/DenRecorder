@@ -263,6 +263,15 @@ public class MainActivity extends Activity {
         return folder.isEmpty() ? "Movies/Screen Recorder" : folder;
     }
 
+    /** The area frame runs in another window; it says so when it was saved. */
+    private final android.content.BroadcastReceiver regionSaved =
+            new android.content.BroadcastReceiver() {
+                @Override
+                public void onReceive(Context context, Intent intent) {
+                    updateRegionValue();
+                }
+            };
+
     private final Runnable poll = new Runnable() {
         @Override
         public void run() {
@@ -283,6 +292,15 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         prefs = getSharedPreferences(LocaleHelper.PREFS, MODE_PRIVATE);
+        try {
+            android.content.IntentFilter filter =
+                    new android.content.IntentFilter(RegionPickerService.ACTION_SAVED);
+            if (Build.VERSION.SDK_INT >= 33) {
+                registerReceiver(regionSaved, filter, Context.RECEIVER_NOT_EXPORTED);
+            } else {
+                registerReceiver(regionSaved, filter);
+            }
+        } catch (Exception ignored) { }
         // A recording that was killed (update, force-stop, low memory) can leave
         // the screen rotation locked where it recorded; opening the app puts the
         // user's own setting back.
@@ -399,6 +417,9 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        try {
+            unregisterReceiver(regionSaved);
+        } catch (Exception ignored) { }
         try {
             rikka.shizuku.Shizuku.removeRequestPermissionResultListener(islandPermissionListener);
         } catch (Throwable ignored) { }

@@ -235,11 +235,13 @@ final class CropMirror {
     private void buildQuad() {
         float w = Math.max(1, screenWidth);
         float h = Math.max(1, screenHeight);
+        // The mirrored screen reaches the texture bottom row first, so the
+        // rectangle reads from its top: with 1 - v the video came out upside
+        // down (and level, since only the rows are turned over).
         float u0 = crop.left / w;
         float u1 = crop.right / w;
-        // Texture rows run bottom-up, the rectangle is given top-down.
-        float v0 = 1f - crop.top / h;
-        float v1 = 1f - crop.bottom / h;
+        float v0 = crop.top / h;
+        float v1 = crop.bottom / h;
 
         float[] corners = {-1f, -1f, 1f, -1f, -1f, 1f, 1f, 1f};
         float[] tex = {u0, v0, u1, v0, u0, v1, u1, v1};
