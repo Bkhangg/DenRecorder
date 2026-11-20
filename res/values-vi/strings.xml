@@ -97,6 +97,11 @@
     <string name="overlay_pen">Bút chì</string>
     <string name="row_draw_size">Kích thước nút nổi</string>
     <string name="title_draw_size">Kích thước nút nổi</string>
+    <string name="row_draw_mode">Nút vẽ khi quay</string>
+    <string name="title_draw_mode">Nút nổi khi đang quay</string>
+    <string name="draw_mode_always">Luôn hiện</string>
+    <string name="draw_mode_fade">Tự ẩn khi không dùng</string>
+    <string name="hint_draw_mode">Android quay đúng màn hình nên khi quay toàn màn hình nút vẫn nằm trong video; quay một vùng thì nút né ra ngoài vùng đã chọn, video chỉ có nét vẽ.</string>
     <string name="draw_size_small">Nhỏ</string>
     <string name="draw_size_medium">Vừa</string>
     <string name="draw_size_large">Lớn</string>

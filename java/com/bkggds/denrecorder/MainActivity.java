@@ -185,7 +185,9 @@ public class MainActivity extends Activity {
     private String orientation = "auto";
     private boolean drawOverlay = true;
     private int drawSize = 1;
+    private boolean drawAutoHide;
     private TextView drawSizeValueView;
+    private TextView drawModeValueView;
     private boolean perfMode = true;
     private boolean pendingStart;
     private boolean sawRecording;
@@ -319,6 +321,7 @@ public class MainActivity extends Activity {
         perfMode = prefs.getBoolean("perfMode", true);
         drawOverlay = prefs.getBoolean("drawOverlay", true);
         drawSize = prefs.getInt("drawSize", 1);
+        drawAutoHide = prefs.getBoolean("drawAutoHide", false);
         handler = new Handler(Looper.getMainLooper());
         try {
             rikka.shizuku.Shizuku.addRequestPermissionResultListener(islandPermissionListener);
@@ -682,6 +685,11 @@ public class MainActivity extends Activity {
         divider(generalCard);
         drawSizeValueView = addRow(generalCard, R.drawable.ic_rect, R.string.row_draw_size,
                 "", true, this::chooseDrawSize);
+        divider(generalCard);
+        drawModeValueView = addRow(generalCard, R.drawable.ic_screen, R.string.row_draw_mode,
+                "", true, this::chooseDrawMode);
+        divider(generalCard);
+        addHint(generalCard, R.string.hint_draw_mode);
 
         // Super Island is a Xiaomi feature, so the row only exists there.
         if (Island.isXiaomi()) {
@@ -1385,6 +1393,7 @@ public class MainActivity extends Activity {
             updateOrientationValue();
             updateDrawValue();
             updateDrawSizeValue();
+            updateDrawModeValue();
         } else if (index == 2) {
             loadRecordings();
         }
@@ -2420,6 +2429,26 @@ public class MainActivity extends Activity {
         if (drawSizeValueView == null) return;
         String[] sizes = drawSizeLabels();
         setValue(drawSizeValueView, sizes[Math.max(0, Math.min(sizes.length - 1, drawSize))]);
+    }
+
+    /** Always in sight, or faded away while nobody uses it. */
+    private void chooseDrawMode() {
+        String[] modes = {
+                getString(R.string.draw_mode_always),
+                getString(R.string.draw_mode_fade)
+        };
+        showChoices(getString(R.string.title_draw_mode), modes, drawAutoHide ? 1 : 0, which -> {
+            drawAutoHide = which == 1;
+            prefs.edit().putBoolean("drawAutoHide", drawAutoHide).apply();
+            updateDrawModeValue();
+            DrawOverlayService.refreshMode(this);
+        });
+    }
+
+    private void updateDrawModeValue() {
+        if (drawModeValueView == null) return;
+        setValue(drawModeValueView, getString(drawAutoHide
+                ? R.string.draw_mode_fade : R.string.draw_mode_always));
     }
 
     private void requestOverlayPermission() {

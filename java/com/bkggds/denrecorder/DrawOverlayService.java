@@ -142,6 +142,24 @@ public class DrawOverlayService extends Service {
         });
     }
 
+    /** "Always visible" or "fade when idle" can be switched mid-recording. */
+    public static void refreshMode(Context context) {
+        final DrawOverlayService service = instance;
+        if (service == null) return;
+        final boolean fade = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
+                .getBoolean("drawAutoHide", false);
+        service.handler.post(new Runnable() {
+            @Override
+            public void run() {
+                service.autoHide = fade;
+                if (!fade) {
+                    service.handler.removeCallbacks(service.hideBubbleTask);
+                    service.showBubble();
+                }
+            }
+        });
+    }
+
     /** Colours of the quick palette, named by the strings in the same order. */
     private static final int[] PALETTE_NAMES = {
             R.string.draw_color_rose, R.string.draw_color_red,
@@ -168,6 +186,8 @@ public class DrawOverlayService extends Service {
     private boolean panelOpen;
     private int bubbleX;
     private int bubbleY;
+    /** Settings: fade the button away while nobody uses it, or keep it in sight. */
+    private boolean autoHide;
 
     /** How long the floating button stays in sight while nobody touches it. */
     private static final long BUBBLE_IDLE_MS = 2000;
@@ -218,6 +238,10 @@ public class DrawOverlayService extends Service {
         int screenWidth = getResources().getDisplayMetrics().widthPixels;
         int screenHeight = getResources().getDisplayMetrics().heightPixels;
         int size = BUBBLE_DP[sizeIndex(this)];
+        // Kept in sight by default: the user wants to see the button while the
+        // recording runs. Fading is the option for a whole-screen video.
+        autoHide = getSharedPreferences("settings", MODE_PRIVATE)
+                .getBoolean("drawAutoHide", false);
 
         layer = new DrawLayer(this);
         layer.setInk(inkColor(this));
@@ -235,6 +259,9 @@ public class DrawOverlayService extends Service {
 
         bubbleX = screenWidth - dp(size + 18);
         bubbleY = screenHeight - dp(260);
+        // An area recording saves only the area: stepping outside it keeps the
+        // button on screen without putting it in the video.
+        placeOutsideRegion(size);
         bubbleParams = overlayParams(dp(size), dp(size));
         bubbleParams.x = bubbleX;
         bubbleParams.y = bubbleY;
@@ -248,7 +275,7 @@ public class DrawOverlayService extends Service {
             public boolean onTouch(View view, MotionEvent event) {
                 if (panelOpen && event.getActionMasked() == MotionEvent.ACTION_DOWN) {
                     handler.removeCallbacks(hidePanelTask);
-                    handler.postDelayed(hidePanelTask, PANEL_IDLE_MS);
+                    if (autoHide) handler.postDelayed(hidePanelTask, PANEL_IDLE_MS);
                 }
                 return false;
             }
@@ -294,7 +321,48 @@ public class DrawOverlayService extends Service {
                 .start();
         // It is a reminder that recording started; then it gets out of the way
         // so the video only shows the app itself. A tap brings it back.
-        handler.postDelayed(hideBubbleTask, BUBBLE_IDLE_MS);
+        if (autoHide) handler.postDelayed(hideBubbleTask, BUBBLE_IDLE_MS);
+    }
+
+    /**
+     * Android records the screen exactly as it is, so a button lying over the
+     * saved area ends up in the video. While an area is recorded the button is
+     * placed just outside it: still in sight for the user, out of the video.
+     */
+    private void placeOutsideRegion(int size) {
+        android.content.SharedPreferences prefs =
+                getSharedPreferences("settings", MODE_PRIVATE);
+        if (!prefs.getBoolean("regionOn", false)) return;
+        int screenWidth = getResources().getDisplayMetrics().widthPixels;
+        int screenHeight = getResources().getDisplayMetrics().heightPixels;
+        int left = Math.round(prefs.getFloat("regionX", 0f) * screenWidth);
+        int top = Math.round(prefs.getFloat("regionY", 0f) * screenHeight);
+        int right = left + Math.round(prefs.getFloat("regionW", 1f) * screenWidth);
+        int bottom = top + Math.round(prefs.getFloat("regionH", 1f) * screenHeight);
+
+        int sizePx = dp(size);
+        int margin = dp(10);
+        int x = bubbleX;
+        int y = bubbleY;
+        // Already clear of the area: leave it where the user put it.
+        if (x + sizePx <= left || x >= right || y + sizePx <= top || y >= bottom) return;
+
+        int nx = x;
+        int ny = y;
+        if (screenHeight - bottom >= sizePx + margin) {
+            ny = bottom + margin;              // under the area
+        } else if (top >= sizePx + margin) {
+            ny = top - margin - sizePx;        // over it
+        } else if (screenWidth - right >= sizePx + margin) {
+            nx = right + margin;               // beside it
+        } else if (left >= sizePx + margin) {
+            nx = left - margin - sizePx;
+        } else {
+            // The area covers the whole screen: nothing is left to stand on.
+            return;
+        }
+        bubbleX = Math.max(0, Math.min(nx, screenWidth - sizePx));
+        bubbleY = Math.max(0, Math.min(ny, screenHeight - sizePx));
     }
 
     private void styleBubble(int size) {
@@ -550,7 +618,7 @@ public class DrawOverlayService extends Service {
         panelOpen = true;
         handler.removeCallbacks(hideBubbleTask);
         handler.removeCallbacks(hidePanelTask);
-        handler.postDelayed(hidePanelTask, PANEL_IDLE_MS);
+        if (autoHide) handler.postDelayed(hidePanelTask, PANEL_IDLE_MS);
         showBubble();
         updatePauseButton();
         updateToolHighlight();
@@ -581,7 +649,7 @@ public class DrawOverlayService extends Service {
         updateLayerTouchable();
         handler.removeCallbacks(hidePanelTask);
         handler.removeCallbacks(hideBubbleTask);
-        handler.postDelayed(hideBubbleTask, BUBBLE_RETURN_MS);
+        if (autoHide) handler.postDelayed(hideBubbleTask, BUBBLE_RETURN_MS);
     }
 
     /**

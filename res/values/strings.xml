@@ -97,6 +97,11 @@
     <string name="overlay_pen">Pencil</string>
     <string name="row_draw_size">Button size</string>
     <string name="title_draw_size">Floating button size</string>
+    <string name="row_draw_mode">Button while recording</string>
+    <string name="title_draw_mode">Floating button while recording</string>
+    <string name="draw_mode_always">Always visible</string>
+    <string name="draw_mode_fade">Fade when idle</string>
+    <string name="hint_draw_mode">Android records the screen exactly as it is, so the button is in a whole-screen video. While recording an area it steps outside the saved part, so the video holds the drawing only.</string>
     <string name="draw_size_small">Small</string>
     <string name="draw_size_medium">Medium</string>
     <string name="draw_size_large">Large</string>
