@@ -45,6 +45,7 @@ import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
+import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
@@ -71,6 +72,7 @@ public class MainActivity extends Activity {
     private static final int REQ_FOLDER = 1005;
     private static final int REQ_SHIZUKU = 1006;
     private static final int REQ_SHIZUKU_FAST = 1011;
+    private static final int REQ_SHIZUKU_STATUS = 1012;
     private static final int REQ_REGION_OVERLAY = 1012;
 
     /** Every file DenRecorder writes starts with this name. */
@@ -108,6 +110,9 @@ public class MainActivity extends Activity {
     private ScrollView recordingsScroll;
     private LinearLayout homeList;
     private LinearLayout settingsList;
+    /** The tab of each settings part, and the card it shows. */
+    private final List<TextView> settingsTabs = new ArrayList<>();
+    private final List<View> settingsSections = new ArrayList<>();
     private LinearLayout recordingsPageList;
     private boolean settingsRevealed;
     private boolean recordingsRevealed;
@@ -134,9 +139,11 @@ public class MainActivity extends Activity {
     private TextView islandValueView;
     private TextView islandModeValueView;
     private TextView fastStartValueView;
+    private TextView shizukuValueView;
     /** Set while the Shizuku permission request is on its way. */
     private boolean islandRequestPending;
     private boolean fastStartRequestPending;
+    private boolean shizukuStatusRequestPending;
     private TextView storageValueView;
     private TextView orientationValueView;
     private TextView drawValueView;
@@ -377,6 +384,7 @@ public class MainActivity extends Activity {
         handler.removeCallbacks(poll);
         handler.post(poll);
         updateBatteryValue();
+        updateShizukuValue();
         // Keep the phone's own rotation at hand, so a game that turns the
         // screen sideways can be undone when the recording ends.
         RotationLock.rememberUserLock(this);
@@ -627,9 +635,17 @@ public class MainActivity extends Activity {
         settingsScroll.addView(list, new ScrollView.LayoutParams(MATCH, WRAP));
         settingsList = list;
 
-        list.addView(sectionLabel(R.string.section_capture), lp(MATCH, WRAP, 0, 10, 0, 0));
-        LinearLayout qualityCard = card();
-        list.addView(qualityCard, lp(MATCH, WRAP, 0, 8, 0, 0));
+        // One part of the settings at a time: this row of tabs picks it, so the
+        // list stays short and a value is found without scrolling far.
+        LinearLayout tabRow = new LinearLayout(this);
+        tabRow.setOrientation(LinearLayout.HORIZONTAL);
+        HorizontalScrollView tabScroll = new HorizontalScrollView(this);
+        tabScroll.setHorizontalScrollBarEnabled(false);
+        tabScroll.setClipToPadding(false);
+        tabScroll.addView(tabRow, new LinearLayout.LayoutParams(WRAP, WRAP));
+        list.addView(tabScroll, lp(MATCH, WRAP, 0, 6, 0, 0));
+
+        LinearLayout qualityCard = settingsSection(list, tabRow, R.string.tab_capture);
         resolutionValueView = addRow(qualityCard, R.drawable.ic_screen, R.string.row_resolution,
                 "", true, this::chooseResolution);
         divider(qualityCard);
@@ -648,15 +664,11 @@ public class MainActivity extends Activity {
         codecValueView = addRow(qualityCard, R.drawable.ic_chip, R.string.row_codec,
                 "", true, this::chooseCodec);
 
-        list.addView(sectionLabel(R.string.section_audio), lp(MATCH, WRAP, 0, 22, 0, 0));
-        LinearLayout audioCard = card();
-        list.addView(audioCard, lp(MATCH, WRAP, 0, 8, 0, 0));
+        LinearLayout audioCard = settingsSection(list, tabRow, R.string.tab_audio);
         audioValueView = addRow(audioCard, R.drawable.ic_mic, R.string.row_audio,
                 "", true, this::chooseAudioSource);
 
-        list.addView(sectionLabel(R.string.section_general), lp(MATCH, WRAP, 0, 22, 0, 0));
-        LinearLayout generalCard = card();
-        list.addView(generalCard, lp(MATCH, WRAP, 0, 8, 0, 0));
+        LinearLayout generalCard = settingsSection(list, tabRow, R.string.tab_general);
         batteryValueView = addRow(generalCard, R.drawable.ic_battery, R.string.row_battery,
                 "", true, this::requestBatteryExemption);
         divider(generalCard);
@@ -665,6 +677,9 @@ public class MainActivity extends Activity {
         divider(generalCard);
         fastStartValueView = addRow(generalCard, R.drawable.ic_chip,
                 R.string.row_fast_start, "", true, this::toggleFastStart);
+        divider(generalCard);
+        shizukuValueView = addRow(generalCard, R.drawable.ic_chip, R.string.row_shizuku,
+                "", true, this::openShizukuStatus);
         divider(generalCard);
         languageValueView = addRow(generalCard, R.drawable.ic_language, R.string.row_language,
                 "", true, this::chooseLanguage);
@@ -693,9 +708,7 @@ public class MainActivity extends Activity {
 
         // Super Island is a Xiaomi feature, so the row only exists there.
         if (Island.isXiaomi()) {
-            list.addView(sectionLabel(R.string.section_beta), lp(MATCH, WRAP, 0, 22, 0, 0));
-            LinearLayout betaCard = card();
-            list.addView(betaCard, lp(MATCH, WRAP, 0, 8, 0, 0));
+            LinearLayout betaCard = settingsSection(list, tabRow, R.string.tab_beta);
             islandValueView = addRow(betaCard, R.drawable.ic_tile, R.string.row_island,
                     "", true, this::chooseIsland);
             divider(betaCard);
@@ -705,13 +718,50 @@ public class MainActivity extends Activity {
             addHint(betaCard, R.string.hint_island_beta);
         }
 
-        list.addView(sectionLabel(R.string.section_about), lp(MATCH, WRAP, 0, 22, 0, 0));
-        LinearLayout aboutCard = card();
-        list.addView(aboutCard, lp(MATCH, WRAP, 0, 8, 0, 0));
+        LinearLayout aboutCard = settingsSection(list, tabRow, R.string.tab_about);
         addRow(aboutCard, R.drawable.ic_info, R.string.row_version, versionName(), false, null);
         divider(aboutCard);
         addRow(aboutCard, R.drawable.ic_info, R.string.row_credit,
                 getString(R.string.value_credit), false, null);
+
+        selectSettingsTab(0);
+    }
+
+    /**
+     * One settings part: its tab in the row and the card it shows. Only the
+     * picked part is visible, so nothing has to be scrolled past.
+     */
+    private LinearLayout settingsSection(LinearLayout list, LinearLayout tabRow, int titleRes) {
+        final int index = settingsTabs.size();
+        TextView tab = label(getString(titleRes), 13, FAINT, true);
+        tab.setGravity(Gravity.CENTER);
+        tab.setPadding(dp(11), dp(9), dp(11), dp(9));
+        tab.setClickable(true);
+        tab.setOnClickListener(v -> selectSettingsTab(index));
+        settingsTabs.add(tab);
+        LinearLayout.LayoutParams tabParams = new LinearLayout.LayoutParams(WRAP, WRAP);
+        tabParams.setMargins(0, 0, dp(5), 0);
+        tabRow.addView(tab, tabParams);
+
+        LinearLayout section = card();
+        list.addView(section, lp(MATCH, WRAP, 0, 10, 0, 0));
+        settingsSections.add(section);
+        return section;
+    }
+
+    private void selectSettingsTab(int index) {
+        if (index < 0 || index >= settingsSections.size()) return;
+        for (int i = 0; i < settingsSections.size(); i++) {
+            boolean on = i == index;
+            View section = settingsSections.get(i);
+            section.setVisibility(on ? View.VISIBLE : View.GONE);
+            if (i < settingsTabs.size()) {
+                TextView tab = settingsTabs.get(i);
+                tab.setBackground(on ? round(NAV_ACTIVE, 10, 0) : null);
+                tab.setTextColor(on ? TEXT : FAINT);
+            }
+        }
+        if (settingsScroll != null) settingsScroll.scrollTo(0, 0);
     }
 
     private void buildRecordings() {
@@ -1386,6 +1436,7 @@ public class MainActivity extends Activity {
             updateBatteryValue();
             updateTileValue();
             updateFastStartValue();
+            updateShizukuValue();
             updateLanguageValue();
             updateThemeValue();
             updateIslandValue();
@@ -1817,6 +1868,45 @@ public class MainActivity extends Activity {
         FastStart.setEnabled(this, true);
         updateFastStartValue();
         Toast.makeText(this, R.string.fast_start_on_toast, Toast.LENGTH_SHORT).show();
+    }
+
+    // ---------- Shizuku status ----------
+
+    /** Says whether Shizuku is there, running and allowed, and fixes it. */
+    private void updateShizukuValue() {
+        if (shizukuValueView == null) return;
+        int res;
+        if (!ShizukuBridge.installed(this)) res = R.string.shizuku_not_installed;
+        else if (!ShizukuBridge.running()) res = R.string.shizuku_not_running;
+        else if (!ShizukuBridge.allowed()) res = R.string.shizuku_no_permission;
+        else res = ShizukuBridge.isRoot()
+                    ? R.string.shizuku_connected_root : R.string.shizuku_connected;
+        setValue(shizukuValueView, getString(res));
+    }
+
+    private void openShizukuStatus() {
+        updateShizukuValue();
+        if (!ShizukuBridge.installed(this)) {
+            showCard(getString(R.string.shizuku_need_title),
+                    getString(R.string.island_need_shizuku_body),
+                    getString(R.string.island_install_shizuku), this::openShizukuDownload,
+                    getString(R.string.dialog_cancel), null);
+            return;
+        }
+        if (!ShizukuBridge.running()) {
+            showCard(getString(R.string.shizuku_need_title),
+                    getString(R.string.island_waiting_shizuku),
+                    getString(R.string.island_open_shizuku), this::openShizukuApp,
+                    getString(R.string.dialog_cancel), null);
+            return;
+        }
+        if (!ShizukuBridge.allowed()) {
+            shizukuStatusRequestPending = true;
+            Toast.makeText(this, R.string.island_allow_in_shizuku, Toast.LENGTH_LONG).show();
+            ShizukuBridge.requestPermission(REQ_SHIZUKU_STATUS);
+            return;
+        }
+        Toast.makeText(this, R.string.shizuku_connected_toast, Toast.LENGTH_SHORT).show();
     }
 
     private String versionName() {
@@ -2621,6 +2711,22 @@ public class MainActivity extends Activity {
                         });
                         return;
                     }
+                    if (requestCode == REQ_SHIZUKU_STATUS) {
+                        if (!shizukuStatusRequestPending) return;
+                        shizukuStatusRequestPending = false;
+                        handler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                updateShizukuValue();
+                                if (grantResult == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                                    Toast.makeText(MainActivity.this,
+                                            R.string.shizuku_connected_toast,
+                                            Toast.LENGTH_SHORT).show();
+                                }
+                            }
+                        });
+                        return;
+                    }
                     if (requestCode != REQ_SHIZUKU || !islandRequestPending) return;
                     islandRequestPending = false;
                     handler.post(new Runnable() {
@@ -3061,6 +3167,8 @@ public class MainActivity extends Activity {
         if (uri != null) {
             String detail = RecorderService.lastSummary;
             String message = getString(R.string.saved_body, saveFolder());
+            String note = RecorderService.lastNote;
+            if (note != null) message = message + "\n\n" + note;
             if (detail != null) message = message + "\n\n" + detail;
             showCard(getString(R.string.saved_title), message,
                     getString(R.string.dialog_open),

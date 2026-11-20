@@ -188,6 +188,8 @@ public class DrawOverlayService extends Service {
     private int bubbleY;
     /** Settings: fade the button away while nobody uses it, or keep it in sight. */
     private boolean autoHide;
+    /** True while a finger is moving the button. */
+    private boolean dragging;
 
     /** How long the floating button stays in sight while nobody touches it. */
     private static final long BUBBLE_IDLE_MS = 2000;
@@ -197,8 +199,9 @@ public class DrawOverlayService extends Service {
     private final Runnable hideBubbleTask = new Runnable() {
         @Override
         public void run() {
-            if (bubble == null || panelOpen) return;
-            bubble.animate().alpha(0f).setDuration(220).start();
+            if (bubble == null || panelOpen || dragging) return;
+            // Still there, just faint.
+            bubble.animate().alpha(0.2f).setDuration(220).start();
         }
     };
     private final Runnable hidePanelTask = new Runnable() {
@@ -530,6 +533,10 @@ public class DrawOverlayService extends Service {
     private void showBubble() {
         if (bubble == null) return;
         bubble.animate().cancel();
+        if (bubble.getAlpha() >= 0.99f) {
+            bubble.setAlpha(1f);
+            return;
+        }
         bubble.animate().alpha(1f).setDuration(150).start();
     }
 
@@ -692,6 +699,7 @@ public class DrawOverlayService extends Service {
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
                         | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
                         | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
+                        | WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
                         | WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR,
                 PixelFormat.TRANSLUCENT);
         params.gravity = Gravity.TOP | Gravity.START;
@@ -705,6 +713,26 @@ public class DrawOverlayService extends Service {
         private int startX;
         private int startY;
         private boolean moved;
+        /** Coalesces a fast drag into one window move per frame. */
+        private boolean pending;
+        private int pendingX;
+        private int pendingY;
+
+        private final Runnable applyMove = new Runnable() {
+            @Override
+            public void run() {
+                pending = false;
+                if (bubble == null || bubbleParams == null) return;
+                if (bubbleParams.x == pendingX && bubbleParams.y == pendingY) return;
+                bubbleX = pendingX;
+                bubbleY = pendingY;
+                bubbleParams.x = pendingX;
+                bubbleParams.y = pendingY;
+                try {
+                    windowManager.updateViewLayout(bubble, bubbleParams);
+                } catch (Exception ignored) { }
+            }
+        };
 
         @Override
         public boolean onTouch(View view, MotionEvent event) {
@@ -715,6 +743,7 @@ public class DrawOverlayService extends Service {
                     startX = bubbleParams.x;
                     startY = bubbleParams.y;
                     moved = false;
+                    dragging = false;
                     // A touch is the user's: bring the button (and its bar) back
                     // while it is being used, and start the idle count again.
                     handler.removeCallbacks(hideBubbleTask);
@@ -724,21 +753,35 @@ public class DrawOverlayService extends Service {
                 case MotionEvent.ACTION_MOVE:
                     int dx = Math.round(event.getRawX() - downRawX);
                     int dy = Math.round(event.getRawY() - downRawY);
-                    if (Math.abs(dx) > dp(6) || Math.abs(dy) > dp(6)) moved = true;
-                    if (!moved) return true;
+                    if (!moved) {
+                        // A small slop still keeps a tap from becoming a drag,
+                        // but the button follows the finger at once.
+                        if (Math.abs(dx) <= dp(3) && Math.abs(dy) <= dp(3)) return true;
+                        moved = true;
+                        dragging = true;
+                        // The bar folds away while the finger moves the button:
+                        // moving two overlay windows at the same time is what
+                        // made a fast drag stutter.
+                        if (panelOpen) closePanel();
+                    }
                     int width = getResources().getDisplayMetrics().widthPixels;
                     int height = getResources().getDisplayMetrics().heightPixels;
-                    bubbleX = Math.max(0, Math.min(startX + dx, width - bubbleParams.width));
-                    bubbleY = Math.max(0, Math.min(startY + dy, height - bubbleParams.height));
-                    bubbleParams.x = bubbleX;
-                    bubbleParams.y = bubbleY;
-                    try {
-                        windowManager.updateViewLayout(bubble, bubbleParams);
-                    } catch (Exception ignored) { }
-                    if (panelOpen) movePanel();
+                    pendingX = Math.max(0, Math.min(startX + dx, width - bubbleParams.width));
+                    pendingY = Math.max(0, Math.min(startY + dy, height - bubbleParams.height));
+                    if (!pending) {
+                        pending = true;
+                        handler.post(applyMove);
+                    }
                     return true;
                 case MotionEvent.ACTION_UP:
-                    if (!moved) togglePanel();
+                case MotionEvent.ACTION_CANCEL:
+                    if (moved) {
+                        handler.removeCallbacks(applyMove);
+                        applyMove.run();
+                    }
+                    if (!moved && event.getActionMasked() == MotionEvent.ACTION_UP) togglePanel();
+                    dragging = false;
+                    if (autoHide) handler.postDelayed(hideBubbleTask, BUBBLE_IDLE_MS);
                     return true;
                 default:
                     return true;

@@ -11,6 +11,19 @@
     <string name="section_audio">ÂM THANH</string>
     <string name="section_general">CHUNG</string>
     <string name="section_about">THÔNG TIN</string>
+    <string name="tab_capture">Chất lượng</string>
+    <string name="tab_audio">Âm thanh</string>
+    <string name="tab_general">Chung</string>
+    <string name="tab_beta">Beta</string>
+    <string name="tab_about">Thông tin</string>
+    <string name="row_shizuku">Shizuku</string>
+    <string name="shizuku_need_title">Shizuku</string>
+    <string name="shizuku_not_installed">Chưa cài</string>
+    <string name="shizuku_not_running">Chưa chạy</string>
+    <string name="shizuku_no_permission">Chưa cấp quyền</string>
+    <string name="shizuku_connected">Đã kết nối · shell</string>
+    <string name="shizuku_connected_root">Đã kết nối · root</string>
+    <string name="shizuku_connected_toast">Shizuku đã kết nối</string>
 
     <string name="row_region">Vùng quay</string>
     <string name="value_region_full">Toàn màn hình</string>
@@ -83,6 +96,7 @@
     <string name="player_close">Đóng</string>
     <string name="player_open_failed">Không mở được trình phát</string>
     <string name="toast_recording_saved">Đã lưu bản ghi</string>
+    <string name="saved_screen_off">Màn hình đã bị tắt, mà Android sẽ dừng quay khi màn hình tắt. Mọi thứ tới lúc đó vẫn nằm trong video.</string>
     <string name="row_draw">Vẽ trên màn hình</string>
     <string name="value_draw_on">Bật · nút nổi</string>
     <string name="value_draw_off">Tắt</string>

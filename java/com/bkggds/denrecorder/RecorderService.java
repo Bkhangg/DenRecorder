@@ -94,6 +94,16 @@ public class RecorderService extends Service {
     private volatile boolean finishing;
     private volatile boolean selfStop;
 
+    /** Keeps the display awake while a recording runs. */
+    private android.os.PowerManager.WakeLock screenLock;
+    private boolean screenReceiverOn;
+    /** The recording was paused because the display went dark. */
+    private boolean screenPaused;
+    /** The projection was stopped by the display going dark, not by a failure. */
+    private boolean screenOffStop;
+    /** A line the saved dialog adds, e.g. that the screen was turned off. */
+    public static volatile String lastNote;
+
     /**
      * Long recordings (an hour and more) must not need the app to do anything
      * every second: the notification counts time by itself (chronometer), and
@@ -147,7 +157,28 @@ public class RecorderService extends Service {
         islandThread.start();
         islandHandler = new Handler(islandThread.getLooper());
         createChannel();
+        // The screen going dark ends a screen recording on Android: hold the
+        // recording instead of letting the frames go black, and pick it up
+        // again when the display is back.
+        try {
+            android.content.IntentFilter filter = new android.content.IntentFilter();
+            filter.addAction(Intent.ACTION_SCREEN_OFF);
+            filter.addAction(Intent.ACTION_SCREEN_ON);
+            registerReceiver(screenReceiver, filter);
+            screenReceiverOn = true;
+        } catch (Exception ignored) { }
     }
+
+    /** The display went dark or came back; see {@link #onScreenOff()}. */
+    private final android.content.BroadcastReceiver screenReceiver =
+            new android.content.BroadcastReceiver() {
+                @Override
+                public void onReceive(android.content.Context context, Intent intent) {
+                    if (intent == null || intent.getAction() == null) return;
+                    if (Intent.ACTION_SCREEN_OFF.equals(intent.getAction())) onScreenOff();
+                    else if (Intent.ACTION_SCREEN_ON.equals(intent.getAction())) onScreenOn();
+                }
+            };
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
@@ -301,6 +332,14 @@ public class RecorderService extends Service {
             @Override
             public void onStop() {
                 if (selfStop) return; // we stopped the recording ourselves
+                if (screenOff()) {
+                    // Android ends the projection when the display goes dark.
+                    // What was recorded is fine, so it is saved, not thrown away.
+                    Log.i(TAG, "Projection stopped with the screen off: saving the video");
+                    screenOffStop = true;
+                    stopRecording(null);
+                    return;
+                }
                 Log.i(TAG, "Projection stopped by system");
                 stopRecording("Screen capture was stopped");
             }
@@ -308,6 +347,12 @@ public class RecorderService extends Service {
 
         lastError = null;
         lastUri = null;
+        lastNote = null;
+        screenPaused = false;
+        screenOffStop = false;
+        // Android records the screen as it is: a display that sleeps would only
+        // put black frames in the video, and cut the recording short.
+        keepScreenOn();
         resetTimer();
         isRecording = true;
         handler.post(ticker);
@@ -410,6 +455,9 @@ public class RecorderService extends Service {
 
                 DrawOverlayService.stop(RecorderService.this);
                 isPaused = false;
+                screenPaused = false;
+                lastNote = screenOffStop ? getString(R.string.saved_screen_off) : null;
+                letScreenSleep();
 
                 final Uri savedUri = uri;
                 final String savedError = failReason != null ? failReason : lastError;
@@ -436,6 +484,64 @@ public class RecorderService extends Service {
                 });
             }
         }, "rec-stop").start();
+    }
+
+    /** True when the display is dark (the phone is asleep or locked). */
+    private boolean screenOff() {
+        try {
+            android.os.PowerManager pm =
+                    (android.os.PowerManager) getSystemService(POWER_SERVICE);
+            return pm != null && !pm.isInteractive();
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * Keeps the display awake for as long as a recording runs. The screen is
+     * what is being recorded, so it sleeping is never wanted: the video would
+     * only hold black frames, and Android ends the capture.
+     */
+    private void keepScreenOn() {
+        try {
+            android.os.PowerManager pm =
+                    (android.os.PowerManager) getSystemService(POWER_SERVICE);
+            if (pm == null) return;
+            if (screenLock == null) {
+                // Dim, so a long recording does not burn the battery at full
+                // brightness; the screen still stays on.
+                screenLock = pm.newWakeLock(android.os.PowerManager.SCREEN_DIM_WAKE_LOCK,
+                        "DenRecorder:recording");
+                screenLock.setReferenceCounted(false);
+            }
+            screenLock.acquire();
+        } catch (Exception e) {
+            Log.w(TAG, "Could not keep the screen on", e);
+        }
+    }
+
+    private void letScreenSleep() {
+        try {
+            if (screenLock != null && screenLock.isHeld()) screenLock.release();
+        } catch (Exception ignored) { }
+    }
+
+    /** The display went dark: hold the video instead of recording black frames. */
+    private void onScreenOff() {
+        if (!isRecording || recorder == null || isPaused) return;
+        Log.i(TAG, "Screen off: pausing the recording until it is back");
+        screenPaused = true;
+        pauseRecording();
+    }
+
+    /** The display is back: the same file goes on, without the dark stretch. */
+    private void onScreenOn() {
+        if (!screenPaused) return;
+        screenPaused = false;
+        if (isRecording && isPaused) {
+            Log.i(TAG, "Screen on: resuming the recording");
+            resumeRecording();
+        }
     }
 
     /** Holds the video without ending it, so one file stays one recording. */
@@ -481,6 +587,12 @@ public class RecorderService extends Service {
         }
         isRecording = false;
         isPaused = false;
+        screenPaused = false;
+        if (screenReceiverOn) {
+            try { unregisterReceiver(screenReceiver); } catch (Exception ignored) { }
+            screenReceiverOn = false;
+        }
+        letScreenSleep();
         // A killed service must not leave a "stop" ball behind on the screen.
         RegionPickerService.recordingStopped(this);
         DrawOverlayService.stop(this);
@@ -559,10 +671,11 @@ public class RecorderService extends Service {
                     .setWhen(System.currentTimeMillis())
                     .setCategory(Notification.CATEGORY_STATUS)
                     .setPriority(Notification.PRIORITY_DEFAULT);
-            if (uri != null && lastSummary != null) {
-                builder.setStyle(new Notification.BigTextStyle()
-                        .bigText(getString(R.string.notification_saved_text, folder)
-                                + " · " + lastSummary));
+            if (uri != null && (lastSummary != null || lastNote != null)) {
+                String text = getString(R.string.notification_saved_text, folder);
+                if (lastSummary != null) text = text + " · " + lastSummary;
+                if (lastNote != null) text = text + "\n" + lastNote;
+                builder.setStyle(new Notification.BigTextStyle().bigText(text));
             }
             NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
             nm.notify(SAVED_ID, builder.build());
