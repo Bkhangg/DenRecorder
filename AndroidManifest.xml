@@ -19,6 +19,9 @@
     <!-- A short buzz says a recording started or stopped without a toast on
          the screen, which the recording would capture. -->
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- The display is held awake (dimmed) while a recording runs, so the
+         screen sleeping does not cut the video short. -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
     <!-- Locking the screen rotation while a recording runs. -->
     <uses-permission android:name="android.permission.WRITE_SETTINGS" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"

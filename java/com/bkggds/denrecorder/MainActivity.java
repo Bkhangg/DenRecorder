@@ -113,6 +113,7 @@ public class MainActivity extends Activity {
     /** The tab of each settings part, and the card it shows. */
     private final List<TextView> settingsTabs = new ArrayList<>();
     private final List<View> settingsSections = new ArrayList<>();
+    private HorizontalScrollView settingsTabScroll;
     private LinearLayout recordingsPageList;
     private boolean settingsRevealed;
     private boolean recordingsRevealed;
@@ -195,6 +196,9 @@ public class MainActivity extends Activity {
     private boolean drawAutoHide;
     private TextView drawSizeValueView;
     private TextView drawModeValueView;
+    /** What turning the display off does: "stop" or "resume" when it is back. */
+    private String screenOffAction = "stop";
+    private TextView screenOffValueView;
     private boolean perfMode = true;
     private boolean pendingStart;
     private boolean sawRecording;
@@ -329,6 +333,7 @@ public class MainActivity extends Activity {
         drawOverlay = prefs.getBoolean("drawOverlay", true);
         drawSize = prefs.getInt("drawSize", 1);
         drawAutoHide = prefs.getBoolean("drawAutoHide", false);
+        screenOffAction = prefs.getString("screenOffAction", "stop");
         handler = new Handler(Looper.getMainLooper());
         try {
             rikka.shizuku.Shizuku.addRequestPermissionResultListener(islandPermissionListener);
@@ -644,6 +649,34 @@ public class MainActivity extends Activity {
         tabScroll.setClipToPadding(false);
         tabScroll.addView(tabRow, new LinearLayout.LayoutParams(WRAP, WRAP));
         list.addView(tabScroll, lp(MATCH, WRAP, 0, 6, 0, 0));
+        settingsTabScroll = tabScroll;
+
+        // General comes first: the everyday parts, so they are one tap away.
+        LinearLayout generalCard = settingsSection(list, tabRow, R.string.tab_general);
+        batteryValueView = addRow(generalCard, R.drawable.ic_battery, R.string.row_battery,
+                "", true, this::requestBatteryExemption);
+        divider(generalCard);
+        tileValueView = addRow(generalCard, R.drawable.ic_tile, R.string.row_tile,
+                "", true, this::requestTile);
+        divider(generalCard);
+        screenOffValueView = addRow(generalCard, R.drawable.ic_screen, R.string.row_screen_off,
+                "", true, this::chooseScreenOff);
+        divider(generalCard);
+        addHint(generalCard, R.string.hint_screen_off);
+        divider(generalCard);
+        languageValueView = addRow(generalCard, R.drawable.ic_language, R.string.row_language,
+                "", true, this::chooseLanguage);
+        divider(generalCard);
+        themeValueView = addRow(generalCard, R.drawable.ic_theme, R.string.row_theme,
+                "", true, this::chooseTheme);
+        divider(generalCard);
+        storageValueView = addRow(generalCard, R.drawable.ic_folder, R.string.row_storage,
+                saveFolder(), true, this::chooseSaveFolder);
+        divider(generalCard);
+        orientationValueView = addRow(generalCard, R.drawable.ic_screen, R.string.row_orientation,
+                "", true, this::chooseOrientation);
+        divider(generalCard);
+        addHint(generalCard, R.string.hint_orientation);
 
         LinearLayout qualityCard = settingsSection(list, tabRow, R.string.tab_capture);
         resolutionValueView = addRow(qualityCard, R.drawable.ic_screen, R.string.row_resolution,
@@ -668,54 +701,37 @@ public class MainActivity extends Activity {
         audioValueView = addRow(audioCard, R.drawable.ic_mic, R.string.row_audio,
                 "", true, this::chooseAudioSource);
 
-        LinearLayout generalCard = settingsSection(list, tabRow, R.string.tab_general);
-        batteryValueView = addRow(generalCard, R.drawable.ic_battery, R.string.row_battery,
-                "", true, this::requestBatteryExemption);
-        divider(generalCard);
-        tileValueView = addRow(generalCard, R.drawable.ic_tile, R.string.row_tile,
-                "", true, this::requestTile);
-        divider(generalCard);
-        fastStartValueView = addRow(generalCard, R.drawable.ic_chip,
-                R.string.row_fast_start, "", true, this::toggleFastStart);
-        divider(generalCard);
-        shizukuValueView = addRow(generalCard, R.drawable.ic_chip, R.string.row_shizuku,
-                "", true, this::openShizukuStatus);
-        divider(generalCard);
-        languageValueView = addRow(generalCard, R.drawable.ic_language, R.string.row_language,
-                "", true, this::chooseLanguage);
-        divider(generalCard);
-        themeValueView = addRow(generalCard, R.drawable.ic_theme, R.string.row_theme,
-                "", true, this::chooseTheme);
-        divider(generalCard);
-        storageValueView = addRow(generalCard, R.drawable.ic_folder, R.string.row_storage,
-                saveFolder(), true, this::chooseSaveFolder);
-        divider(generalCard);
-        orientationValueView = addRow(generalCard, R.drawable.ic_screen, R.string.row_orientation,
-                "", true, this::chooseOrientation);
-        divider(generalCard);
-        addHint(generalCard, R.string.hint_orientation);
-        divider(generalCard);
-        drawValueView = addRow(generalCard, R.drawable.ic_pen, R.string.row_draw,
+        // Drawing has a tab of its own: everything that puts something on the
+        // screen belongs together, apart from the recording settings.
+        LinearLayout drawCard = settingsSection(list, tabRow, R.string.tab_draw);
+        drawValueView = addRow(drawCard, R.drawable.ic_pen, R.string.row_draw,
                 "", true, this::toggleDrawOverlay);
-        divider(generalCard);
-        drawSizeValueView = addRow(generalCard, R.drawable.ic_rect, R.string.row_draw_size,
+        divider(drawCard);
+        drawSizeValueView = addRow(drawCard, R.drawable.ic_rect, R.string.row_draw_size,
                 "", true, this::chooseDrawSize);
-        divider(generalCard);
-        drawModeValueView = addRow(generalCard, R.drawable.ic_screen, R.string.row_draw_mode,
+        divider(drawCard);
+        drawModeValueView = addRow(drawCard, R.drawable.ic_screen, R.string.row_draw_mode,
                 "", true, this::chooseDrawMode);
-        divider(generalCard);
-        addHint(generalCard, R.string.hint_draw_mode);
+        divider(drawCard);
+        addHint(drawCard, R.string.hint_draw_mode);
 
-        // Super Island is a Xiaomi feature, so the row only exists there.
+        // Everything that goes through Shizuku lives in one tab as well.
+        LinearLayout shizukuCard = settingsSection(list, tabRow, R.string.tab_shizuku);
+        fastStartValueView = addRow(shizukuCard, R.drawable.ic_chip,
+                R.string.row_fast_start, "", true, this::toggleFastStart);
+        divider(shizukuCard);
+        shizukuValueView = addRow(shizukuCard, R.drawable.ic_chip, R.string.row_shizuku,
+                "", true, this::openShizukuStatus);
+        // Super Island is a Xiaomi feature, so the rows only exist there.
         if (Island.isXiaomi()) {
-            LinearLayout betaCard = settingsSection(list, tabRow, R.string.tab_beta);
-            islandValueView = addRow(betaCard, R.drawable.ic_tile, R.string.row_island,
+            divider(shizukuCard);
+            islandValueView = addRow(shizukuCard, R.drawable.ic_tile, R.string.row_island,
                     "", true, this::chooseIsland);
-            divider(betaCard);
-            islandModeValueView = addRow(betaCard, R.drawable.ic_rect,
+            divider(shizukuCard);
+            islandModeValueView = addRow(shizukuCard, R.drawable.ic_rect,
                     R.string.row_island_mode, "", true, this::chooseIslandMode);
-            divider(betaCard);
-            addHint(betaCard, R.string.hint_island_beta);
+            divider(shizukuCard);
+            addHint(shizukuCard, R.string.hint_island_beta);
         }
 
         LinearLayout aboutCard = settingsSection(list, tabRow, R.string.tab_about);
@@ -733,14 +749,15 @@ public class MainActivity extends Activity {
      */
     private LinearLayout settingsSection(LinearLayout list, LinearLayout tabRow, int titleRes) {
         final int index = settingsTabs.size();
-        TextView tab = label(getString(titleRes), 13, FAINT, true);
+        TextView tab = label(getString(titleRes), 12, FAINT, true);
         tab.setGravity(Gravity.CENTER);
-        tab.setPadding(dp(11), dp(9), dp(11), dp(9));
+        tab.setPadding(dp(8), dp(9), dp(8), dp(9));
+        tab.setSingleLine(true);
         tab.setClickable(true);
         tab.setOnClickListener(v -> selectSettingsTab(index));
         settingsTabs.add(tab);
         LinearLayout.LayoutParams tabParams = new LinearLayout.LayoutParams(WRAP, WRAP);
-        tabParams.setMargins(0, 0, dp(5), 0);
+        tabParams.setMargins(0, 0, dp(4), 0);
         tabRow.addView(tab, tabParams);
 
         LinearLayout section = card();
@@ -762,6 +779,23 @@ public class MainActivity extends Activity {
             }
         }
         if (settingsScroll != null) settingsScroll.scrollTo(0, 0);
+        // Keep the picked tab in sight: the row is wider than the screen when
+        // there are many parts.
+        final HorizontalScrollView row = settingsTabScroll;
+        if (row != null && index < settingsTabs.size()) {
+            final View tab = settingsTabs.get(index);
+            row.post(new Runnable() {
+                @Override
+                public void run() {
+                    int pad = dp(12);
+                    if (tab.getLeft() - row.getScrollX() < pad) {
+                        row.smoothScrollTo(Math.max(0, tab.getLeft() - pad), 0);
+                    } else if (tab.getRight() - row.getScrollX() > row.getWidth() - pad) {
+                        row.smoothScrollTo(tab.getRight() - row.getWidth() + pad, 0);
+                    }
+                }
+            });
+        }
     }
 
     private void buildRecordings() {
@@ -1445,6 +1479,7 @@ public class MainActivity extends Activity {
             updateDrawValue();
             updateDrawSizeValue();
             updateDrawModeValue();
+            updateScreenOffValue();
         } else if (index == 2) {
             loadRecordings();
         }
@@ -2533,6 +2568,25 @@ public class MainActivity extends Activity {
             updateDrawModeValue();
             DrawOverlayService.refreshMode(this);
         });
+    }
+
+    private void chooseScreenOff() {
+        String[] modes = {
+                getString(R.string.screen_off_stop),
+                getString(R.string.screen_off_resume)
+        };
+        showChoices(getString(R.string.title_screen_off), modes,
+                "resume".equals(screenOffAction) ? 1 : 0, which -> {
+            screenOffAction = which == 1 ? "resume" : "stop";
+            prefs.edit().putString("screenOffAction", screenOffAction).apply();
+            updateScreenOffValue();
+        });
+    }
+
+    private void updateScreenOffValue() {
+        if (screenOffValueView == null) return;
+        setValue(screenOffValueView, getString("resume".equals(screenOffAction)
+                ? R.string.screen_off_resume : R.string.screen_off_stop));
     }
 
     private void updateDrawModeValue() {

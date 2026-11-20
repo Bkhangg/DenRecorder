@@ -101,6 +101,10 @@ public class RecorderService extends Service {
     private boolean screenPaused;
     /** The projection was stopped by the display going dark, not by a failure. */
     private boolean screenOffStop;
+    /** The recording is saved and the service waits for the phone to be unlocked. */
+    private boolean waitingUnlock;
+    /** How long a "record again" stands waiting for the phone to be unlocked. */
+    private static final long WAIT_UNLOCK_MS = 30L * 60 * 1000;
     /** A line the saved dialog adds, e.g. that the screen was turned off. */
     public static volatile String lastNote;
 
@@ -164,6 +168,7 @@ public class RecorderService extends Service {
             android.content.IntentFilter filter = new android.content.IntentFilter();
             filter.addAction(Intent.ACTION_SCREEN_OFF);
             filter.addAction(Intent.ACTION_SCREEN_ON);
+            filter.addAction(Intent.ACTION_USER_PRESENT);
             registerReceiver(screenReceiver, filter);
             screenReceiverOn = true;
         } catch (Exception ignored) { }
@@ -177,6 +182,7 @@ public class RecorderService extends Service {
                     if (intent == null || intent.getAction() == null) return;
                     if (Intent.ACTION_SCREEN_OFF.equals(intent.getAction())) onScreenOff();
                     else if (Intent.ACTION_SCREEN_ON.equals(intent.getAction())) onScreenOn();
+                    else if (Intent.ACTION_USER_PRESENT.equals(intent.getAction())) onUserPresent();
                 }
             };
 
@@ -350,6 +356,8 @@ public class RecorderService extends Service {
         lastNote = null;
         screenPaused = false;
         screenOffStop = false;
+        waitingUnlock = false;
+        handler.removeCallbacks(unlockTimeout);
         // Android records the screen as it is: a display that sleeps would only
         // put black frames in the video, and cut the recording short.
         keepScreenOn();
@@ -456,7 +464,14 @@ public class RecorderService extends Service {
                 DrawOverlayService.stop(RecorderService.this);
                 isPaused = false;
                 screenPaused = false;
-                lastNote = screenOffStop ? getString(R.string.saved_screen_off) : null;
+                // The display was turned off and the user asked for a new
+                // recording once the phone is back: the saved card says so, and
+                // the service stays on until the phone is unlocked.
+                final boolean resumeWanted = screenOffStop && uri != null && resumeWhenAwake();
+                lastNote = screenOffStop
+                        ? getString(resumeWanted
+                                ? R.string.saved_screen_off_resume : R.string.saved_screen_off)
+                        : null;
                 letScreenSleep();
 
                 final Uri savedUri = uri;
@@ -478,8 +493,12 @@ public class RecorderService extends Service {
                         // Two short pulses: the video is closed, so the toast
                         // above is shown after the capture has ended.
                         buzz(new long[]{0, 40, 90, 40});
-                        try { stopForeground(true); } catch (Exception ignored) { }
-                        stopSelf();
+                        if (resumeWanted) {
+                            waitForUnlock();
+                        } else {
+                            try { stopForeground(true); } catch (Exception ignored) { }
+                            stopSelf();
+                        }
                     }
                 });
             }
@@ -524,6 +543,79 @@ public class RecorderService extends Service {
         try {
             if (screenLock != null && screenLock.isHeld()) screenLock.release();
         } catch (Exception ignored) { }
+    }
+
+    /** True when the user picked "record again" for when the display comes back. */
+    private boolean resumeWhenAwake() {
+        return "resume".equals(getSharedPreferences("settings", MODE_PRIVATE)
+                .getString("screenOffAction", "stop"));
+    }
+
+    /**
+     * Holds the service (with its notification) while the phone is asleep, so a
+     * new recording can start on its own as soon as it is unlocked.
+     */
+    private void waitForUnlock() {
+        waitingUnlock = true;
+        handler.removeCallbacks(unlockTimeout);
+        handler.postDelayed(unlockTimeout, WAIT_UNLOCK_MS);
+        try {
+            NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+            nm.notify(NOTIF_ID, buildWaitNotification());
+        } catch (Exception e) {
+            Log.w(TAG, "Could not post the waiting notification", e);
+        }
+    }
+
+    /** The wait is over: the same file list ends here, no new recording. */
+    private final Runnable unlockTimeout = new Runnable() {
+        @Override
+        public void run() {
+            if (!waitingUnlock) return;
+            Log.i(TAG, "Nobody unlocked the phone: no new recording");
+            waitingUnlock = false;
+            try { stopForeground(true); } catch (Exception ignored) { }
+            stopSelf();
+        }
+    };
+
+    /** The phone is unlocked: a new recording starts, the user asks nothing. */
+    private void onUserPresent() {
+        if (!waitingUnlock) return;
+        Log.i(TAG, "Unlocked: starting a new recording");
+        waitingUnlock = false;
+        handler.removeCallbacks(unlockTimeout);
+        try { stopForeground(true); } catch (Exception ignored) { }
+        try {
+            startActivity(new Intent(this, CapturePromptActivity.class)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+        } catch (Exception e) {
+            Log.w(TAG, "Could not start the recording again", e);
+        }
+        stopSelf();
+    }
+
+    private Notification buildWaitNotification() {
+        PendingIntent resume = PendingIntent.getActivity(this, 5,
+                new Intent(this, CapturePromptActivity.class)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK), pendingFlags());
+        Notification.Builder builder;
+        if (Build.VERSION.SDK_INT >= 26) {
+            builder = new Notification.Builder(this, CHANNEL_ID);
+        } else {
+            builder = new Notification.Builder(this);
+        }
+        return builder.setSmallIcon(R.drawable.ic_record)
+                .setContentTitle(getString(R.string.wait_unlock_title))
+                .setContentText(getString(R.string.wait_unlock_text))
+                .setContentIntent(resume)
+                .setOngoing(true)
+                .setOnlyAlertOnce(true)
+                .setPriority(Notification.PRIORITY_LOW)
+                .addAction(new Notification.Action.Builder(
+                        android.R.drawable.ic_media_play,
+                        getString(R.string.notification_resume), resume).build())
+                .build();
     }
 
     /** The display went dark: hold the video instead of recording black frames. */
