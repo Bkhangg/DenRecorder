@@ -22,6 +22,7 @@ import android.view.View;
 import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -266,7 +267,9 @@ public class DrawOverlayService extends Service {
     private void styleBubble(int size) {
         int pad = Math.round(size * 0.25f);
         bubble.setPadding(dp(pad), dp(pad), dp(pad), dp(pad));
-        bubble.setBackground(circle(PANEL, size / 2, BORDER));
+        // A red ring says the layer is taking touches right now.
+        boolean drawing = layer != null && layer.getTool() != DrawLayer.TOOL_NONE;
+        bubble.setBackground(circle(PANEL, size / 2, drawing ? ACTIVE : BORDER));
     }
 
     private LinearLayout buildPanel() {
@@ -302,9 +305,10 @@ public class DrawOverlayService extends Service {
             RecorderService.requestStop(this);
             stopSelf();
         }));
-        // The chevron hides the bar and nothing else: the picked tool stays on,
-        // so the next touch draws instead of tapping around on the screen.
-        toolbar.addView(toolButton(R.drawable.ic_collapse, R.string.overlay_hide, button, v -> closePanel()));
+        // The ✕ stops drawing for good: the tool goes off, the bar closes and
+        // taps reach the app under the overlay again. Tapping the screen beside
+        // the bar still just hides it and keeps the tool.
+        toolbar.addView(toolButton(R.drawable.ic_close, R.string.overlay_stop_draw, button, v -> stopDrawing()));
 
         // The ink colour is pickable at any time while recording: a row of
         // colour dots sits under the tools and new shapes use the last pick.
@@ -409,6 +413,17 @@ public class DrawOverlayService extends Service {
         layer.setTool(same ? DrawLayer.TOOL_NONE : tool);
         updateLayerTouchable();
         updateToolHighlight();
+        styleBubble(BUBBLE_DP[sizeIndex(this)]);
+    }
+
+    /** Leaves drawing mode: shapes stay on screen, but taps reach the app again. */
+    private void stopDrawing() {
+        if (layer != null) layer.setTool(DrawLayer.TOOL_NONE);
+        closePanel();
+        updateLayerTouchable();
+        updateToolHighlight();
+        styleBubble(BUBBLE_DP[sizeIndex(this)]);
+        Toast.makeText(this, R.string.toast_draw_stopped, Toast.LENGTH_SHORT).show();
     }
 
     private void updateToolHighlight() {

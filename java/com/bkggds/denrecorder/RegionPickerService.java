@@ -77,8 +77,6 @@ public class RegionPickerService extends Service {
     private boolean recording;
     private boolean foreground;
     private boolean ballMoved;
-    private int savedBallX;
-    private int savedBallY;
     private int bubbleX;
     private int bubbleY;
     private int screenWidth;
@@ -116,7 +114,7 @@ public class RegionPickerService extends Service {
         } catch (Exception ignored) { }
     }
 
-    /** The recording ended: the ball is a record button again. */
+    /** The recording ended: the picker closes itself, ball and notification included. */
     public static void recordingStopped(Context context) {
         if (!running) return;
         try {
@@ -319,17 +317,19 @@ public class RegionPickerService extends Service {
         if (on) {
             closeEditor();
             moveBallOutOfRegion();
-        } else {
-            restoreBall();
+            updateBubble();
+            updateNotification();
+            return;
         }
-        updateBubble();
-        updateNotification();
+        // Đã quay xong: ẩn luôn bóng chọn khung và thông báo của nó, khỏi vướng
+        // màn hình khi không cần quay nữa.
+        stopSelf();
     }
 
     /**
      * The screen is captured as it is, so the ball would end up in the video.
-     * While recording it is placed just outside the chosen area; the area's
-     * edge is where it steps back in.
+     * While recording it is placed just outside the chosen area; the picker
+     * closes when the recording ends, so it never has to come back.
      */
     private void moveBallOutOfRegion() {
         if (bubble == null || bubbleParams == null || windowManager == null) return;
@@ -365,22 +365,9 @@ public class RegionPickerService extends Service {
         }
         nx = Math.max(0, Math.min(nx, screenWidth - size));
         ny = Math.max(0, Math.min(ny, screenHeight - size));
-        savedBallX = x;
-        savedBallY = y;
         ballMoved = true;
         bubbleParams.x = nx;
         bubbleParams.y = ny;
-        try {
-            windowManager.updateViewLayout(bubble, bubbleParams);
-        } catch (Exception ignored) { }
-    }
-
-    /** Puts the ball back where the user keeps it. */
-    private void restoreBall() {
-        if (!ballMoved || bubbleParams == null || windowManager == null || bubble == null) return;
-        ballMoved = false;
-        bubbleParams.x = savedBallX;
-        bubbleParams.y = savedBallY;
         try {
             windowManager.updateViewLayout(bubble, bubbleParams);
         } catch (Exception ignored) { }
@@ -400,10 +387,9 @@ public class RegionPickerService extends Service {
 
         TextView cancel = chip(getString(R.string.dialog_cancel), TEXT);
         cancel.setOnClickListener(v -> {
-            // Chỉ bỏ phần đang sửa: vùng đã lưu vẫn dùng được, bóng vẫn ở đó
-            // để quay. Chưa có vùng nào thì đóng hẳn.
-            if (regionSaved()) closeEditor();
-            else stopSelf();
+            // Hủy là thoát hẳn khỏi chế độ chọn vùng: khung, bóng và thông báo
+            // cùng tắt. Muốn giữ bóng để quay thì dùng "Ẩn".
+            stopSelf();
         });
         bar.addView(cancel, new LinearLayout.LayoutParams(dp(84), dp(44)));
 

@@ -21,11 +21,11 @@ DenRecorder records the whole screen (and the device audio, the microphone or no
 - **Xiaomi Super Island (beta, Xiaomi only)** — the running recording shows up in HyperOS's island as a small icon with its timer, and a tap on it gives **pause, resume and stop** right on the bar (the stop button is a filled square, not a cross); it can be hidden entirely, and HyperOS hides it by itself whenever the status bar is pulled down (the notification there carries the same buttons). Needs Shizuku once to grant the island permission.
 - **Game performance mode** — caps the recorder at 60 fps and runs the encoder in realtime priority, so a game next to it keeps its frame rate.
 - **Recordings screen** — recent/all lists with real thumbnails, the video's own name and the folder it is saved in; tap to play, long-press for play/share/**rename**/delete, or tap **Select** to pick several videos and delete them at once.
-- **Draw on screen** — a floating button while recording: pencil, rectangle or circle drawn straight onto the screen (they end up in the video), pause and stop from the same bar. A tool stays picked, so several shapes can be drawn one after another, and the bar carries the whole palette (12 colours): the colour can be changed in the middle of a recording, and every shape keeps the colour it was drawn with. The down-arrow hides the bar and keeps the tool on, and touching the screen beside the bar hides it and starts the shape there and then, so a tool, a colour and a stroke take one visit to the bar. The button's size is picked in settings.
+- **Draw on screen** — a floating button while recording: pencil, rectangle or circle drawn straight onto the screen (they end up in the video), pause and stop from the same bar. A tool stays picked, so several shapes can be drawn one after another, and the bar carries the whole palette (12 colours): the colour can be changed in the middle of a recording, and every shape keeps the colour it was drawn with. The **✕** stops drawing: the tool goes off, the bar closes and the app under it takes taps again, while what was drawn stays on screen. The button carries a red ring while a tool is on, and touching the screen beside the bar hides it but keeps the tool, so a tool, a colour and a stroke take one visit to the bar. The button's size is picked in settings.
 - **Pause and resume** — one recording stays one file; the paused time is cut out of the video and the timer stops while paused.
 - **Built-in player** — a recording opens in DenRecorder's own player (play/pause, seek, double-tap to jump 10 s back or forward, and a rotate button that turns the video even when the phone's rotation is locked), so the video you tap is the video you get, whatever gallery app is installed.
 - **Choose where videos go** — `Movies/Screen Recorder` by default, five presets, the phone's own folder browser, or a typed path, including `Download` (videos land in the Downloads collection so MIUI keeps them there).
-- **Record a part of the screen** — Settings → Recording area → Choose an area… floats a frame over whatever app you are in. After Save the same ball becomes the record button: tap it to start and tap again to stop from inside the app or game, hold it to change the frame. While recording it steps just outside the frame, so the video holds only the area itself.
+- **Record a part of the screen** — Settings → Recording area → Choose an area… floats a frame over whatever app you are in. After Save the same ball becomes the record button: tap it to start and tap again to stop from inside the app or game, hold it to change the frame. While recording it steps just outside the frame, so the video holds only the area itself. When the recording ends the ball and its notification close themselves; **Hủy** in the frame closes everything, while **Ẩn khung** keeps the ball ready to record.
 - **Recording rotation** — automatic, portrait or landscape: the screen is locked to that rotation for the whole recording (your phone's own rotation setting comes back afterwards), so the video never turns halfway through.
 - **Long recordings** — the notification uses the system chronometer (no wake-ups every second), storage is checked every 15 s, recording stops safely before the card fills up.
 - **Bilingual** — English and Vietnamese, English on first launch.
@@ -34,7 +34,7 @@ DenRecorder records the whole screen (and the device audio, the microphone or no
 
 ### Install
 
-1. Download `DenRecorder-1.10.3.apk` from the [Releases](../../releases) page.
+1. Download `DenRecorder-1.10.4.apk` from the [Releases](../../releases) page.
 2. Open it on the phone and allow installing apps from that source if asked.
 3. Open DenRecorder, allow the permissions it asks for, and optionally let it add the Quick Settings tile.
 
@@ -82,6 +82,11 @@ res/                    strings (EN + VI), icons, launcher icons
 ```
 
 ### What's new
+
+**1.10.4**
+
+- New: the down-arrow on the drawing bar is now **✕ Stop drawing** — the tool goes off, the bar closes and taps reach the app under the overlay again, while what was already drawn stays on screen. The floating button shows a red ring while a tool is picked.
+- The area ball closes itself when a recording ends, and **Hủy** in the frame closes the ball and its notification too; **Ẩn khung** still keeps the ball ready to record.
 
 **1.10.3**
 
@@ -235,11 +240,11 @@ DenRecorder quay toàn bộ màn hình (kèm âm thanh thiết bị, micrô ho�
 - **Super Island của Xiaomi (beta, chỉ máy Xiaomi)** — bản ghi đang chạy hiện trên đảo của HyperOS dưới dạng một biểu tượng nhỏ kèm đồng hồ đếm, chạm vào đảo là **tạm dừng, tiếp tục và dừng** ngay trên thanh đó; có thể tắt hẳn, và HyperOS tự ẩn đảo khi bạn kéo thanh trạng thái xuống (thông báo ở đó có đúng các nút này). Cần Shizuku một lần để cấp quyền hiện đảo.
 - **Chế độ hiệu năng khi chơi game** — giới hạn 60 fps và ưu tiên thời gian thực cho bộ mã hóa, để game đang chạy bên cạnh vẫn mượt.
 - **Màn Bản ghi** — danh sách Gần đây/Tất cả kèm ảnh thu nhỏ thật, tên video và thư mục lưu; chạm để xem, giữ để xem/chia sẻ/**đổi tên**/xóa, hoặc bấm **Chọn** để chọn nhiều bản ghi và xóa một lần.
-- **Vẽ trên màn hình** — nút nổi khi đang quay: bút chì, hình chữ nhật hoặc khoanh tròn vẽ thẳng lên màn hình (có trong video), tạm dừng và dừng quay ngay trên thanh đó. Chọn công cụ một lần là vẽ được nhiều hình liên tiếp, và thanh vẽ có sẵn đủ bảng màu (12 màu): đang quay vẫn đổi màu được, mỗi hình giữ đúng màu lúc vẽ. Mũi tên xuống chỉ ẩn thanh, công cụ vẫn bật; chạm ra ngoài thanh là thanh ẩn và vẽ ngay tại chỗ đó, nên chọn công cụ, chọn màu và vẽ chỉ trong một lần mở thanh. Kích thước nút nổi chỉnh trong Cài đặt.
+- **Vẽ trên màn hình** — nút nổi khi đang quay: bút chì, hình chữ nhật hoặc khoanh tròn vẽ thẳng lên màn hình (có trong video), tạm dừng và dừng quay ngay trên thanh đó. Chọn công cụ một lần là vẽ được nhiều hình liên tiếp, và thanh vẽ có sẵn đủ bảng màu (12 màu): đang quay vẫn đổi màu được, mỗi hình giữ đúng màu lúc vẽ. Nút **✕** để dừng vẽ: công cụ tắt, thanh đóng lại và chạm được vào app bên dưới như bình thường, còn nét đã vẽ vẫn nằm trên màn hình. Bóng có viền đỏ khi đang bật công cụ; chạm ra ngoài thanh thì thanh ẩn mà công cụ vẫn bật, nên chọn công cụ, chọn màu và vẽ chỉ trong một lần mở thanh. Kích thước nút nổi chỉnh trong Cài đặt.
 - **Tạm dừng và tiếp tục** — một lần quay vẫn là một file, thời gian tạm dừng được cắt khỏi video và đồng hồ đếm dừng lại khi tạm dừng.
 - **Trình phát sẵn trong app** — chạm vào bản ghi là phát ngay trong DenRecorder (phát/tạm dừng, tua, nhấn đúp để lùi hoặc tiến 10 giây, nút xoay màn hình hoạt động cả khi điện thoại đang khoá xoay), đúng video vừa chọn dù máy dùng ứng dụng thư viện nào.
 - **Chọn thư mục lưu** — mặc định `Movies/Screen Recorder`, có 5 gợi ý sẵn, duyệt thư mục bằng trình chọn của điện thoại, hoặc tự nhập.
-- **Quay một vùng màn hình** — Cài đặt → Vùng quay → Chọn vùng quay… mở một khung nổi trên app bạn đang dùng. Bấm Lưu xong, chính bóng đó thành nút quay: chạm để bắt đầu, chạm lần nữa để dừng ngay trong app hay game, giữ bóng để đổi khung. Đang quay thì bóng né ra ngoài khung nên video chỉ có đúng phần đã chọn.
+- **Quay một vùng màn hình** — Cài đặt → Vùng quay → Chọn vùng quay… mở một khung nổi trên app bạn đang dùng. Bấm Lưu xong, chính bóng đó thành nút quay: chạm để bắt đầu, chạm lần nữa để dừng ngay trong app hay game, giữ bóng để đổi khung. Đang quay thì bóng né ra ngoài khung nên video chỉ có đúng phần đã chọn. Quay xong bóng và thông báo tự tắt; bấm **Hủy** trong khung cũng tắt hết, còn **Ẩn khung** thì giữ bóng lại để quay.
 - **Hướng khi ghi hình** — tự động, dọc hoặc ngang: màn hình được khóa đúng hướng đó trong suốt lần quay (cài đặt xoay của máy được trả lại sau khi dừng), nên video không bị xoay giữa chừng.
 - **Quay dài** — thông báo dùng đồng hồ đếm của hệ thống (không đánh thức mỗi giây), kiểm tra dung lượng mỗi 15 giây và tự dừng trước khi đầy bộ nhớ.
 - **Song ngữ** — English và Tiếng Việt, lần đầu mở là tiếng Anh.
@@ -248,7 +253,7 @@ DenRecorder quay toàn bộ màn hình (kèm âm thanh thiết bị, micrô ho�
 
 ### Cài đặt
 
-1. Tải `DenRecorder-1.10.3.apk` ở mục [Releases](../../releases).
+1. Tải `DenRecorder-1.10.4.apk` ở mục [Releases](../../releases).
 2. Mở file trên điện thoại và cho phép cài đặt từ nguồn đó nếu được hỏi.
 3. Mở DenRecorder, cấp quyền khi được hỏi, có thể thêm nút vào Trung tâm điều khiển.
 
@@ -275,6 +280,11 @@ export ANDROID_HOME=$HOME/android-sdk
 `app.properties` chứa `versionCode`, `versionName`, `minSdk`.
 
 ### Có gì mới
+
+**1.10.4**
+
+- Mới: mũi tên xuống trên thanh vẽ thành nút **✕ Dừng vẽ** — tắt công cụ, đóng thanh và chạm lại được vào app bên dưới, còn nét đã vẽ vẫn nằm trên màn hình. Bóng nổi có viền đỏ khi đang bật công cụ.
+- Bóng quay vùng tự tắt khi quay xong, bấm **Hủy** trong khung cũng tắt luôn bóng và thông báo; **Ẩn khung** thì vẫn giữ bóng để quay.
 
 **1.10.3**
 

@@ -128,6 +128,7 @@
     <string name="overlay_clear">Xóa nét vẽ</string>
     <string name="overlay_stop">Dừng quay</string>
     <string name="overlay_hide">Ẩn công cụ vẽ</string>
+    <string name="overlay_stop_draw">Dừng vẽ</string>
     <string name="overlay_color">Màu vẽ</string>
     <string name="action_pause">Tạm dừng</string>
     <string name="action_resume">Tiếp tục</string>
@@ -135,6 +136,7 @@
     <string name="hero_paused_title">Đang tạm dừng</string>
     <string name="toast_recording_paused">Đã tạm dừng quay</string>
     <string name="toast_recording_resumed">Tiếp tục quay</string>
+    <string name="toast_draw_stopped">Đã tắt vẽ</string>
     <string name="row_credit">Tác giả</string>
 
     <string name="value_native">Gốc · %1$s</string>

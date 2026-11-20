@@ -128,6 +128,7 @@
     <string name="overlay_clear">Clear drawings</string>
     <string name="overlay_stop">Stop recording</string>
     <string name="overlay_hide">Hide drawing tools</string>
+    <string name="overlay_stop_draw">Stop drawing</string>
     <string name="overlay_color">Drawing colour</string>
     <string name="action_pause">Pause</string>
     <string name="action_resume">Resume</string>
@@ -135,6 +136,7 @@
     <string name="hero_paused_title">Paused</string>
     <string name="toast_recording_paused">Recording paused</string>
     <string name="toast_recording_resumed">Recording resumed</string>
+    <string name="toast_draw_stopped">Drawing off</string>
     <string name="row_credit">Credit</string>
 
     <string name="value_native">Native · %1$s</string>
