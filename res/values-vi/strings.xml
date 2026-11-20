@@ -74,7 +74,6 @@
     <string name="orientation_permission_on">Đã sẵn sàng khóa hướng</string>
     <string name="orientation_permission_off">Chưa khóa được: hãy bật \"Sửa cài đặt hệ thống\"</string>
     <string name="orientation_permission_unavailable">Không mở được trang cài đặt đó</string>
-    <string name="toast_recording_started_locked">Đang ghi · đã khóa %1$s</string>
     <string name="notification_starting">Đang bắt đầu…</string>
     <string name="player_error">Không phát được video này</string>
     <string name="player_seek_back">« 10 giây</string>
@@ -83,7 +82,6 @@
     <string name="player_pause">Tạm dừng</string>
     <string name="player_close">Đóng</string>
     <string name="player_open_failed">Không mở được trình phát</string>
-    <string name="toast_recording_started">Đã bắt đầu quay</string>
     <string name="toast_recording_saved">Đã lưu bản ghi</string>
     <string name="row_draw">Vẽ trên màn hình</string>
     <string name="value_draw_on">Bật · nút nổi</string>
@@ -134,9 +132,6 @@
     <string name="action_resume">Tiếp tục</string>
     <string name="notification_paused">Đã tạm dừng</string>
     <string name="hero_paused_title">Đang tạm dừng</string>
-    <string name="toast_recording_paused">Đã tạm dừng quay</string>
-    <string name="toast_recording_resumed">Tiếp tục quay</string>
-    <string name="toast_draw_stopped">Đã tắt vẽ</string>
     <string name="row_credit">Tác giả</string>
 
     <string name="value_native">Gốc · %1$s</string>

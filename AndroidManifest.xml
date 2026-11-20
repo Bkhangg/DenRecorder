@@ -16,6 +16,9 @@
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <!-- The floating drawing button, shown over other apps while recording. -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <!-- A short buzz says a recording started or stopped without a toast on
+         the screen, which the recording would capture. -->
+    <uses-permission android:name="android.permission.VIBRATE" />
     <!-- Locking the screen rotation while a recording runs. -->
     <uses-permission android:name="android.permission.WRITE_SETTINGS" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"

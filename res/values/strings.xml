@@ -74,7 +74,6 @@
     <string name="orientation_permission_on">Rotation lock is ready</string>
     <string name="orientation_permission_off">Rotation lock is off: allow \"Modify system settings\"</string>
     <string name="orientation_permission_unavailable">Could not open that settings page</string>
-    <string name="toast_recording_started_locked">Recording started · %1$s locked</string>
     <string name="notification_starting">Starting…</string>
     <string name="player_error">This video can not be played</string>
     <string name="player_seek_back">« 10s</string>
@@ -83,7 +82,6 @@
     <string name="player_pause">Pause</string>
     <string name="player_close">Close</string>
     <string name="player_open_failed">Could not open the player</string>
-    <string name="toast_recording_started">Recording started</string>
     <string name="toast_recording_saved">Recording saved</string>
     <string name="row_draw">Draw on screen</string>
     <string name="value_draw_on">On · floating button</string>
@@ -134,9 +132,6 @@
     <string name="action_resume">Resume</string>
     <string name="notification_paused">Paused</string>
     <string name="hero_paused_title">Paused</string>
-    <string name="toast_recording_paused">Recording paused</string>
-    <string name="toast_recording_resumed">Recording resumed</string>
-    <string name="toast_draw_stopped">Drawing off</string>
     <string name="row_credit">Credit</string>
 
     <string name="value_native">Native · %1$s</string>

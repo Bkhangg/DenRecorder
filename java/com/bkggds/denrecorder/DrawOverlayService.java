@@ -22,7 +22,6 @@ import android.view.View;
 import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -170,6 +169,25 @@ public class DrawOverlayService extends Service {
     private int bubbleX;
     private int bubbleY;
 
+    /** How long the floating button stays in sight while nobody touches it. */
+    private static final long BUBBLE_IDLE_MS = 2000;
+    private static final long PANEL_IDLE_MS = 5000;
+    private static final long BUBBLE_RETURN_MS = 1200;
+
+    private final Runnable hideBubbleTask = new Runnable() {
+        @Override
+        public void run() {
+            if (bubble == null || panelOpen) return;
+            bubble.animate().alpha(0f).setDuration(220).start();
+        }
+    };
+    private final Runnable hidePanelTask = new Runnable() {
+        @Override
+        public void run() {
+            if (panelOpen) closePanel();
+        }
+    };
+
     @Override
     public IBinder onBind(Intent intent) {
         return null;
@@ -223,6 +241,18 @@ public class DrawOverlayService extends Service {
 
         panel = buildPanel();
         panel.setVisibility(View.GONE);
+        // Using the bar keeps it in sight; leaving it alone folds it away, so
+        // it does not sit in the recording either.
+        panel.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View view, MotionEvent event) {
+                if (panelOpen && event.getActionMasked() == MotionEvent.ACTION_DOWN) {
+                    handler.removeCallbacks(hidePanelTask);
+                    handler.postDelayed(hidePanelTask, PANEL_IDLE_MS);
+                }
+                return false;
+            }
+        });
         panelParams = overlayParams(1, 1);
         measurePanel();
         panelParams.x = bubbleX;
@@ -262,6 +292,9 @@ public class DrawOverlayService extends Service {
                 .setDuration(220)
                 .setInterpolator(new android.view.animation.OvershootInterpolator(1.5f))
                 .start();
+        // It is a reminder that recording started; then it gets out of the way
+        // so the video only shows the app itself. A tap brings it back.
+        handler.postDelayed(hideBubbleTask, BUBBLE_IDLE_MS);
     }
 
     private void styleBubble(int size) {
@@ -423,7 +456,13 @@ public class DrawOverlayService extends Service {
         updateLayerTouchable();
         updateToolHighlight();
         styleBubble(BUBBLE_DP[sizeIndex(this)]);
-        Toast.makeText(this, R.string.toast_draw_stopped, Toast.LENGTH_SHORT).show();
+    }
+
+    /** Brings the floating button back into sight when it is touched. */
+    private void showBubble() {
+        if (bubble == null) return;
+        bubble.animate().cancel();
+        bubble.animate().alpha(1f).setDuration(150).start();
     }
 
     private void updateToolHighlight() {
@@ -509,6 +548,10 @@ public class DrawOverlayService extends Service {
             return;
         }
         panelOpen = true;
+        handler.removeCallbacks(hideBubbleTask);
+        handler.removeCallbacks(hidePanelTask);
+        handler.postDelayed(hidePanelTask, PANEL_IDLE_MS);
+        showBubble();
         updatePauseButton();
         updateToolHighlight();
         updatePalette();
@@ -536,6 +579,9 @@ public class DrawOverlayService extends Service {
         panelOpen = false;
         if (panel != null) panel.setVisibility(View.GONE);
         updateLayerTouchable();
+        handler.removeCallbacks(hidePanelTask);
+        handler.removeCallbacks(hideBubbleTask);
+        handler.postDelayed(hideBubbleTask, BUBBLE_RETURN_MS);
     }
 
     /**
@@ -601,6 +647,11 @@ public class DrawOverlayService extends Service {
                     startX = bubbleParams.x;
                     startY = bubbleParams.y;
                     moved = false;
+                    // A touch is the user's: bring the button (and its bar) back
+                    // while it is being used, and start the idle count again.
+                    handler.removeCallbacks(hideBubbleTask);
+                    handler.removeCallbacks(hidePanelTask);
+                    showBubble();
                     return true;
                 case MotionEvent.ACTION_MOVE:
                     int dx = Math.round(event.getRawX() - downRawX);

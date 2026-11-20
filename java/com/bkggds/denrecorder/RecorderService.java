@@ -17,6 +17,8 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
 import android.service.quicksettings.TileService;
 import android.util.Log;
 
@@ -351,12 +353,10 @@ public class RecorderService extends Service {
             if (prefs.getBoolean("drawOverlay", true)) {
                 DrawOverlayService.start(this);
             }
-            toast(rotationLocked
-                    ? getString(R.string.toast_recording_started_locked,
-                            getString("landscape".equals(orientation)
-                                    ? R.string.orientation_landscape
-                                    : R.string.orientation_portrait))
-                    : getString(R.string.toast_recording_started));
+            // A short buzz, not a toast: the screen is recorded exactly as it
+            // is, so anything drawn on it would land in the video. The
+            // notification and the floating button show the same thing.
+            buzz(new long[]{0, 40});
         } catch (Exception e) {
             Log.e(TAG, "Recording failed to start", e);
             lastError = "Recording failed: " + (e.getMessage() == null ? e.toString() : e.getMessage());
@@ -427,6 +427,9 @@ public class RecorderService extends Service {
                             toast(getString(R.string.toast_recording_saved));
                             notifySaved(savedUri, null);
                         }
+                        // Two short pulses: the video is closed, so the toast
+                        // above is shown after the capture has ended.
+                        buzz(new long[]{0, 40, 90, 40});
                         try { stopForeground(true); } catch (Exception ignored) { }
                         stopSelf();
                     }
@@ -447,7 +450,7 @@ public class RecorderService extends Service {
         }
         updateNotification();
         DrawOverlayService.refreshControls(this);
-        toast(getString(R.string.toast_recording_paused));
+        buzz(new long[]{0, 25});
     }
 
     public void resumeRecording() {
@@ -464,7 +467,7 @@ public class RecorderService extends Service {
         }
         updateNotification();
         DrawOverlayService.refreshControls(this);
-        toast(getString(R.string.toast_recording_resumed));
+        buzz(new long[]{0, 25});
     }
 
     @Override
@@ -693,6 +696,22 @@ public class RecorderService extends Service {
         Intent intent = new Intent(context, RecorderService.class).setAction(ACTION_STOP);
         try {
             context.startService(intent);
+        } catch (Exception ignored) { }
+    }
+
+    /**
+     * A short buzz in place of a toast while recording: Android captures the
+     * screen exactly as it is, so a toast shown then would sit in the video.
+     */
+    private void buzz(long[] pattern) {
+        try {
+            Vibrator vibrator = (Vibrator) getSystemService(VIBRATOR_SERVICE);
+            if (vibrator == null || !vibrator.hasVibrator()) return;
+            if (Build.VERSION.SDK_INT >= 26) {
+                vibrator.vibrate(VibrationEffect.createWaveform(pattern, -1));
+            } else {
+                vibrator.vibrate(pattern, -1);
+            }
         } catch (Exception ignored) { }
     }
 
