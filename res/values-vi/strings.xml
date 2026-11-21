@@ -237,9 +237,17 @@
 
     <string name="recordings_recent">Gần đây</string>
     <string name="recordings_all">Tất cả</string>
+    <string name="day_today">Hôm nay</string>
+    <string name="day_yesterday">Hôm qua</string>
+    <string name="recordings_day_count">%1$d video · %2$s</string>
+    <string name="recordings_more">Xem thêm (còn %1$d)</string>
     <string name="recordings_empty">Chưa có bản ghi nào. Bản ghi tiếp theo sẽ xuất hiện ở đây.</string>
     <string name="recordings_count">%1$d video · %2$s</string>
     <string name="recordings_count_all">%1$d video · %2$s</string>
+    <plurals name="videos_count">
+        <item quantity="one">%1$d video</item>
+        <item quantity="other">%1$d video</item>
+    </plurals>
     <string name="recordings_action_title">Bản ghi này</string>
     <string name="action_open">Xem</string>
     <string name="action_share">Chia sẻ</string>

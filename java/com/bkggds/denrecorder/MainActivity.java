@@ -54,6 +54,7 @@ import android.widget.Toast;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -164,6 +165,11 @@ public class MainActivity extends Activity {
     private boolean recordingsLoaded;
     /** The last list read, so changing the mode can redraw without a read. */
     private final List<Recording> recordingsCache = new ArrayList<>();
+    /** How many rows "All" shows; "Show more" adds to it. */
+    private int recordingsVisible = 20;
+    /** Set when only the number of rows changed, so the list is drawn again. */
+    private boolean recordingsRedraw;
+    private static final int RECORDINGS_STEP = 40;
     private boolean recordingsQuerying;
     private boolean recordingsQueryAgain;
     private final java.util.LinkedHashSet<String> selectedRecordings =
@@ -813,6 +819,8 @@ public class MainActivity extends Activity {
         recentTab = tabLabel(getString(R.string.recordings_recent));
         recentTab.setOnClickListener(v -> {
             showAllRecordings = false;
+            recordingsVisible = 20;
+            recordingsRedraw = true;
             loadRecordings();
         });
         tabs.addView(recentTab, new LinearLayout.LayoutParams(0, dp(40), 1f));
@@ -820,6 +828,8 @@ public class MainActivity extends Activity {
         allTab = tabLabel(getString(R.string.recordings_all));
         allTab.setOnClickListener(v -> {
             showAllRecordings = true;
+            recordingsVisible = 20;
+            recordingsRedraw = true;
             loadRecordings();
         });
         tabs.addView(allTab, new LinearLayout.LayoutParams(0, dp(40), 1f));
@@ -960,7 +970,9 @@ public class MainActivity extends Activity {
             recordingsCache.clear();
             recordingsCache.addAll(items);
         }
-        if (!force && recordingsLoaded && signature.equals(recordingsSignature)) return;
+        if (!force && !recordingsRedraw && recordingsLoaded
+                && signature.equals(recordingsSignature)) return;
+        recordingsRedraw = false;
         recordingsSignature = signature;
         recordingsLoaded = true;
 
@@ -979,12 +991,13 @@ public class MainActivity extends Activity {
         long totalSize = 0;
         for (Recording item : items) totalSize += item.size;
         if (recordingsSummary != null) {
-            recordingsSummary.setText(getString(R.string.recordings_count,
-                    items.size(), formatSize(totalSize)));
+            recordingsSummary.setText(videosCount(items.size()) + " · " + formatSize(totalSize));
         }
         updateSelectBar();
 
-        int shown = showAllRecordings ? items.size() : Math.min(10, items.size());
+        int shown = showAllRecordings
+                ? Math.min(recordingsVisible, items.size())
+                : Math.min(10, items.size());
         if (shown == 0) {
             TextView empty = label(getString(R.string.recordings_empty), 13, FAINT, false);
             empty.setLineSpacing(dp(3), 1f);
@@ -992,12 +1005,74 @@ public class MainActivity extends Activity {
             return;
         }
 
-        LinearLayout card = card();
-        recordingsList.addView(card, lp(MATCH, WRAP, 0, 0, 0, 0));
+        // One card per day, with the day above it: an older video is found by
+        // the day it was recorded, not by scrolling through one long list.
+        java.util.LinkedHashMap<String, List<Recording>> days = new java.util.LinkedHashMap<>();
         for (int i = 0; i < shown; i++) {
-            if (i > 0) divider(card);
-            addRecordingRow(card, items.get(i), i);
+            Recording item = items.get(i);
+            String day = dayLabel(item.added);
+            List<Recording> group = days.get(day);
+            if (group == null) {
+                group = new ArrayList<>();
+                days.put(day, group);
+            }
+            group.add(item);
         }
+        int index = 0;
+        for (java.util.Map.Entry<String, List<Recording>> entry : days.entrySet()) {
+            List<Recording> group = entry.getValue();
+            long groupSize = 0;
+            for (Recording item : group) groupSize += item.size;
+            LinearLayout header = new LinearLayout(this);
+            header.setOrientation(LinearLayout.HORIZONTAL);
+            header.setGravity(Gravity.CENTER_VERTICAL);
+            TextView day = label(entry.getKey(), 12, TEXT, true);
+            header.addView(day, new LinearLayout.LayoutParams(WRAP, WRAP));
+            TextView count = label("  ·  " + videosCount(group.size()) + " · "
+                    + formatSize(groupSize), 11, FAINT, false);
+            header.addView(count, new LinearLayout.LayoutParams(WRAP, WRAP));
+            recordingsList.addView(header, lp(MATCH, WRAP, 0, 14, 14, 4));
+
+            LinearLayout card = card();
+            recordingsList.addView(card, lp(MATCH, WRAP, 0, 0, 0, 0));
+            for (int i = 0; i < group.size(); i++) {
+                if (i > 0) divider(card);
+                addRecordingRow(card, group.get(i), index++);
+            }
+        }
+
+        if (showAllRecordings && items.size() > shown) {
+            final TextView more = label(getString(R.string.recordings_more, items.size() - shown),
+                    13, TEXT, true);
+            more.setGravity(Gravity.CENTER);
+            more.setPadding(0, dp(16), 0, dp(16));
+            more.setBackground(round(CARD, 12, BORDER));
+            more.setClickable(true);
+            more.setOnClickListener(v -> {
+                recordingsVisible += RECORDINGS_STEP;
+                renderRecordings(recordingsCache, true);
+            });
+            recordingsList.addView(more, lp(MATCH, WRAP, 0, 12, 0, 0));
+        }
+    }
+
+    /** "1 video", "5 videos": the count that follows a day or the summary. */
+    private String videosCount(int count) {
+        return getResources().getQuantityString(R.plurals.videos_count, count, count);
+    }
+
+    /** "Today", "Yesterday" or the day itself, for the list's day groups. */
+    private String dayLabel(long seconds) {
+        Calendar then = Calendar.getInstance();
+        then.setTimeInMillis(seconds * 1000L);
+        Calendar now = Calendar.getInstance();
+        long today = now.get(Calendar.YEAR) * 1000L + now.get(Calendar.DAY_OF_YEAR);
+        long that = then.get(Calendar.YEAR) * 1000L + then.get(Calendar.DAY_OF_YEAR);
+        long days = today - that;
+        if (days == 0) return getString(R.string.day_today);
+        if (days == 1) return getString(R.string.day_yesterday);
+        return new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+                .format(new Date(seconds * 1000L));
     }
 
     private void readRecordings(List<Recording> out, Uri collection, String mimeFilter) {
@@ -1054,30 +1129,48 @@ public class MainActivity extends Activity {
         dot.setVisibility(recordingsSelectMode ? View.VISIBLE : View.GONE);
         styleSelectDot(dot, selectedRecordings.contains(item.uri.toString()));
 
+        // The first frame, with the length on it: the fastest way to tell two
+        // recordings of the same day apart.
+        FrameLayout thumbBox = new FrameLayout(this);
+        LinearLayout.LayoutParams boxParams = new LinearLayout.LayoutParams(dp(78), dp(58));
+        boxParams.setMargins(0, 0, dp(14), 0);
+        row.addView(thumbBox, boxParams);
+
         final ImageView thumb = new ImageView(this);
         thumb.setScaleType(ImageView.ScaleType.CENTER_CROP);
         thumb.setBackground(round(NAV, 10, BORDER));
-        LinearLayout.LayoutParams thumbParams = new LinearLayout.LayoutParams(dp(58), dp(58));
-        thumbParams.setMargins(0, 0, dp(14), 0);
-        row.addView(thumb, thumbParams);
+        thumbBox.addView(thumb, new FrameLayout.LayoutParams(MATCH, MATCH));
         showThumbnail(item, thumb);
+
+        if (item.duration > 0) {
+            TextView badge = label(formatLength(item.duration), 9, Color.WHITE, true);
+            badge.setBackground(round(0xCC000000, 6, 0));
+            badge.setPadding(dp(5), dp(2), dp(5), dp(2));
+            FrameLayout.LayoutParams badgeParams = new FrameLayout.LayoutParams(WRAP, WRAP,
+                    Gravity.BOTTOM | Gravity.END);
+            badgeParams.setMargins(0, 0, dp(5), dp(5));
+            thumbBox.addView(badge, badgeParams);
+        }
 
         LinearLayout texts = new LinearLayout(this);
         texts.setOrientation(LinearLayout.VERTICAL);
         row.addView(texts, new LinearLayout.LayoutParams(0, WRAP, 1f));
-        TextView nameView = label(item.displayName(), 14, TEXT, false);
+        TextView nameView = label(item.title(), 15, TEXT, false);
         nameView.setMaxLines(1);
         nameView.setEllipsize(android.text.TextUtils.TruncateAt.END);
         texts.addView(nameView, new LinearLayout.LayoutParams(MATCH, WRAP));
 
-        TextView meta = label(item.dateLabel() + "  ·  " + item.meta(), 12, FAINT, false);
+        TextView meta = label(item.meta(), 12, FAINT, false);
         texts.addView(meta, lp(MATCH, WRAP, 0, 3, 0, 0));
 
-        // Where the video lives, so a changed save folder is easy to spot.
-        TextView path = label(getString(R.string.recording_path, item.folder), 11, FAINT, false);
-        path.setMaxLines(1);
-        path.setEllipsize(android.text.TextUtils.TruncateAt.MIDDLE);
-        texts.addView(path, lp(MATCH, WRAP, 0, 2, 0, 0));
+        // Where the video lives, but only when it is not the folder new
+        // recordings go to: repeating that on every row is just noise.
+        if (!item.folder.equals(saveFolder())) {
+            TextView path = label(getString(R.string.recording_path, item.folder), 11, FAINT, false);
+            path.setMaxLines(1);
+            path.setEllipsize(android.text.TextUtils.TruncateAt.MIDDLE);
+            texts.addView(path, lp(MATCH, WRAP, 0, 2, 0, 0));
+        }
 
         parent.addView(row, lp(MATCH, WRAP, 0, 0, 0, 0));
         if (index < 8) {
@@ -1419,6 +1512,19 @@ public class MainActivity extends Activity {
                 out = out.substring(SCREEN_RECORDING_PREFIX.length());
             }
             return out.isEmpty() ? name : out;
+        }
+
+        /**
+         * The time of a name the app made up ("20261120_124538" says nothing),
+         * or the name itself once the user renamed the file.
+         */
+        String title() {
+            String shown = displayName();
+            if (shown.matches("\\d{8}_\\d{6}( \\(\\d+\\))?")) {
+                return new SimpleDateFormat("HH:mm", Locale.getDefault())
+                        .format(new Date(added * 1000L));
+            }
+            return shown;
         }
 
         String dateLabel() {
