@@ -2106,10 +2106,18 @@ public class MainActivity extends Activity {
 
     // ---------- Updates ----------
 
-    /** Asks GitHub for the newest release when the app opens, a few times a day. */
+    /** Asks GitHub for the newest release when the app opens, every quarter hour. */
     private void maybeCheckUpdates() {
+        // The row already says what the last check found, so it is never blank
+        // while the new check runs.
+        String known = prefs.getString("lastRelease", "");
+        if (!known.isEmpty()) {
+            setUpdateValue(UpdateChecker.isNewer(known, versionName())
+                    ? getString(R.string.updates_available, known)
+                    : getString(R.string.updates_up_to_date));
+        }
         long last = prefs.getLong("lastUpdateCheck", 0);
-        if (System.currentTimeMillis() - last < 6L * 60 * 60 * 1000) return;
+        if (System.currentTimeMillis() - last < 15L * 60 * 1000) return;
         checkForUpdates(false);
     }
 
@@ -2133,6 +2141,7 @@ public class MainActivity extends Activity {
                     }
                     return;
                 }
+                prefs.edit().putString("lastRelease", release.version).apply();
                 boolean newer = UpdateChecker.isNewer(release.version, versionName());
                 pendingUpdate = newer ? release : null;
                 refreshUpdateBanner();
