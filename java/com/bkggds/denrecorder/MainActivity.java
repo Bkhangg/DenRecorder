@@ -49,6 +49,7 @@ import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
+import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -801,6 +802,9 @@ public class MainActivity extends Activity {
         divider(aboutCard);
         addHint(aboutCard, R.string.hint_updates);
         divider(aboutCard);
+        addRow(aboutCard, R.drawable.ic_link, R.string.row_github,
+                getString(R.string.github_link), true, this::openGitHub);
+        divider(aboutCard);
         addRow(aboutCard, R.drawable.ic_info, R.string.row_credit,
                 getString(R.string.value_credit), false, null);
 
@@ -1221,6 +1225,13 @@ public class MainActivity extends Activity {
         TextView meta = label(item.meta(), 12, FAINT, false);
         texts.addView(meta, lp(MATCH, WRAP, 0, 3, 0, 0));
 
+        // The file name itself, so a recording is easy to find in a file
+        // manager or another app.
+        TextView fileName = label(item.name, 11, FAINT, false);
+        fileName.setMaxLines(1);
+        fileName.setEllipsize(android.text.TextUtils.TruncateAt.MIDDLE);
+        texts.addView(fileName, lp(MATCH, WRAP, 0, 2, 0, 0));
+
         // Where the video lives, but only when it is not the folder new
         // recordings go to: repeating that on every row is just noise.
         if (!item.folder.equals(saveFolder())) {
@@ -1420,15 +1431,143 @@ public class MainActivity extends Activity {
         String[] items = {
                 getString(R.string.action_open),
                 getString(R.string.action_share),
+                getString(R.string.action_trim),
                 getString(R.string.action_rename),
                 getString(R.string.action_delete)
         };
         showChoices(item.displayName(), items, -1, which -> {
             if (which == 0) playRecording(item);
             else if (which == 1) shareRecording(item.uri);
-            else if (which == 2) renameRecording(item);
+            else if (which == 2) trimRecording(item);
+            else if (which == 3) renameRecording(item);
             else confirmDelete(item);
         });
+    }
+
+    /** The GitHub page of the app, opened in whatever browser the phone has. */
+    private void openGitHub() {
+        try {
+            startActivity(new Intent(Intent.ACTION_VIEW,
+                    Uri.parse("https://github.com/Bkhangg/DenRecorder")));
+        } catch (Exception e) {
+            Toast.makeText(this, R.string.github_failed, Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    /**
+     * Two sliders cut the recording: the piece between them is saved as a new
+     * video, so nothing is lost if the cut is wrong.
+     */
+    private void trimRecording(final Recording item) {
+        if (item.duration < 1500) {
+            Toast.makeText(this, R.string.trim_short, Toast.LENGTH_SHORT).show();
+            return;
+        }
+        final int seconds = (int) (item.duration / 1000L);
+        final int[] range = {0, seconds};
+        final boolean[] setting = {false};
+
+        LinearLayout content = new LinearLayout(this);
+        content.setOrientation(LinearLayout.VERTICAL);
+
+        final TextView fromLabel = label(getString(R.string.trim_from, formatLength(0)),
+                13, MUTED, false);
+        content.addView(fromLabel, lp(MATCH, WRAP, 0, 0, 0, 0));
+        final SeekBar fromBar = new SeekBar(this);
+        fromBar.setMax(seconds);
+        fromBar.setProgress(0);
+        styleSeekBar(fromBar);
+        content.addView(fromBar, lp(MATCH, WRAP, 0, 4, 0, 0));
+
+        final TextView toLabel = label(
+                getString(R.string.trim_to, formatLength(item.duration)), 13, MUTED, false);
+        content.addView(toLabel, lp(MATCH, WRAP, 0, 14, 0, 0));
+        final SeekBar toBar = new SeekBar(this);
+        toBar.setMax(seconds);
+        toBar.setProgress(seconds);
+        styleSeekBar(toBar);
+        content.addView(toBar, lp(MATCH, WRAP, 0, 4, 0, 0));
+
+        final Runnable update = () -> {
+            fromLabel.setText(getString(R.string.trim_from,
+                    formatLength(range[0] * 1000L)));
+            toLabel.setText(getString(R.string.trim_to,
+                    formatLength(range[1] * 1000L)));
+        };
+
+        fromBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override public void onProgressChanged(SeekBar bar, int value, boolean user) {
+                if (setting[0]) return;
+                if (value >= range[1]) {
+                    value = Math.max(0, range[1] - 1);
+                    setting[0] = true;
+                    fromBar.setProgress(value);
+                    setting[0] = false;
+                }
+                range[0] = value;
+                update.run();
+            }
+            @Override public void onStartTrackingTouch(SeekBar bar) { }
+            @Override public void onStopTrackingTouch(SeekBar bar) { }
+        });
+        toBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override public void onProgressChanged(SeekBar bar, int value, boolean user) {
+                if (setting[0]) return;
+                if (value <= range[0]) {
+                    value = Math.min(seconds, range[0] + 1);
+                    setting[0] = true;
+                    toBar.setProgress(value);
+                    setting[0] = false;
+                }
+                range[1] = value;
+                update.run();
+            }
+            @Override public void onStartTrackingTouch(SeekBar bar) { }
+            @Override public void onStopTrackingTouch(SeekBar bar) { }
+        });
+
+        TextView hint = label(getString(R.string.trim_hint), 12, FAINT, false);
+        hint.setLineSpacing(dp(3), 1f);
+        content.addView(hint, lp(MATCH, WRAP, 0, 16, 0, 0));
+
+        showCustomCard(getString(R.string.trim_title), content,
+                getString(R.string.trim_save),
+                () -> {
+                    final long start = range[0] * 1000L;
+                    final long end = range[1] * 1000L;
+                    if (end - start < 1000L) {
+                        Toast.makeText(this, R.string.trim_short, Toast.LENGTH_SHORT).show();
+                        return false;
+                    }
+                    Toast.makeText(this, R.string.trim_working, Toast.LENGTH_SHORT).show();
+                    VideoTrimmer.start(this, item.uri, item.name, item.folder, start, end,
+                            new VideoTrimmer.OnTrim() {
+                                @Override
+                                public void done(String fileName, String error) {
+                                    if (fileName == null) {
+                                        Toast.makeText(MainActivity.this,
+                                                R.string.trim_failed, Toast.LENGTH_LONG).show();
+                                        return;
+                                    }
+                                    Toast.makeText(MainActivity.this,
+                                            getString(R.string.trim_done, fileName),
+                                            Toast.LENGTH_SHORT).show();
+                                    loadRecordings();
+                                }
+                            });
+                    return true;
+                },
+                getString(R.string.dialog_cancel), null);
+    }
+
+    /** The sliders follow the app's colours instead of the system accent. */
+    private void styleSeekBar(SeekBar bar) {
+        android.content.res.ColorStateList tint =
+                android.content.res.ColorStateList.valueOf(PRIMARY);
+        bar.setProgressTintList(tint);
+        bar.setThumbTintList(tint);
+        bar.setProgressBackgroundTintList(
+                android.content.res.ColorStateList.valueOf(BORDER));
     }
 
     /** Renaming keeps the "DenRecorder_" prefix, which is how the list finds videos. */

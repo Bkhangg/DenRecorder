@@ -187,6 +187,9 @@
     <string name="action_resume">Resume</string>
     <string name="notification_paused">Paused</string>
     <string name="hero_paused_title">Paused</string>
+    <string name="row_github">GitHub</string>
+    <string name="github_link">Bkhangg/DenRecorder</string>
+    <string name="github_failed">Could not open GitHub</string>
     <string name="row_credit">Credit</string>
 
     <string name="value_native">Native · %1$s</string>
@@ -308,6 +311,16 @@
     <string name="folder_browse_unavailable">This phone has no folder browser</string>
     <string name="folder_browse_unsupported_title">That folder can not be used</string>
     <string name="folder_browse_unsupported_body">Pick a folder on the phone\'s own storage, for example Download or Movies. Folders on a memory card or in the cloud are not supported yet.</string>
+    <string name="action_trim">Trim</string>
+    <string name="trim_title">Trim this recording</string>
+    <string name="trim_from">Start: %1$s</string>
+    <string name="trim_to">End: %1$s</string>
+    <string name="trim_hint">The piece between the sliders is saved as a new recording; the original stays as it is. A cut starts on the nearest key frame, so it can be up to a second longer.</string>
+    <string name="trim_save">Save the cut</string>
+    <string name="trim_working">Trimming…</string>
+    <string name="trim_done">Saved %1$s</string>
+    <string name="trim_failed">Could not trim this recording</string>
+    <string name="trim_short">That cut is too short</string>
     <string name="action_rename">Rename</string>
     <string name="rename_title">Rename recording</string>
     <string name="rename_hint">My clip</string>

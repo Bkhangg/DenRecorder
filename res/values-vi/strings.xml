@@ -187,6 +187,9 @@
     <string name="action_resume">Tiếp tục</string>
     <string name="notification_paused">Đã tạm dừng</string>
     <string name="hero_paused_title">Đang tạm dừng</string>
+    <string name="row_github">GitHub</string>
+    <string name="github_link">Bkhangg/DenRecorder</string>
+    <string name="github_failed">Không mở được GitHub</string>
     <string name="row_credit">Tác giả</string>
 
     <string name="value_native">Gốc · %1$s</string>
@@ -308,6 +311,16 @@
     <string name="folder_browse_unavailable">Máy này không có trình duyệt thư mục</string>
     <string name="folder_browse_unsupported_title">Không dùng được thư mục đó</string>
     <string name="folder_browse_unsupported_body">Hãy chọn thư mục trong bộ nhớ của máy, ví dụ Download hoặc Movies. Thư mục trên thẻ nhớ hoặc trên cloud chưa được hỗ trợ.</string>
+    <string name="action_trim">Cắt</string>
+    <string name="trim_title">Cắt bản ghi này</string>
+    <string name="trim_from">Từ: %1$s</string>
+    <string name="trim_to">Đến: %1$s</string>
+    <string name="trim_hint">Đoạn giữa hai thanh trượt được lưu thành bản ghi mới, bản gốc giữ nguyên. Đoạn cắt bắt đầu từ khung hình khoá gần nhất nên có thể dài hơn tối đa một giây.</string>
+    <string name="trim_save">Lưu đoạn cắt</string>
+    <string name="trim_working">Đang cắt…</string>
+    <string name="trim_done">Đã lưu %1$s</string>
+    <string name="trim_failed">Không cắt được bản ghi này</string>
+    <string name="trim_short">Đoạn cắt quá ngắn</string>
     <string name="action_rename">Đổi tên</string>
     <string name="rename_title">Đổi tên bản ghi</string>
     <string name="rename_hint">Clip của tôi</string>
