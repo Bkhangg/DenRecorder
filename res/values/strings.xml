@@ -79,6 +79,31 @@
     <string name="row_language">Language</string>
     <string name="row_storage">Save to</string>
     <string name="row_version">Version</string>
+    <string name="row_updates">Updates</string>
+    <string name="hint_updates">DenRecorder asks GitHub for the newest release when it opens. An update is downloaded and installed right here; Android shows its own install prompt once.</string>
+    <string name="updates_checking">Checking…</string>
+    <string name="updates_up_to_date">Up to date</string>
+    <string name="updates_available">%1$s available</string>
+    <string name="updates_downloading">Downloading %1$d%%</string>
+    <string name="updates_ready">%1$s ready</string>
+    <string name="updates_failed">Could not check</string>
+    <string name="updates_failed_body">GitHub could not be reached.
+
+%1$s</string>
+    <string name="update_title">Update available</string>
+    <string name="update_body">DenRecorder %1$s is on GitHub; this phone has %2$s.</string>
+    <string name="update_now">Download and install</string>
+    <string name="update_later">Later</string>
+    <string name="update_downloading">Downloading the update…</string>
+    <string name="update_download_failed">The update could not be downloaded</string>
+    <string name="update_install_failed">Android\'s installer did not open</string>
+    <string name="update_up_to_date_body">DenRecorder %1$s is the newest release.</string>
+    <string name="update_banner">Update to %1$s</string>
+    <string name="update_permission_title">Allow installs</string>
+    <string name="update_permission_body">Android only lets an app install an update when \u201cInstall unknown apps\u201d is allowed for it. Turn that on for DenRecorder and come back: the update carries on by itself.</string>
+    <string name="update_permission_open">Open the setting</string>
+    <string name="update_permission_later">Not now</string>
+    <string name="action_ok">OK</string>
 
     <string name="row_orientation">Screen orientation</string>
 

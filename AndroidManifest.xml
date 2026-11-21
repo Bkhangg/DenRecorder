@@ -13,6 +13,10 @@
     <!-- The floating record button stays alive while another app is recorded. -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- The latest release is read from GitHub, and its APK downloaded. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- An update is installed from inside the app, through Android's installer. -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <!-- The floating drawing button, shown over other apps while recording. -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
@@ -111,5 +115,12 @@
                 android:name="android.service.quicksettings.ACTIVE_TILE"
                 android:value="true" />
         </service>
+        <!-- Serves the downloaded APK to Android's installer. -->
+        <provider
+            android:name=".UpdateProvider"
+            android:authorities="com.bkggds.denrecorder.updates"
+            android:exported="false"
+            android:grantUriPermissions="true" />
+
     </application>
 </manifest>

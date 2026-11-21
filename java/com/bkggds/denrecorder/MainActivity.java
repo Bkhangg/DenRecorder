@@ -205,6 +205,15 @@ public class MainActivity extends Activity {
     /** What turning the display off does: "stop" or "resume" when it is back. */
     private String screenOffAction = "stop";
     private TextView screenOffValueView;
+    /** The GitHub release, when it is newer than this build. */
+    private UpdateChecker.Release pendingUpdate;
+    private boolean updateChecking;
+    private boolean updateDownloading;
+    /** The APK waiting for the one-time "install apps" permission. */
+    private java.io.File pendingInstall;
+    private TextView updateValueView;
+    private LinearLayout updateBanner;
+    private TextView updateBannerText;
     private boolean perfMode = true;
     private boolean pendingStart;
     private boolean sawRecording;
@@ -357,6 +366,7 @@ public class MainActivity extends Activity {
         updateLanguageValue();
         handleAutoStart(getIntent());
         maybeShowSetup();
+        maybeCheckUpdates();
     }
 
     @Override
@@ -400,6 +410,13 @@ public class MainActivity extends Activity {
         // screen sideways can be undone when the recording ends.
         RotationLock.rememberUserLock(this);
         updateRegionValue();
+        // The update was waiting for "install unknown apps": the user may have
+        // just allowed it, so the install goes on without another tap.
+        if (pendingInstall != null && canInstallUpdates()) {
+            java.io.File apk = pendingInstall;
+            pendingInstall = null;
+            UpdateChecker.install(this, apk);
+        }
         // A recording that went on while another app was in front: bring the
         // pulsing dot back now that this screen is the one in front again.
         if (uiRecording && RecorderService.isRecording) startDotAnimation();
@@ -611,6 +628,38 @@ public class MainActivity extends Activity {
         statusView.setLineSpacing(dp(2), 1f);
         hero.addView(statusView, lp(MATCH, WRAP, 0, 14, 0, 0));
 
+        // A newer release is offered here, where the app opens: one tap and
+        // the update is on its way.
+        updateBanner = new LinearLayout(this);
+        updateBanner.setOrientation(LinearLayout.HORIZONTAL);
+        updateBanner.setGravity(Gravity.CENTER_VERTICAL);
+        updateBanner.setBackground(round(CARD, 12, BORDER));
+        updateBanner.setPadding(dp(14), dp(12), dp(14), dp(12));
+        updateBanner.setClickable(true);
+        updateBanner.setFocusable(true);
+        updateBanner.setVisibility(View.GONE);
+
+        ImageView updateIcon = new ImageView(this);
+        updateIcon.setImageResource(R.drawable.ic_update);
+        updateIcon.setColorFilter(MUTED);
+        updateBanner.addView(updateIcon, new LinearLayout.LayoutParams(dp(18), dp(18)));
+
+        updateBannerText = label("", 13, TEXT, false);
+        updateBannerText.setMaxLines(1);
+        updateBannerText.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        LinearLayout.LayoutParams bannerTextParams =
+                new LinearLayout.LayoutParams(0, WRAP, 1f);
+        bannerTextParams.setMargins(dp(10), 0, dp(8), 0);
+        updateBanner.addView(updateBannerText, bannerTextParams);
+
+        ImageView bannerChevron = new ImageView(this);
+        bannerChevron.setImageResource(R.drawable.ic_chevron);
+        bannerChevron.setColorFilter(FAINT);
+        updateBanner.addView(bannerChevron, new LinearLayout.LayoutParams(dp(16), dp(16)));
+        updateBanner.setOnClickListener(v -> showUpdateCard());
+        pressEffect(updateBanner);
+        list.addView(updateBanner, lp(MATCH, WRAP, 0, 10, 0, 0));
+
         // Icon and label sit together in the middle: a Button would push the
         // icon to its edge, far from the text.
         mainButton = new LinearLayout(this);
@@ -742,6 +791,11 @@ public class MainActivity extends Activity {
 
         LinearLayout aboutCard = settingsSection(list, tabRow, R.string.tab_about);
         addRow(aboutCard, R.drawable.ic_info, R.string.row_version, versionName(), false, null);
+        divider(aboutCard);
+        updateValueView = addRow(aboutCard, R.drawable.ic_update, R.string.row_updates,
+                "", true, this::onUpdatesRow);
+        divider(aboutCard);
+        addHint(aboutCard, R.string.hint_updates);
         divider(aboutCard);
         addRow(aboutCard, R.drawable.ic_info, R.string.row_credit,
                 getString(R.string.value_credit), false, null);
@@ -2048,6 +2102,157 @@ public class MainActivity extends Activity {
             return;
         }
         Toast.makeText(this, R.string.shizuku_connected_toast, Toast.LENGTH_SHORT).show();
+    }
+
+    // ---------- Updates ----------
+
+    /** Asks GitHub for the newest release when the app opens, a few times a day. */
+    private void maybeCheckUpdates() {
+        long last = prefs.getLong("lastUpdateCheck", 0);
+        if (System.currentTimeMillis() - last < 6L * 60 * 60 * 1000) return;
+        checkForUpdates(false);
+    }
+
+    /** Reads the latest release; "manual" means the user asked, so it answers either way. */
+    private void checkForUpdates(final boolean manual) {
+        if (updateChecking || updateDownloading) return;
+        updateChecking = true;
+        if (manual) setUpdateValue(getString(R.string.updates_checking));
+        UpdateChecker.check(new UpdateChecker.OnCheck() {
+            @Override
+            public void done(UpdateChecker.Release release, String error) {
+                updateChecking = false;
+                prefs.edit().putLong("lastUpdateCheck", System.currentTimeMillis()).apply();
+                if (release == null) {
+                    if (manual) {
+                        setUpdateValue(getString(R.string.updates_failed));
+                        showCard(getString(R.string.row_updates),
+                                getString(R.string.updates_failed_body,
+                                        error == null ? "" : error),
+                                getString(R.string.action_ok), null, null, null);
+                    }
+                    return;
+                }
+                boolean newer = UpdateChecker.isNewer(release.version, versionName());
+                pendingUpdate = newer ? release : null;
+                refreshUpdateBanner();
+                setUpdateValue(newer
+                        ? getString(R.string.updates_available, release.version)
+                        : getString(R.string.updates_up_to_date));
+                if (!manual) return;
+                if (newer) {
+                    showUpdateCard();
+                } else {
+                    showCard(getString(R.string.row_updates),
+                            getString(R.string.update_up_to_date_body, release.version),
+                            getString(R.string.action_ok), null, null, null);
+                }
+            }
+        });
+    }
+
+    /** The About row: opens the update if one is known, otherwise checks again. */
+    private void onUpdatesRow() {
+        if (pendingUpdate != null) showUpdateCard();
+        else checkForUpdates(true);
+    }
+
+    /** The card that offers the newest release, with the start of its notes. */
+    private void showUpdateCard() {
+        UpdateChecker.Release release = pendingUpdate;
+        if (release == null) {
+            checkForUpdates(true);
+            return;
+        }
+        String notes = release.notes.trim();
+        // The whole note can be long; the first paragraphs say what changed.
+        if (notes.length() > 700) notes = notes.substring(0, 700).trim() + "…";
+        String body = getString(R.string.update_body, release.version, versionName());
+        if (!notes.isEmpty()) body += "\n\n" + notes;
+        showCard(getString(R.string.update_title), body,
+                getString(R.string.update_now), this::downloadUpdate,
+                getString(R.string.update_later), null);
+    }
+
+    /** Fetches the APK and hands it to Android's installer. */
+    private void downloadUpdate() {
+        final UpdateChecker.Release release = pendingUpdate;
+        if (release == null || updateDownloading) return;
+        updateDownloading = true;
+        setUpdateValue(getString(R.string.updates_downloading, 0));
+        Toast.makeText(this, R.string.update_downloading, Toast.LENGTH_SHORT).show();
+        UpdateChecker.download(this, release, new UpdateChecker.OnDownload() {
+            @Override
+            public void progress(int percent) {
+                setUpdateValue(getString(R.string.updates_downloading, percent));
+            }
+
+            @Override
+            public void done(java.io.File apk, String error) {
+                updateDownloading = false;
+                if (apk == null) {
+                    setUpdateValue(getString(R.string.updates_failed));
+                    Toast.makeText(MainActivity.this, R.string.update_download_failed,
+                            Toast.LENGTH_LONG).show();
+                    return;
+                }
+                setUpdateValue(getString(R.string.updates_ready, release.version));
+                if (!canInstallUpdates()) {
+                    // Android keeps this choice for the user: the update waits
+                    // here until it is allowed, then goes on by itself.
+                    pendingInstall = apk;
+                    askInstallPermission();
+                    return;
+                }
+                if (!UpdateChecker.install(MainActivity.this, apk)) {
+                    Toast.makeText(MainActivity.this, R.string.update_install_failed,
+                            Toast.LENGTH_LONG).show();
+                }
+            }
+        });
+    }
+
+    /** True when Android lets this app hand an APK to its installer. */
+    private boolean canInstallUpdates() {
+        if (Build.VERSION.SDK_INT < 26) return true;
+        try {
+            return getPackageManager().canRequestPackageInstalls();
+        } catch (Exception e) {
+            return true;
+        }
+    }
+
+    /** Explains the one permission Android does not let an app grant itself. */
+    private void askInstallPermission() {
+        showCard(getString(R.string.update_permission_title),
+                getString(R.string.update_permission_body),
+                getString(R.string.update_permission_open), this::openInstallPermission,
+                getString(R.string.update_permission_later), null);
+    }
+
+    private void openInstallPermission() {
+        if (Build.VERSION.SDK_INT < 26) return;
+        try {
+            startActivity(new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                    Uri.parse("package:" + getPackageName())));
+        } catch (Exception e) {
+            Toast.makeText(this, R.string.update_install_failed, Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private void refreshUpdateBanner() {
+        if (updateBanner == null || updateBannerText == null) return;
+        if (pendingUpdate == null) {
+            updateBanner.setVisibility(View.GONE);
+            return;
+        }
+        updateBannerText.setText(getString(R.string.update_banner, pendingUpdate.version));
+        updateBanner.setVisibility(View.VISIBLE);
+    }
+
+    private void setUpdateValue(CharSequence text) {
+        if (updateValueView == null || text == null) return;
+        setValue(updateValueView, text);
     }
 
     private String versionName() {
