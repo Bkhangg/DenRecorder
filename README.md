@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/icon.png" width="96" alt="DenRecorder icon" />
+</p>
+
 # DenRecorder
 
 A small, fast screen recorder for Android — native MediaCodec recording, no ads, no tracking.
