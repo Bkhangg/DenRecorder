@@ -212,6 +212,8 @@ public class MainActivity extends Activity {
     /** The APK waiting for the one-time "install apps" permission. */
     private java.io.File pendingInstall;
     private TextView updateValueView;
+    /** What the updates row says; kept while Settings is not built yet. */
+    private String updateState;
     private LinearLayout updateBanner;
     private TextView updateBannerText;
     private boolean perfMode = true;
@@ -792,8 +794,10 @@ public class MainActivity extends Activity {
         LinearLayout aboutCard = settingsSection(list, tabRow, R.string.tab_about);
         addRow(aboutCard, R.drawable.ic_info, R.string.row_version, versionName(), false, null);
         divider(aboutCard);
+        // Settings is built on first opening, possibly after the check has
+        // finished: the row takes the state that is already known.
         updateValueView = addRow(aboutCard, R.drawable.ic_update, R.string.row_updates,
-                "", true, this::onUpdatesRow);
+                updateState == null ? "" : updateState, true, this::onUpdatesRow);
         divider(aboutCard);
         addHint(aboutCard, R.string.hint_updates);
         divider(aboutCard);
@@ -2264,7 +2268,9 @@ public class MainActivity extends Activity {
     }
 
     private void setUpdateValue(CharSequence text) {
-        if (updateValueView == null || text == null) return;
+        if (text == null) return;
+        updateState = text.toString();
+        if (updateValueView == null) return;
         setValue(updateValueView, text);
     }
 
