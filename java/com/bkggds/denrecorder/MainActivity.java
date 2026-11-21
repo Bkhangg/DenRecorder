@@ -2111,13 +2111,17 @@ public class MainActivity extends Activity {
         // The row already says what the last check found, so it is never blank
         // while the new check runs.
         String known = prefs.getString("lastRelease", "");
+        boolean knownNewer = !known.isEmpty()
+                && UpdateChecker.isNewer(known, versionName());
         if (!known.isEmpty()) {
-            setUpdateValue(UpdateChecker.isNewer(known, versionName())
+            setUpdateValue(knownNewer
                     ? getString(R.string.updates_available, known)
                     : getString(R.string.updates_up_to_date));
         }
         long last = prefs.getLong("lastUpdateCheck", 0);
-        if (System.currentTimeMillis() - last < 15L * 60 * 1000) return;
+        // A release already known to be newer is looked up again at once: its
+        // details are what the banner and the card need.
+        if (!knownNewer && System.currentTimeMillis() - last < 15L * 60 * 1000) return;
         checkForUpdates(false);
     }
 
