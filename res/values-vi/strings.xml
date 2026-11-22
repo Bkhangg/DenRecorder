@@ -212,6 +212,7 @@
 
     <string name="audio_internal">Âm thanh thiết bị (nội bộ)</string>
     <string name="audio_mic">Micrô</string>
+    <string name="audio_internal_mic">Âm thanh máy + micrô</string>
     <string name="audio_none">Không âm thanh</string>
 
     <string name="start_recording">Bắt đầu quay</string>
@@ -251,7 +252,9 @@
     <string name="codec_avc_item">H.264 AVC (tương thích nhất)</string>
     <string name="codec_hevc_item">H.265 HEVC (file nhỏ hơn)</string>
     <string name="language_en">English</string>
-    <string name="language_vi">Tiếng Việt</string>
+    <string name="language_zh">中文</string>
+    <string name="language_ja">日本語</string>
+    <string name="language_ko">한국어</string>
 
     <string name="dialog_cancel">Hủy</string>
     <string name="dialog_close">Đóng</string>

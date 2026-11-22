@@ -2143,14 +2143,20 @@ public class MainActivity extends Activity {
         int res;
         if (audioSource == ScreenRecorder.AUDIO_MIC) res = R.string.audio_mic;
         else if (audioSource == ScreenRecorder.AUDIO_INTERNAL) res = R.string.audio_internal;
+        else if (audioSource == ScreenRecorder.AUDIO_INTERNAL_MIC) res = R.string.audio_internal_mic;
         else res = R.string.audio_none;
         setValue(audioValueView, getString(res));
     }
 
     private void updateLanguageValue() {
         if (languageValueView == null) return;
-        setValue(languageValueView, getString(
-                "vi".equals(language) ? R.string.language_vi : R.string.language_en));
+        int res;
+        if ("vi".equals(language)) res = R.string.language_vi;
+        else if ("zh".equals(language)) res = R.string.language_zh;
+        else if ("ja".equals(language)) res = R.string.language_ja;
+        else if ("ko".equals(language)) res = R.string.language_ko;
+        else res = R.string.language_en;
+        setValue(languageValueView, getString(res));
     }
 
     private void updateTileValue() {
@@ -3148,11 +3154,13 @@ public class MainActivity extends Activity {
         if (blockWhileRecording()) return;
         final int[] values = {
                 ScreenRecorder.AUDIO_INTERNAL,
+                ScreenRecorder.AUDIO_INTERNAL_MIC,
                 ScreenRecorder.AUDIO_MIC,
                 ScreenRecorder.AUDIO_NONE
         };
         final String[] names = {
                 getString(R.string.audio_internal),
+                getString(R.string.audio_internal_mic),
                 getString(R.string.audio_mic),
                 getString(R.string.audio_none)
         };
@@ -3168,13 +3176,20 @@ public class MainActivity extends Activity {
     }
 
     private void chooseLanguage() {
-        final String[] values = {"en", "vi"};
+        // English first, then the rest alphabetically by their English name.
+        final String[] values = {"en", "zh", "ja", "ko", "vi"};
         final String[] names = {
                 getString(R.string.language_en),
+                getString(R.string.language_zh),
+                getString(R.string.language_ja),
+                getString(R.string.language_ko),
                 getString(R.string.language_vi)
         };
-        showChoices(getString(R.string.title_language), names,
-                "vi".equals(language) ? 1 : 0, which -> {
+        int checked = 0;
+        for (int i = 0; i < values.length; i++) {
+            if (values[i].equals(language)) checked = i;
+        }
+        showChoices(getString(R.string.title_language), names, checked, which -> {
                     language = values[which];
                     prefs.edit().putString(LocaleHelper.KEY, language)
                             .putBoolean("openSettingsNext", true).apply();
@@ -3439,6 +3454,7 @@ public class MainActivity extends Activity {
         List<String> needed = new ArrayList<>();
         // Before Android 10 "device audio" falls back to the microphone.
         boolean needsMic = audioSource == ScreenRecorder.AUDIO_MIC
+                || audioSource == ScreenRecorder.AUDIO_INTERNAL_MIC
                 || (audioSource == ScreenRecorder.AUDIO_INTERNAL && Build.VERSION.SDK_INT < 29);
         if (needsMic && !hasPermission(Manifest.permission.RECORD_AUDIO)) {
             needed.add(Manifest.permission.RECORD_AUDIO);
@@ -3511,9 +3527,13 @@ public class MainActivity extends Activity {
         pendingStart = false;
 
         boolean needsMic = audioSource == ScreenRecorder.AUDIO_MIC
+                || audioSource == ScreenRecorder.AUDIO_INTERNAL_MIC
                 || (audioSource == ScreenRecorder.AUDIO_INTERNAL && Build.VERSION.SDK_INT < 29);
         if (needsMic && !hasPermission(Manifest.permission.RECORD_AUDIO)) {
-            audioSource = ScreenRecorder.AUDIO_NONE;
+            audioSource = audioSource == ScreenRecorder.AUDIO_INTERNAL_MIC
+                    && Build.VERSION.SDK_INT >= 29
+                    ? ScreenRecorder.AUDIO_INTERNAL
+                    : ScreenRecorder.AUDIO_NONE;
             prefs.edit().putInt("audio", audioSource).apply();
             updateAudioValue();
             status(R.string.status_mic_denied, MUTED);

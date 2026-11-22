@@ -18,14 +18,14 @@ A small, fast screen recorder for Android — native MediaCodec recording, no ad
 
 ## English
 
-DenRecorder records the whole screen (and the device audio, the microphone or nothing) straight from Android's own encoders. It is written in plain Java against the Android framework, so the APK stays small (about 160 KB, most of it the Shizuku client behind the beta island feature).
+DenRecorder records the whole screen (and the device audio, the microphone, both together or nothing) straight from Android's own encoders. It is written in plain Java against the Android framework, so the APK stays small (about 160 KB, most of it the Shizuku client behind the beta island feature).
 
 ### Features
 
 - **Exact screen size** — a native recording is saved at the real screen resolution (for example 1220 × 2712), not scaled down to the encoder's 16-pixel grid.
 - **Quality presets** — Native, 4K, 2K, Full HD, HD and SD, keeping the screen's aspect ratio. Videos stay inside what phone decoders handle (3840 px on the long side, H.264 level 5.1 frame size), so a 4K recording plays in every gallery and player.
 - **15–50 Mbps** variable bitrate, **H.264 AVC** or **H.265 HEVC**, up to **120 fps**.
-- **Audio** — internal device audio (Android 10+), microphone, or silent.
+- **Audio** — internal device audio (Android 10+), the microphone, **both mixed into one track** (the device sound and your voice together in one AAC track), or silent. If the microphone is unavailable or not allowed, the recording keeps the device sound instead of losing all audio.
 - **Quick Settings tile** — tap to start and stop without opening the app (with a toast when the recording starts or is saved); press and hold the tile to open the app.
 - **One tap to record (optional, Shizuku)** — Android asks for the screen-capture permission every time; with Shizuku running, DenRecorder presses that button itself as soon as the dialog is up, at the place it found the first time, so recording starts at once. Android 16 gives an app no way to skip the dialog completely, even with the app-op set; the dialog is gone in well under a second. The option can be turned off again in Settings.
 - **Xiaomi Super Island (beta, Xiaomi only)** — the running recording shows up in HyperOS's island as a small icon with its timer, and a tap on it gives **pause, resume and stop** right on the bar (the stop button is a filled square, not a cross); it can be hidden entirely, and HyperOS hides it by itself whenever the status bar is pulled down (the notification there carries the same buttons). Needs Shizuku once to grant the island permission.
@@ -45,13 +45,13 @@ DenRecorder records the whole screen (and the device audio, the microphone or no
 - **Record a part of the screen** — Settings → Recording area → Choose an area… floats a frame over whatever app you are in. After Save the same ball becomes the record button: tap it to start and tap again to stop from inside the app or game, hold it to change the frame. While recording it steps just outside the frame, so the video holds only the area itself. When the recording ends the ball and its notification close themselves; **Hủy** in the frame closes everything, while **Ẩn khung** keeps the ball ready to record.
 - **Recording rotation** — automatic, portrait or landscape: the screen is locked to that rotation for the whole recording (your phone's own rotation setting comes back afterwards), so the video never turns halfway through.
 - **Long recordings** — the notification uses the system chronometer (no wake-ups every second), storage is checked every 15 s, recording stops safely before the card fills up.
-- **Bilingual** — English and Vietnamese, English on first launch.
+- **Five languages** — English, 中文, 日本語, 한국어 and Tiếng Việt, English first in the list; the choice is remembered and the whole UI switches with it.
 - **Shadcn-style UI** — dark, light or automatic (follows the phone), a floating bottom bar, screens that rise in part by part and short, subtle animations.
 - **Android 5.1 (SDK 22) to Android 16 (SDK 36).**
 
 ### Install
 
-1. Download `DenRecorder-1.10.4.apk` from the [Releases](../../releases) page.
+1. Download `DenRecorder-1.10.14.apk` from the [Releases](../../releases) page.
 2. Open it on the phone and allow installing apps from that source if asked.
 3. Open DenRecorder, allow the permissions it asks for, and optionally let it add the Quick Settings tile.
 
@@ -93,7 +93,7 @@ java/com/bkggds/denrecorder/
   CapturePromptActivity.java  transparent capture-consent trampoline
   Island.java           Xiaomi Super Island (beta) notification extras
   ShizukuBridge.java    Shizuku: one shell command, the island permission
-  LocaleHelper.java     EN/VI switching
+  LocaleHelper.java     language switching (EN, ZH, JA, KO, VI)
 libs/                   Shizuku API (Apache-2.0, RikkaW) for the beta feature
 res/                    strings (EN + VI), icons, launcher icons
 ```
@@ -108,14 +108,14 @@ Made with ♥ by BKggDs
 
 ## Tiếng Việt
 
-DenRecorder quay toàn bộ màn hình (kèm âm thanh thiết bị, micrô hoặc không âm thanh) bằng chính bộ mã hóa của Android. Ứng dụng viết bằng Java thuần trên Android framework nên APK rất nhẹ (khoảng 160 KB, phần lớn là thư viện Shizuku cho tính năng đảo beta).
+DenRecorder quay toàn bộ màn hình (kèm âm thanh thiết bị, micrô, cả hai hoặc không âm thanh) bằng chính bộ mã hóa của Android. Ứng dụng viết bằng Java thuần trên Android framework nên APK rất nhẹ (khoảng 160 KB, phần lớn là thư viện Shizuku cho tính năng đảo beta).
 
 ### Tính năng
 
 - **Đúng kích thước màn hình** — bản quay "Gốc" lưu đúng độ phân giải thật (ví dụ 1220 × 2712), không bị hạ xuống mốc chia hết cho 16.
 - **Chọn chất lượng** — Gốc, 4K, 2K, Full HD, HD, SD, giữ đúng tỉ lệ màn hình.
 - **15–50 Mbps**, **H.264 AVC** hoặc **H.265 HEVC**, tới **120 fps**.
-- **Âm thanh** — âm thanh trong máy (Android 10 trở lên), micrô, hoặc không có.
+- **Âm thanh** — âm thanh trong máy (Android 10 trở lên), micrô, **cả hai hoà vào một track** (tiếng máy và giọng bạn cùng nằm trong một track AAC), hoặc không có. Nếu không lấy được micrô hoặc chưa cấp quyền, bản ghi vẫn giữ tiếng máy thay vì mất hết âm thanh.
 - **Nút trên Trung tâm điều khiển** — chạm để bắt đầu và dừng quay mà không cần mở ứng dụng (có toast khi bắt đầu và khi đã lưu); nhấn giữ nút để mở ứng dụng.
 - **Một chạm là quay (tùy chọn, cần Shizuku)** — Android hỏi quyền quay màn hình mỗi lần; khi Shizuku đang chạy, DenRecorder tự bấm nút đó ngay khi hộp thoại vừa hiện, đúng chỗ tìm được lần đầu, nên ghi gần như tức thì. Android 16 không cho ứng dụng thường bỏ hẳn hộp thoại (đặt app-op PROJECT_MEDIA cũng không qua được, đã thử); hộp thoại chỉ loé lên dưới một giây. Có thể tắt lại trong Cài đặt.
 - **Super Island của Xiaomi (beta, chỉ máy Xiaomi)** — bản ghi đang chạy hiện trên đảo của HyperOS dưới dạng một biểu tượng nhỏ kèm đồng hồ đếm, chạm vào đảo là **tạm dừng, tiếp tục và dừng** ngay trên thanh đó; có thể tắt hẳn, và HyperOS tự ẩn đảo khi bạn kéo thanh trạng thái xuống (thông báo ở đó có đúng các nút này). Cần Shizuku một lần để cấp quyền hiện đảo.
@@ -135,13 +135,13 @@ DenRecorder quay toàn bộ màn hình (kèm âm thanh thiết bị, micrô ho�
 - **Quay một vùng màn hình** — Cài đặt → Vùng quay → Chọn vùng quay… mở một khung nổi trên app bạn đang dùng. Bấm Lưu xong, chính bóng đó thành nút quay: chạm để bắt đầu, chạm lần nữa để dừng ngay trong app hay game, giữ bóng để đổi khung. Đang quay thì bóng né ra ngoài khung nên video chỉ có đúng phần đã chọn. Quay xong bóng và thông báo tự tắt; bấm **Hủy** trong khung cũng tắt hết, còn **Ẩn khung** thì giữ bóng lại để quay.
 - **Hướng khi ghi hình** — tự động, dọc hoặc ngang: màn hình được khóa đúng hướng đó trong suốt lần quay (cài đặt xoay của máy được trả lại sau khi dừng), nên video không bị xoay giữa chừng.
 - **Quay dài** — thông báo dùng đồng hồ đếm của hệ thống (không đánh thức mỗi giây), kiểm tra dung lượng mỗi 15 giây và tự dừng trước khi đầy bộ nhớ.
-- **Song ngữ** — English và Tiếng Việt, lần đầu mở là tiếng Anh.
+- **Năm ngôn ngữ** — English, 中文, 日本語, 한국어 và Tiếng Việt, tiếng Anh đứng đầu danh sách; lựa chọn được nhớ và cả giao diện đổi theo.
 - **Giao diện tối kiểu Shadcn** với thanh điều hướng nổi và animation nhẹ.
 - **Chạy trên Android 5.1 (SDK 22) đến Android 16 (SDK 36).**
 
 ### Cài đặt
 
-1. Tải `DenRecorder-1.10.4.apk` ở mục [Releases](../../releases).
+1. Tải `DenRecorder-1.10.14.apk` ở mục [Releases](../../releases).
 2. Mở file trên điện thoại và cho phép cài đặt từ nguồn đó nếu được hỏi.
 3. Mở DenRecorder, cấp quyền khi được hỏi, có thể thêm nút vào Trung tâm điều khiển.
 

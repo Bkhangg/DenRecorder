@@ -228,7 +228,7 @@ public class RecorderService extends Service {
         final boolean rotationLocked = RotationLock.apply(this, orientation);
 
         int type = ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION;
-        if (audio == ScreenRecorder.AUDIO_MIC) {
+        if (audio == ScreenRecorder.AUDIO_MIC || audio == ScreenRecorder.AUDIO_INTERNAL_MIC) {
             type |= ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE;
         }
         if (Build.VERSION.SDK_INT >= 29) {

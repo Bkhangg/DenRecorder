@@ -60,9 +60,18 @@ public class CapturePromptActivity extends Activity {
                 // No playback capture before Android 10: use the microphone instead.
                 audio = ScreenRecorder.AUDIO_MIC;
             }
-            if (audio == ScreenRecorder.AUDIO_MIC && !hasPermission(
-                    android.Manifest.permission.RECORD_AUDIO)) {
-                audio = ScreenRecorder.AUDIO_NONE;
+            if (audio == ScreenRecorder.AUDIO_INTERNAL_MIC && Build.VERSION.SDK_INT < 29) {
+                // The device sound cannot be captured there, so keep the microphone.
+                audio = ScreenRecorder.AUDIO_MIC;
+            }
+            if ((audio == ScreenRecorder.AUDIO_MIC
+                    || audio == ScreenRecorder.AUDIO_INTERNAL_MIC)
+                    && !hasPermission(android.Manifest.permission.RECORD_AUDIO)) {
+                // Without the microphone the device sound is still worth keeping.
+                audio = audio == ScreenRecorder.AUDIO_INTERNAL_MIC
+                        && Build.VERSION.SDK_INT >= 29
+                        ? ScreenRecorder.AUDIO_INTERNAL
+                        : ScreenRecorder.AUDIO_NONE;
             }
             Intent service = new Intent(this, RecorderService.class)
                     .setAction(RecorderService.ACTION_START)

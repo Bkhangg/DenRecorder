@@ -51,6 +51,8 @@ public class ScreenRecorder {
     public static final int AUDIO_NONE = 0;
     public static final int AUDIO_MIC = 1;
     public static final int AUDIO_INTERNAL = 2;
+    /** Device sound and the microphone together, mixed into one AAC track. */
+    public static final int AUDIO_INTERNAL_MIC = 3;
 
     public static final String CODEC_AVC = "video/avc";
     public static final String CODEC_HEVC = "video/hevc";
@@ -85,6 +87,8 @@ public class ScreenRecorder {
     private CropMirror cropMirror;
     private Rect cropRegion;
     private AudioRecord audioRecord;
+    /** The microphone, when it is mixed with the device sound. */
+    private AudioRecord micRecord;
     private MediaMuxer muxer;
     private ParcelFileDescriptor outputFd;
     private Uri outputUri;
@@ -273,6 +277,7 @@ public class ScreenRecorder {
             audioCodec.start();
             try {
                 audioRecord.startRecording();
+                if (micRecord != null) micRecord.startRecording();
             } catch (Exception e) {
                 Log.w(TAG, "AudioRecord could not start", e);
                 audioActive = false;
@@ -280,6 +285,8 @@ public class ScreenRecorder {
                 audioCodec = null;
                 try { audioRecord.release(); } catch (Exception ignored) { }
                 audioRecord = null;
+                try { if (micRecord != null) micRecord.release(); } catch (Exception ignored) { }
+                micRecord = null;
             }
         }
 
@@ -776,39 +783,34 @@ public class ScreenRecorder {
                 .build();
 
         try {
-            boolean internal = audioSource == AUDIO_INTERNAL
+            boolean internal = (audioSource == AUDIO_INTERNAL
+                    || audioSource == AUDIO_INTERNAL_MIC)
                     && Build.VERSION.SDK_INT >= 29
                     && projection != null;
+
             AudioRecord record;
+            AudioRecord mic = null;
             if (internal) {
-                AudioPlaybackCaptureConfiguration capture =
-                        new AudioPlaybackCaptureConfiguration.Builder(projection)
-                                .addMatchingUsage(AudioAttributes.USAGE_MEDIA)
-                                .addMatchingUsage(AudioAttributes.USAGE_GAME)
-                                .addMatchingUsage(AudioAttributes.USAGE_UNKNOWN)
-                                .build();
-                record = new AudioRecord.Builder()
-                        .setAudioFormat(format)
-                        .setBufferSizeInBytes(bufSize)
-                        .setAudioPlaybackCaptureConfig(capture)
-                        .build();
-            } else if (Build.VERSION.SDK_INT >= 23) {
-                // Microphone, and the fallback for "device audio" before Android 10,
-                // which has no playback capture.
-                record = new AudioRecord.Builder()
-                        .setAudioSource(MediaRecorder.AudioSource.MIC)
-                        .setAudioFormat(format)
-                        .setBufferSizeInBytes(bufSize)
-                        .build();
+                record = playbackRecord(format, bufSize);
+                if (audioSource == AUDIO_INTERNAL_MIC) mic = micRecord(format, bufSize);
             } else {
-                record = new AudioRecord(MediaRecorder.AudioSource.MIC, SAMPLE_RATE,
-                        AudioFormat.CHANNEL_IN_STEREO, AudioFormat.ENCODING_PCM_16BIT, bufSize);
+                record = micRecord(format, bufSize);
             }
             if (record.getState() != AudioRecord.STATE_INITIALIZED) {
                 record.release();
+                if (mic != null) {
+                    try { mic.release(); } catch (Exception ignored) { }
+                }
                 throw new Exception("Microphone/audio capture unavailable");
             }
+            if (mic != null && mic.getState() != AudioRecord.STATE_INITIALIZED) {
+                // Device sound alone is better than no sound at all.
+                Log.w(TAG, "Microphone unavailable, keeping the device sound only");
+                try { mic.release(); } catch (Exception ignored) { }
+                mic = null;
+            }
             audioRecord = record;
+            micRecord = mic;
 
             MediaFormat audioFormat = MediaFormat.createAudioFormat(MIME_AUDIO, SAMPLE_RATE, CHANNELS);
             audioFormat.setInteger(MediaFormat.KEY_AAC_PROFILE,
@@ -823,9 +825,38 @@ public class ScreenRecorder {
             audioActive = false;
             try { if (audioRecord != null) audioRecord.release(); } catch (Exception ignored) { }
             audioRecord = null;
+            try { if (micRecord != null) micRecord.release(); } catch (Exception ignored) { }
+            micRecord = null;
             try { if (audioCodec != null) audioCodec.release(); } catch (Exception ignored) { }
             audioCodec = null;
         }
+    }
+
+    /** Android 10's playback capture: the app's own output, not the microphone. */
+    private AudioRecord playbackRecord(AudioFormat format, int bufSize) {
+        AudioPlaybackCaptureConfiguration capture =
+                new AudioPlaybackCaptureConfiguration.Builder(projection)
+                        .addMatchingUsage(AudioAttributes.USAGE_MEDIA)
+                        .addMatchingUsage(AudioAttributes.USAGE_GAME)
+                        .addMatchingUsage(AudioAttributes.USAGE_UNKNOWN)
+                        .build();
+        return new AudioRecord.Builder()
+                .setAudioFormat(format)
+                .setBufferSizeInBytes(bufSize)
+                .setAudioPlaybackCaptureConfig(capture)
+                .build();
+    }
+
+    private AudioRecord micRecord(AudioFormat format, int bufSize) {
+        if (Build.VERSION.SDK_INT >= 23) {
+            return new AudioRecord.Builder()
+                    .setAudioSource(MediaRecorder.AudioSource.MIC)
+                    .setAudioFormat(format)
+                    .setBufferSizeInBytes(bufSize)
+                    .build();
+        }
+        return new AudioRecord(MediaRecorder.AudioSource.MIC, SAMPLE_RATE,
+                AudioFormat.CHANNEL_IN_STEREO, AudioFormat.ENCODING_PCM_16BIT, bufSize);
     }
 
     private void runVideo() {
@@ -880,6 +911,7 @@ public class ScreenRecorder {
         android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_URGENT_AUDIO);
         MediaCodec.BufferInfo info = new MediaCodec.BufferInfo();
         short[] pcm = new short[1024 * CHANNELS];
+        short[] micPcm = micRecord == null ? null : new short[pcm.length];
         long frames = 0;
         audioFrames.set(0);
 
@@ -887,6 +919,21 @@ public class ScreenRecorder {
             int read;
             try {
                 read = audioRecord.read(pcm, 0, pcm.length);
+                if (micPcm != null) {
+                    int micRead = micRecord.read(micPcm, 0, micPcm.length);
+                    int count = Math.max(read, micRead);
+                    if (count > 0) {
+                        // Averaged, not summed: two loud sources added
+                        // together would clip (music at full volume plus a
+                        // voice right at the microphone).
+                        for (int i = 0; i < count; i++) {
+                            int a = i < read ? pcm[i] : 0;
+                            int b = i < micRead ? micPcm[i] : 0;
+                            pcm[i] = (short) ((a + b) / 2);
+                        }
+                        read = count;
+                    }
+                }
             } catch (Exception e) {
                 break;
             }
@@ -999,6 +1046,7 @@ public class ScreenRecorder {
         virtualDisplay = null;
         try { if (videoCodec != null) videoCodec.signalEndOfInputStream(); } catch (Exception ignored) { }
         try { if (audioRecord != null) audioRecord.stop(); } catch (Exception ignored) { }
+        try { if (micRecord != null) micRecord.stop(); } catch (Exception ignored) { }
 
         joinThread(videoThread);
         joinThread(audioThread);
@@ -1014,6 +1062,8 @@ public class ScreenRecorder {
         inputSurface = null;
         try { if (audioRecord != null) audioRecord.release(); } catch (Exception ignored) { }
         audioRecord = null;
+        try { if (micRecord != null) micRecord.release(); } catch (Exception ignored) { }
+        micRecord = null;
 
         synchronized (muxLock) {
             if (muxStarted) {
