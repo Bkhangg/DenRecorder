@@ -372,4 +372,20 @@
     <string name="title_island_mode">Khi nào hiện đảo</string>
     <string name="island_mode_pull">Ẩn</string>
     <string name="island_mode_always">Luôn hiện</string>
+
+    <string name="recordings_search">Tìm bản ghi</string>
+    <string name="recordings_no_match">Không có bản ghi nào khớp. Thử từ khác hoặc chọn “Tất cả video”.</string>
+    <string name="sort_title">Sắp xếp bản ghi</string>
+    <string name="sort_newest">Mới nhất trước</string>
+    <string name="sort_oldest">Cũ nhất trước</string>
+    <string name="sort_largest">Dung lượng lớn trước</string>
+    <string name="sort_smallest">Dung lượng nhỏ trước</string>
+    <string name="sort_longest">Dài nhất trước</string>
+    <string name="sort_shortest">Ngắn nhất trước</string>
+    <string name="filter_title">Hiện bản ghi</string>
+    <string name="filter_all">Tất cả video</string>
+    <string name="filter_week">7 ngày qua</string>
+    <string name="filter_month">30 ngày qua</string>
+    <string name="trim_delete_original">Xoá bản gốc sau khi lưu đoạn cắt</string>
+    <string name="trim_deleted_original">Đã lưu %1$s và xoá bản gốc</string>
 </resources>

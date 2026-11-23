@@ -140,6 +140,8 @@ final class VideoTrimmer {
                         MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
             }
 
+            int videoSamples = 0;
+            int audioSamples = 0;
             int muxVideo = muxer.addTrack(videoFormat);
             int muxAudio = audioTrack >= 0 && audioFormat != null
                     ? muxer.addTrack(audioFormat) : -1;
@@ -174,15 +176,23 @@ final class VideoTrimmer {
                         info.size = size;
                         info.presentationTimeUs = time - baseUs;
                         // The first video sample of a cut has to stay a key frame.
-                        info.flags = time == baseUs ? MediaCodec.BUFFER_FLAG_KEY_FRAME : 0;
+                        info.flags = (extractor.getSampleFlags()
+                                & MediaExtractor.SAMPLE_FLAG_SYNC) != 0
+                                ? MediaCodec.BUFFER_FLAG_KEY_FRAME : 0;
                         muxer.writeSampleData(muxTrack, buffer, info);
+                        if (muxTrack == muxVideo) videoSamples++; else audioSamples++;
                     }
                 }
                 if (!extractor.advance()) break;
             }
 
+            // Without a single video sample the file is only its audio: better
+            // to report a failure than to hand that over (and lose the source).
+            if (videoSamples == 0) throw new Exception("No video in the cut");
             muxer.stop();
             muxing = false;
+            Log.i(TAG, "cut: " + videoSamples + " video, " + audioSamples
+                    + " audio samples from " + baseUs + "us");
             muxer.release();
             muxer = null;
 

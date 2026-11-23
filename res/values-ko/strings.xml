@@ -355,4 +355,20 @@
         <item quantity="one">%1$d개의 동영상</item>
         <item quantity="other">%1$d개의 동영상</item>
     </plurals>
+
+    <string name="recordings_search">녹화 검색</string>
+    <string name="recordings_no_match">일치하는 녹화가 없습니다. 다른 단어나 “모든 동영상”을 사용해 보세요.</string>
+    <string name="sort_title">녹화 정렬</string>
+    <string name="sort_newest">최신순</string>
+    <string name="sort_oldest">오래된 순</string>
+    <string name="sort_largest">큰 용량 순</string>
+    <string name="sort_smallest">작은 용량 순</string>
+    <string name="sort_longest">긴 영상 순</string>
+    <string name="sort_shortest">짧은 영상 순</string>
+    <string name="filter_title">표시할 녹화</string>
+    <string name="filter_all">모든 동영상</string>
+    <string name="filter_week">최근 7일</string>
+    <string name="filter_month">최근 30일</string>
+    <string name="trim_delete_original">잘라낸 영상을 저장한 후 원본 삭제</string>
+    <string name="trim_deleted_original">%1$s 저장 후 원본을 삭제했습니다</string>
 </resources>

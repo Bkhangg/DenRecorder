@@ -32,6 +32,9 @@
         android:maxSdkVersion="28" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="28" />
+    <!-- The recordings screen lists the videos in the save folder, including
+         ones the app did not create itself (a file moved there, a reinstall). -->
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
 
     <uses-feature android:name="android.hardware.microphone" android:required="false" />
 

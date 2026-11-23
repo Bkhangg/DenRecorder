@@ -355,4 +355,20 @@
         <item quantity="one">%1$d 个视频</item>
         <item quantity="other">%1$d 个视频</item>
     </plurals>
+
+    <string name="recordings_search">搜索录像</string>
+    <string name="recordings_no_match">没有匹配的录像。换一个词或选择“所有视频”。</string>
+    <string name="sort_title">录像排序</string>
+    <string name="sort_newest">最新优先</string>
+    <string name="sort_oldest">最早优先</string>
+    <string name="sort_largest">最大优先</string>
+    <string name="sort_smallest">最小优先</string>
+    <string name="sort_longest">最长优先</string>
+    <string name="sort_shortest">最短优先</string>
+    <string name="filter_title">显示录像</string>
+    <string name="filter_all">所有视频</string>
+    <string name="filter_week">最近 7 天</string>
+    <string name="filter_month">最近 30 天</string>
+    <string name="trim_delete_original">保存剪辑后删除原视频</string>
+    <string name="trim_deleted_original">已保存 %1$s 并删除原视频</string>
 </resources>

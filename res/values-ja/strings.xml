@@ -355,4 +355,20 @@
         <item quantity="one">%1$d ビデオ</item>
         <item quantity="other">%1$d 本のビデオ</item>
     </plurals>
+
+    <string name="recordings_search">録画を検索</string>
+    <string name="recordings_no_match">一致する録画がありません。別の言葉か「すべての動画」を試してください。</string>
+    <string name="sort_title">録画の並べ替え</string>
+    <string name="sort_newest">新しい順</string>
+    <string name="sort_oldest">古い順</string>
+    <string name="sort_largest">大きい順</string>
+    <string name="sort_smallest">小さい順</string>
+    <string name="sort_longest">長い順</string>
+    <string name="sort_shortest">短い順</string>
+    <string name="filter_title">表示する録画</string>
+    <string name="filter_all">すべての動画</string>
+    <string name="filter_week">過去 7 日間</string>
+    <string name="filter_month">過去 30 日間</string>
+    <string name="trim_delete_original">切り抜きを保存したら元の録画を削除する</string>
+    <string name="trim_deleted_original">%1$s を保存し、元の録画を削除しました</string>
 </resources>

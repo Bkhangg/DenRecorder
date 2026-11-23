@@ -69,6 +69,7 @@ public class MainActivity extends Activity {
 
     private static final int REQ_PROJECTION = 1001;
     private static final int REQ_PERMISSIONS = 1002;
+    private static final int REQ_MEDIA = 1003;
     private static final int REQ_WRITE_SETTINGS = 1003;
     private static final int REQ_OVERLAY = 1004;
     private static final int REQ_FOLDER = 1005;
@@ -160,6 +161,13 @@ public class MainActivity extends Activity {
     private TextView recentTab;
     private TextView allTab;
     private boolean showAllRecordings;
+    /** Search text, filter (0 all, 1 today, 2 yesterday, 3 week, 4 month) and order of the list. */
+    private String recSearch = "";
+    private int recFilter;
+    private int recSort;
+    private EditText recordingsSearchField;
+    private TextView recSortChip;
+    private TextView recFilterChip;
     private boolean recordingsSelectMode;
     /** What the rows on screen were built from, to skip needless rebuilds. */
     private String recordingsSignature = "";
@@ -170,6 +178,8 @@ public class MainActivity extends Activity {
     private int recordingsVisible = 20;
     /** Set when only the number of rows changed, so the list is drawn again. */
     private boolean recordingsRedraw;
+    /** The videos permission is asked for once, the first time the tab opens. */
+    private boolean askedMediaAccess;
     private static final int RECORDINGS_STEP = 40;
     private boolean recordingsQuerying;
     private boolean recordingsQueryAgain;
@@ -352,6 +362,8 @@ public class MainActivity extends Activity {
         drawSize = prefs.getInt("drawSize", 1);
         drawAutoHide = prefs.getBoolean("drawAutoHide", false);
         screenOffAction = prefs.getString("screenOffAction", "stop");
+        recFilter = prefs.getInt("recFilter", 0);
+        recSort = prefs.getInt("recSort", 0);
         handler = new Handler(Looper.getMainLooper());
         try {
             rikka.shizuku.Shizuku.addRequestPermissionResultListener(islandPermissionListener);
@@ -896,6 +908,47 @@ public class MainActivity extends Activity {
         });
         tabs.addView(allTab, new LinearLayout.LayoutParams(0, dp(40), 1f));
 
+        // Search a long list by name, folder, day or size, then narrow it by
+        // date and order it.
+        recordingsSearchField = new EditText(this);
+        recordingsSearchField.setHint(getString(R.string.recordings_search));
+        recordingsSearchField.setText(recSearch);
+        recordingsSearchField.setTextColor(TEXT);
+        recordingsSearchField.setHintTextColor(FAINT);
+        recordingsSearchField.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+        recordingsSearchField.setSingleLine(true);
+        recordingsSearchField.setImeOptions(android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH);
+        recordingsSearchField.setBackground(round(CARD, 12, BORDER));
+        recordingsSearchField.setPadding(dp(14), dp(10), dp(14), dp(10));
+        list.addView(recordingsSearchField, lp(MATCH, WRAP, 0, 10, 0, 0));
+        recordingsSearchField.addTextChangedListener(new android.text.TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence text, int start, int count, int after) { }
+            @Override public void onTextChanged(CharSequence text, int start, int before, int count) { }
+            @Override public void afterTextChanged(android.text.Editable text) {
+                String value = text.toString().trim();
+                if (value.equals(recSearch)) return;
+                recSearch = value;
+                recordingsVisible = 20;
+                recordingsRedraw = true;
+                if (recordingsLoaded) renderRecordings(recordingsCache, true);
+            }
+        });
+
+        LinearLayout controls = new LinearLayout(this);
+        controls.setOrientation(LinearLayout.HORIZONTAL);
+        list.addView(controls, lp(MATCH, WRAP, 0, 8, 0, 0));
+
+        recSortChip = chipLabel("");
+        recSortChip.setOnClickListener(v -> chooseRecordingSort());
+        controls.addView(recSortChip, new LinearLayout.LayoutParams(0, WRAP, 1f));
+
+        recFilterChip = chipLabel("");
+        recFilterChip.setOnClickListener(v -> chooseRecordingFilter());
+        LinearLayout.LayoutParams filterParams = new LinearLayout.LayoutParams(0, WRAP, 1f);
+        filterParams.setMargins(dp(8), 0, 0, 0);
+        controls.addView(recFilterChip, filterParams);
+        updateRecordingChips();
+
         LinearLayout summaryRow = new LinearLayout(this);
         summaryRow.setOrientation(LinearLayout.HORIZONTAL);
         summaryRow.setGravity(Gravity.CENTER_VERTICAL);
@@ -924,6 +977,113 @@ public class MainActivity extends Activity {
         list.addView(recordingsList, lp(MATCH, WRAP, 0, 10, 0, 0));
     }
 
+    /** A small rounded control under the search field: sort and filter. */
+    private TextView chipLabel(String text) {
+        TextView view = label(text, 12, MUTED, true);
+        view.setGravity(Gravity.CENTER);
+        view.setPadding(dp(10), dp(9), dp(10), dp(9));
+        view.setBackground(round(CARD, 10, BORDER));
+        view.setClickable(true);
+        return view;
+    }
+
+    private void updateRecordingChips() {
+        if (recSortChip != null) recSortChip.setText(sortName(recSort));
+        if (recFilterChip != null) recFilterChip.setText(filterName(recFilter));
+    }
+
+    private String sortName(int which) {
+        int res;
+        switch (which) {
+            case 1: res = R.string.sort_oldest; break;
+            case 2: res = R.string.sort_largest; break;
+            case 3: res = R.string.sort_smallest; break;
+            case 4: res = R.string.sort_longest; break;
+            case 5: res = R.string.sort_shortest; break;
+            default: res = R.string.sort_newest; break;
+        }
+        return getString(res);
+    }
+
+    private String filterName(int which) {
+        int res;
+        switch (which) {
+            case 1: res = R.string.day_today; break;
+            case 2: res = R.string.day_yesterday; break;
+            case 3: res = R.string.filter_week; break;
+            case 4: res = R.string.filter_month; break;
+            default: res = R.string.filter_all; break;
+        }
+        return getString(res);
+    }
+
+    private void chooseRecordingSort() {
+        String[] names = new String[6];
+        for (int i = 0; i < names.length; i++) names[i] = sortName(i);
+        showChoices(getString(R.string.sort_title), names, recSort, which -> {
+            recSort = which;
+            prefs.edit().putInt("recSort", recSort).apply();
+            updateRecordingChips();
+            recordingsVisible = 20;
+            recordingsRedraw = true;
+            renderRecordings(recordingsCache, true);
+        });
+    }
+
+    private void chooseRecordingFilter() {
+        String[] names = new String[5];
+        for (int i = 0; i < names.length; i++) names[i] = filterName(i);
+        showChoices(getString(R.string.filter_title), names, recFilter, which -> {
+            recFilter = which;
+            prefs.edit().putInt("recFilter", recFilter).apply();
+            updateRecordingChips();
+            recordingsVisible = 20;
+            recordingsRedraw = true;
+            renderRecordings(recordingsCache, true);
+        });
+    }
+
+    /** The videos the search, filter and order leave on screen. */
+    private List<Recording> recordingsView(List<Recording> items) {
+        List<Recording> out = new ArrayList<>();
+        String query = recSearch == null ? "" : recSearch.toLowerCase(Locale.getDefault());
+        for (Recording item : items) {
+            if (!matchesFilter(item)) continue;
+            if (!query.isEmpty() && !matchesSearch(item, query)) continue;
+            out.add(item);
+        }
+        java.util.Comparator<Recording> order;
+        switch (recSort) {
+            case 1: order = (a, b) -> Long.compare(a.added, b.added); break;
+            case 2: order = (a, b) -> Long.compare(b.size, a.size); break;
+            case 3: order = (a, b) -> Long.compare(a.size, b.size); break;
+            case 4: order = (a, b) -> Long.compare(b.duration, a.duration); break;
+            case 5: order = (a, b) -> Long.compare(a.duration, b.duration); break;
+            default: order = (a, b) -> Long.compare(b.added, a.added); break;
+        }
+        java.util.Collections.sort(out, order);
+        return out;
+    }
+
+    private boolean matchesFilter(Recording item) {
+        if (recFilter == 0) return true;
+        long days = dayDifference(item.added);
+        switch (recFilter) {
+            case 1: return days == 0;
+            case 2: return days == 1;
+            case 3: return days >= 0 && days < 7;
+            default: return days >= 0 && days < 30;
+        }
+    }
+
+    private boolean matchesSearch(Recording item, String query) {
+        if (item.name != null && item.name.toLowerCase(Locale.getDefault()).contains(query)) return true;
+        if (item.folder != null && item.folder.toLowerCase(Locale.getDefault()).contains(query)) return true;
+        if (dayLabel(item.added).toLowerCase(Locale.getDefault()).contains(query)) return true;
+        return (item.width + "x" + item.height).contains(query.replace(" ", ""))
+                || (item.width + "×" + item.height).contains(query.replace(" ", ""));
+    }
+
     private TextView tabLabel(String text) {
         TextView view = label(text, 13, MUTED, true);
         view.setGravity(Gravity.CENTER);
@@ -946,6 +1106,13 @@ public class MainActivity extends Activity {
      */
     private void loadRecordings() {
         if (recordingsList == null) return;
+        // Android 13 and later need this to see videos the app did not make;
+        // without it the tab still lists the app's own recordings.
+        if (Build.VERSION.SDK_INT >= 33 && !askedMediaAccess
+                && !hasPermission(Manifest.permission.READ_MEDIA_VIDEO)) {
+            askedMediaAccess = true;
+            requestPermissions(new String[]{Manifest.permission.READ_MEDIA_VIDEO}, REQ_MEDIA);
+        }
         styleTabs();
         if (recordingsHint != null) {
             recordingsHint.setText(getString(R.string.hint_recordings, saveFolder()));
@@ -1025,13 +1192,14 @@ public class MainActivity extends Activity {
      */
     private void renderRecordings(List<Recording> items, boolean force) {
         if (recordingsList == null) return;
-        String signature = signatureOf(items);
         // The cached list is handed in again to redraw it; copying it onto
         // itself would empty it, so it is only replaced by another list.
         if (items != recordingsCache) {
             recordingsCache.clear();
             recordingsCache.addAll(items);
         }
+        List<Recording> visible = recordingsView(items);
+        String signature = signatureOf(visible) + "#" + recSort + "#" + recFilter + "#" + recSearch;
         if (!force && !recordingsRedraw && recordingsLoaded
                 && signature.equals(recordingsSignature)) return;
         recordingsRedraw = false;
@@ -1043,7 +1211,7 @@ public class MainActivity extends Activity {
 
         // A selection only lasts as long as the video exists.
         java.util.LinkedHashSet<String> alive = new java.util.LinkedHashSet<>();
-        for (Recording item : items) {
+        for (Recording item : visible) {
             if (selectedRecordings.contains(item.uri.toString())) {
                 alive.add(item.uri.toString());
             }
@@ -1051,17 +1219,24 @@ public class MainActivity extends Activity {
         selectedRecordings.retainAll(alive);
 
         long totalSize = 0;
-        for (Recording item : items) totalSize += item.size;
+        for (Recording item : visible) totalSize += item.size;
         if (recordingsSummary != null) {
-            recordingsSummary.setText(videosCount(items.size()) + " · " + formatSize(totalSize));
+            String summary = videosCount(visible.size()) + " · " + formatSize(totalSize);
+            if (visible.size() != items.size()) {
+                summary = videosCount(visible.size()) + " / " + videosCount(items.size())
+                        + " · " + formatSize(totalSize);
+            }
+            recordingsSummary.setText(summary);
         }
         updateSelectBar();
 
         int shown = showAllRecordings
-                ? Math.min(recordingsVisible, items.size())
-                : Math.min(10, items.size());
+                ? Math.min(recordingsVisible, visible.size())
+                : Math.min(10, visible.size());
         if (shown == 0) {
-            TextView empty = label(getString(R.string.recordings_empty), 13, FAINT, false);
+            boolean narrowed = !recSearch.isEmpty() || recFilter != 0;
+            TextView empty = label(getString(narrowed
+                    ? R.string.recordings_no_match : R.string.recordings_empty), 13, FAINT, false);
             empty.setLineSpacing(dp(3), 1f);
             recordingsList.addView(empty, lp(MATCH, WRAP, 0, 12, 0, 0));
             return;
@@ -1069,31 +1244,39 @@ public class MainActivity extends Activity {
 
         // One card per day, with the day above it: an older video is found by
         // the day it was recorded, not by scrolling through one long list.
+        // Another order (size, length) hides the days: a card with one of them
+        // would repeat the same day over and over.
         java.util.LinkedHashMap<String, List<Recording>> days = new java.util.LinkedHashMap<>();
-        for (int i = 0; i < shown; i++) {
-            Recording item = items.get(i);
-            String day = dayLabel(item.added);
-            List<Recording> group = days.get(day);
-            if (group == null) {
-                group = new ArrayList<>();
-                days.put(day, group);
+        if (recSort <= 1) {
+            for (int i = 0; i < shown; i++) {
+                Recording item = visible.get(i);
+                String day = dayLabel(item.added);
+                List<Recording> group = days.get(day);
+                if (group == null) {
+                    group = new ArrayList<>();
+                    days.put(day, group);
+                }
+                group.add(item);
             }
-            group.add(item);
+        } else {
+            days.put("", new ArrayList<>(visible.subList(0, shown)));
         }
         int index = 0;
         for (java.util.Map.Entry<String, List<Recording>> entry : days.entrySet()) {
             List<Recording> group = entry.getValue();
-            long groupSize = 0;
-            for (Recording item : group) groupSize += item.size;
-            LinearLayout header = new LinearLayout(this);
-            header.setOrientation(LinearLayout.HORIZONTAL);
-            header.setGravity(Gravity.CENTER_VERTICAL);
-            TextView day = label(entry.getKey(), 12, TEXT, true);
-            header.addView(day, new LinearLayout.LayoutParams(WRAP, WRAP));
-            TextView count = label("  ·  " + videosCount(group.size()) + " · "
-                    + formatSize(groupSize), 11, FAINT, false);
-            header.addView(count, new LinearLayout.LayoutParams(WRAP, WRAP));
-            recordingsList.addView(header, lp(MATCH, WRAP, 0, 14, 14, 4));
+            if (!entry.getKey().isEmpty()) {
+                long groupSize = 0;
+                for (Recording item : group) groupSize += item.size;
+                LinearLayout header = new LinearLayout(this);
+                header.setOrientation(LinearLayout.HORIZONTAL);
+                header.setGravity(Gravity.CENTER_VERTICAL);
+                TextView day = label(entry.getKey(), 12, TEXT, true);
+                header.addView(day, new LinearLayout.LayoutParams(WRAP, WRAP));
+                TextView count = label("  ·  " + videosCount(group.size()) + " · "
+                        + formatSize(groupSize), 11, FAINT, false);
+                header.addView(count, new LinearLayout.LayoutParams(WRAP, WRAP));
+                recordingsList.addView(header, lp(MATCH, WRAP, 0, 14, 14, 4));
+            }
 
             LinearLayout card = card();
             recordingsList.addView(card, lp(MATCH, WRAP, 0, 0, 0, 0));
@@ -1103,8 +1286,8 @@ public class MainActivity extends Activity {
             }
         }
 
-        if (showAllRecordings && items.size() > shown) {
-            final TextView more = label(getString(R.string.recordings_more, items.size() - shown),
+        if (showAllRecordings && visible.size() > shown) {
+            final TextView more = label(getString(R.string.recordings_more, visible.size() - shown),
                     13, TEXT, true);
             more.setGravity(Gravity.CENTER);
             more.setPadding(0, dp(16), 0, dp(16));
@@ -1125,16 +1308,21 @@ public class MainActivity extends Activity {
 
     /** "Today", "Yesterday" or the day itself, for the list's day groups. */
     private String dayLabel(long seconds) {
+        long days = dayDifference(seconds);
+        if (days == 0) return getString(R.string.day_today);
+        if (days == 1) return getString(R.string.day_yesterday);
+        return new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+                .format(new Date(seconds * 1000L));
+    }
+
+    /** How many days ago a video was added: 0 today, 1 yesterday, and so on. */
+    private static long dayDifference(long seconds) {
         Calendar then = Calendar.getInstance();
         then.setTimeInMillis(seconds * 1000L);
         Calendar now = Calendar.getInstance();
         long today = now.get(Calendar.YEAR) * 1000L + now.get(Calendar.DAY_OF_YEAR);
         long that = then.get(Calendar.YEAR) * 1000L + then.get(Calendar.DAY_OF_YEAR);
-        long days = today - that;
-        if (days == 0) return getString(R.string.day_today);
-        if (days == 1) return getString(R.string.day_yesterday);
-        return new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-                .format(new Date(seconds * 1000L));
+        return today - that;
     }
 
     private void readRecordings(List<Recording> out, Uri collection, String mimeFilter) {
@@ -1466,13 +1654,29 @@ public class MainActivity extends Activity {
         final int seconds = (int) (item.duration / 1000L);
         final int[] range = {0, seconds};
         final boolean[] setting = {false};
+        final boolean[] deleteOriginal = {false};
 
         LinearLayout content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
 
+        // What the cut starts and ends on: the two frames follow the sliders,
+        // so the piece is chosen by what is in it, not by the clock alone.
+        LinearLayout previews = new LinearLayout(this);
+        previews.setOrientation(LinearLayout.HORIZONTAL);
+        content.addView(previews, lp(MATCH, WRAP, 0, 0, 0, 0));
+
+        final ImageView fromPreview = trimPreview();
+        LinearLayout.LayoutParams fromParams = new LinearLayout.LayoutParams(0, dp(112), 1f);
+        previews.addView(fromPreview, fromParams);
+
+        final ImageView toPreview = trimPreview();
+        LinearLayout.LayoutParams toParams = new LinearLayout.LayoutParams(0, dp(112), 1f);
+        toParams.setMargins(dp(10), 0, 0, 0);
+        previews.addView(toPreview, toParams);
+
         final TextView fromLabel = label(getString(R.string.trim_from, formatLength(0)),
                 13, MUTED, false);
-        content.addView(fromLabel, lp(MATCH, WRAP, 0, 0, 0, 0));
+        content.addView(fromLabel, lp(MATCH, WRAP, 0, 12, 0, 0));
         final SeekBar fromBar = new SeekBar(this);
         fromBar.setMax(seconds);
         fromBar.setProgress(0);
@@ -1488,11 +1692,23 @@ public class MainActivity extends Activity {
         styleSeekBar(toBar);
         content.addView(toBar, lp(MATCH, WRAP, 0, 4, 0, 0));
 
+        // Frames are read off the UI thread; a drag throws away the pending
+        // read so only the frame the slider rests on is drawn.
+        final Handler previewHandler = new Handler(Looper.getMainLooper());
+        final Runnable[] previews2 = new Runnable[1];
+        final Runnable schedulePreviews = () -> {
+            if (previews2[0] != null) previewHandler.removeCallbacks(previews2[0]);
+            previews2[0] = () -> loadTrimPreviews(item, range[0] * 1000L, range[1] * 1000L,
+                    fromPreview, toPreview);
+            previewHandler.postDelayed(previews2[0], 160);
+        };
+
         final Runnable update = () -> {
             fromLabel.setText(getString(R.string.trim_from,
                     formatLength(range[0] * 1000L)));
             toLabel.setText(getString(R.string.trim_to,
                     formatLength(range[1] * 1000L)));
+            schedulePreviews.run();
         };
 
         fromBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
@@ -1526,11 +1742,19 @@ public class MainActivity extends Activity {
             @Override public void onStopTrackingTouch(SeekBar bar) { }
         });
 
+        final android.widget.CheckBox deleteBox = new android.widget.CheckBox(this);
+        deleteBox.setText(getString(R.string.trim_delete_original));
+        deleteBox.setTextColor(MUTED);
+        deleteBox.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+        deleteBox.setButtonTintList(android.content.res.ColorStateList.valueOf(PRIMARY));
+        deleteBox.setOnCheckedChangeListener((button, checked) -> deleteOriginal[0] = checked);
+        content.addView(deleteBox, lp(MATCH, WRAP, 0, 12, 0, 0));
+
         TextView hint = label(getString(R.string.trim_hint), 12, FAINT, false);
         hint.setLineSpacing(dp(3), 1f);
-        content.addView(hint, lp(MATCH, WRAP, 0, 16, 0, 0));
+        content.addView(hint, lp(MATCH, WRAP, 0, 4, 0, 0));
 
-        showCustomCard(getString(R.string.trim_title), content,
+        Dialog dialog = showCustomCard(getString(R.string.trim_title), content,
                 getString(R.string.trim_save),
                 () -> {
                     final long start = range[0] * 1000L;
@@ -1549,8 +1773,12 @@ public class MainActivity extends Activity {
                                                 R.string.trim_failed, Toast.LENGTH_LONG).show();
                                         return;
                                     }
+                                    boolean deleted = deleteOriginal[0]
+                                            && deleteRecordingFile(item);
                                     Toast.makeText(MainActivity.this,
-                                            getString(R.string.trim_done, fileName),
+                                            getString(deleted
+                                                    ? R.string.trim_deleted_original
+                                                    : R.string.trim_done, fileName),
                                             Toast.LENGTH_SHORT).show();
                                     loadRecordings();
                                 }
@@ -1558,6 +1786,71 @@ public class MainActivity extends Activity {
                     return true;
                 },
                 getString(R.string.dialog_cancel), null);
+        dialog.setOnDismissListener(d -> {
+            if (previews2[0] != null) previewHandler.removeCallbacks(previews2[0]);
+        });
+        previewHandler.postDelayed(schedulePreviews, 120);
+    }
+
+    private ImageView trimPreview() {
+        ImageView view = new ImageView(this);
+        // The whole frame, not a band cut out of its middle: a portrait screen
+        // recording is mostly empty in the middle, so cropping it shows nothing.
+        view.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        view.setBackground(round(CARD, 10, BORDER));
+        view.setClipToOutline(true);
+        view.setImageDrawable(null);
+        return view;
+    }
+
+    /** Two frames of the source video, read in the background. */
+    private void loadTrimPreviews(final Recording item, final long startMs, final long endMs,
+                                  final ImageView startView, final ImageView endView) {
+        new Thread(() -> {
+            android.media.MediaMetadataRetriever retriever =
+                    new android.media.MediaMetadataRetriever();
+            android.graphics.Bitmap first = null;
+            android.graphics.Bitmap last = null;
+            try {
+                retriever.setDataSource(this, item.uri);
+                first = frameAt(retriever, startMs, item.width, item.height);
+                last = frameAt(retriever, endMs, item.width, item.height);
+            } catch (Exception ignored) {
+            } finally {
+                try { retriever.release(); } catch (Exception ignored) { }
+            }
+            final android.graphics.Bitmap f = first;
+            final android.graphics.Bitmap l = last;
+            handler.post(() -> {
+                if (f != null) startView.setImageBitmap(f);
+                if (l != null) endView.setImageBitmap(l);
+            });
+        }, "trim-preview").start();
+    }
+
+    /** A frame scaled to about 480 px on its long side, so a 4K video stays small. */
+    private static android.graphics.Bitmap frameAt(
+            android.media.MediaMetadataRetriever retriever, long ms, int width, int height) {
+        int w = width > 0 ? width : 16;
+        int h = height > 0 ? height : 9;
+        int longSide = Math.max(w, h);
+        int targetW = Math.max(2, 480 * w / longSide);
+        int targetH = Math.max(2, 480 * h / longSide);
+        if (Build.VERSION.SDK_INT >= 27) {
+            return retriever.getScaledFrameAtTime(ms * 1000L,
+                    android.media.MediaMetadataRetriever.OPTION_CLOSEST_SYNC, targetW, targetH);
+        }
+        return retriever.getFrameAtTime(ms * 1000L,
+                android.media.MediaMetadataRetriever.OPTION_CLOSEST_SYNC);
+    }
+
+    /** Deletes the video a cut came from, once the cut is safely on the card. */
+    private boolean deleteRecordingFile(Recording item) {
+        try {
+            return getContentResolver().delete(item.uri, null, null) > 0;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     /** The sliders follow the app's colours instead of the system accent. */
@@ -1660,6 +1953,7 @@ public class MainActivity extends Activity {
     }
 
     private static String formatSize(long bytes) {
+        if (bytes <= 0) return "0 KB";
         if (bytes < 1024L * 1024L) return Math.max(1, bytes / 1024) + " KB";
         double mb = bytes / (1024.0 * 1024.0);
         if (mb < 1024) return Math.round(mb) + " MB";
@@ -3523,6 +3817,10 @@ public class MainActivity extends Activity {
     public void onRequestPermissionsResult(int requestCode, String[] permissions,
                                            int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == REQ_MEDIA) {
+            queryRecordings();
+            return;
+        }
         if (requestCode != REQ_PERMISSIONS || !pendingStart) return;
         pendingStart = false;
 

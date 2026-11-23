@@ -373,4 +373,20 @@
     <string name="title_island_mode">When to show the island</string>
     <string name="island_mode_pull">Hidden</string>
     <string name="island_mode_always">Always visible</string>
+
+    <string name="recordings_search">Search recordings</string>
+    <string name="recordings_no_match">Nothing matches that. Try another word or “All videos”.</string>
+    <string name="sort_title">Sort recordings</string>
+    <string name="sort_newest">Newest first</string>
+    <string name="sort_oldest">Oldest first</string>
+    <string name="sort_largest">Largest first</string>
+    <string name="sort_smallest">Smallest first</string>
+    <string name="sort_longest">Longest first</string>
+    <string name="sort_shortest">Shortest first</string>
+    <string name="filter_title">Show recordings</string>
+    <string name="filter_all">All videos</string>
+    <string name="filter_week">Last 7 days</string>
+    <string name="filter_month">Last 30 days</string>
+    <string name="trim_delete_original">Delete the original once the cut is saved</string>
+    <string name="trim_deleted_original">Saved %1$s and deleted the original</string>
 </resources>
