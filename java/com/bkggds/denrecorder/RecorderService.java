@@ -385,9 +385,8 @@ public class RecorderService extends Service {
         boolean gameMode = prefs.getBoolean("perfMode", true);
         if (gameMode) {
             RegionPickerService.stop(this);
-            DrawOverlayService.stop(this);
         }
-        if (!gameMode && Island.enabled(this) && islandHandler != null) {
+        if (Island.enabled(this) && islandHandler != null) {
             islandHandler.post(islandTicker);
         }
 
@@ -443,17 +442,17 @@ public class RecorderService extends Service {
                         updateNotification();
                         refreshTile();
                         if (perfMode) {
-                            // Game mode is deliberately zero-overlay: use the
-                            // notification or QS tile to stop, never a window
-                            // above the game's touch surface.
+                            // Keep region selection off in gaming mode, but
+                            // honor the user's separate drawing-button choice.
                             RegionPickerService.stop(this);
-                            DrawOverlayService.stop(this);
                         } else if (RegionPickerService.isRunning()) {
                             if (selectedRegion != null) RegionPickerService.recordingStarted(this);
                             else RegionPickerService.stop(this);
                         }
-                        if (!perfMode && prefs.getBoolean("drawOverlay", true)) {
+                        if (prefs.getBoolean("drawOverlay", true)) {
                             DrawOverlayService.start(this);
+                        } else {
+                            DrawOverlayService.stop(this);
                         }
                     });
                 } catch (Exception e) {
@@ -901,9 +900,7 @@ public class RecorderService extends Service {
         builder.addAction(stopAction);
         Notification notification = builder.build();
         // Beta: the same notification can live in Xiaomi's Super Island.
-        boolean gameMode = getSharedPreferences("settings", MODE_PRIVATE)
-                .getBoolean("perfMode", true);
-        if (!gameMode && Island.enabled(this) && Island.allowed(this)) {
+        if (Island.enabled(this) && Island.allowed(this)) {
             long elapsed = elapsedMs();
             String time = String.format(java.util.Locale.US, "%02d:%02d",
                     elapsed / 60000L, (elapsed / 1000L) % 60L);

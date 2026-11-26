@@ -300,14 +300,14 @@
     <string name="player_rotate">화면 회전</string>
     <string name="section_beta">베타</string>
     <string name="row_island">슈퍼아일랜드</string>
-    <string name="hint_island_beta">베타, Xiaomi에만 해당됩니다. 녹화하는 동안 섬에는 작은 아이콘과 타이머가 표시됩니다. 탭하면 일시 중지 및 중지됩니다. HyperOS는 상태 표시줄을 아래로 내릴 때마다 섬을 숨기므로 해당 알림에는 동일한 버튼이 표시됩니다. 허가를 부여하려면 Shizuku가 한 번 필요합니다.</string>
+    <string name="hint_island_beta">베타, Xiaomi 전용. Xiaomi가 이 앱의 Focus 알림을 승인해야 합니다. Shizuku는 시스템이 알지 못하는 권한을 부여할 수 없습니다.</string>
     <string name="island_value_off">꺼짐 · 베타</string>
     <string name="island_value_on">· 베타 사용 중</string>
     <string name="island_value_need">Shizuku가 필요해</string>
     <string name="island_title">슈퍼 아일랜드(베타)</string>
-    <string name="island_body">HyperOS는 Super Island에 녹화 내용을 작은 아이콘과 타이머로 표시할 수 있습니다. 일시 중지하고 중지하려면 섬을 탭하세요. HyperOS는 상태 표시줄을 아래로 내리자마자 자체적으로 섬을 숨기고 거기에 있는 알림에는 동일한 버튼이 있습니다. 그 허가는 Shizuku를 통해서만 주어질 수 있습니다.</string>
+    <string name="island_body">Xiaomi가 이 앱을 Focus 알림용으로 승인해야 Super Island에 녹화를 표시할 수 있습니다. Shizuku는 시스템에 없는 권한을 부여할 수 없습니다.</string>
     <string name="island_body_on">녹화하는 동안 섬에는 작은 아이콘과 타이머가 표시됩니다. 탭하면 일시 정지 및 정지가 가능합니다. HyperOS는 상태 표시줄을 아래로 내릴 때마다 자동으로 숨깁니다. 섬을 전혀 갖고 싶지 않다면 숨김을 선택하세요. 알림은 어느 쪽이든 유지됩니다.</string>
-    <string name="island_enable">Shizuku로 활성화</string>
+    <string name="island_enable">권한 확인</string>
     <string name="island_disable">끄다</string>
     <string name="island_need_shizuku_title">Shizuku가 필요해</string>
     <string name="island_need_shizuku_body">Super Island는 베타 버전이며 Xiaomi 휴대폰에서만 작동합니다. Android에서는 일반 앱이 섬 권한을 요청하는 것을 허용하지 않으므로 DenRecorder에는 Shizuku가 한 번 필요합니다. Shizuku를 설치하고 시작한 다음(무선 디버깅 또는 루트) 여기로 돌아옵니다.</string>
@@ -319,7 +319,7 @@
     <string name="island_done_title">슈퍼아일랜드가 떴다</string>
     <string name="island_done_body">이제 섬에 작은 테스트 항목이 나타납니다. 그렇지 않은 경우 이 HyperOS 빌드는 시스템 앱용 아일랜드를 유지합니다. 녹화 알림은 여전히 ​​이전처럼 작동합니다.</string>
     <string name="island_failed_title">섬 허가가 부여되지 않았습니다.</string>
-    <string name="island_failed_body">SystemUI에서는 여전히 DenRecorder가 섬에 그림을 그리는 것을 허용하지 않습니다. 많은 빌드에서는 루트만이 이를 부여할 수 있습니다. Shizuku가 말했습니다: %1$s</string>
+    <string name="island_failed_body">SystemUI에서 아직 DenRecorder를 섬에 표시하지 못했습니다. 세부정보: %1$s</string>
     <string name="island_denied_body">Shizuku는 DenRecorder를 허용하지 않았습니다. 활성화를 다시 탭하고 Shizuku의 대화 상자에서 허용을 선택하십시오.</string>
     <string name="island_request_again">다시 시도하세요</string>
     <string name="island_no_xiaomi">슈퍼 아일랜드는 샤오미 휴대폰에만 존재합니다.</string>
@@ -340,7 +340,7 @@
     </plurals>
 
     <string name="recordings_search">녹화 검색</string>
-    <string name="recordings_no_match">일치하는 녹화가 없습니다. 다른 단어나 “모든 동영상”을 사용해 보세요.</string>
+    <string name="recordings_no_match">일치하는 녹화가 없습니다.</string>
     <string name="sort_title">녹화 정렬</string>
     <string name="sort_newest">최신순</string>
     <string name="sort_oldest">오래된 순</string>

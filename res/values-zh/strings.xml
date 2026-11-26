@@ -300,14 +300,14 @@
     <string name="player_rotate">旋转屏幕</string>
     <string name="section_beta">测试版</string>
     <string name="row_island">超级岛</string>
-    <string name="hint_island_beta">测试版，仅限小米。当您录制时，岛上会显示一个小图标和计时器；点击它可以暂停和停止。每当状态栏被拉下时，HyperOS 就会隐藏岛，因此那里的通知带有相同的按钮。需要Shizuku一次来授予许可。</string>
+    <string name="hint_island_beta">测试版，仅限小米。小米必须批准此应用使用焦点通知。Shizuku 无法授予系统不识别的权限。</string>
     <string name="island_value_off">关闭·测试版</string>
     <string name="island_value_on">上·测试版</string>
     <string name="island_value_need">需要Shizuku</string>
     <string name="island_title">超级岛（测试版）</string>
-    <string name="island_body">HyperOS 可以在其超级岛中显示录像：一个小图标和计时器。点击岛屿即可暂停和停止。一旦状态栏被拉下，HyperOS 就会自行隐藏岛屿，并且那里的通知也有相同的按钮。该许可只能通过Shizuku授予。</string>
+    <string name="island_body">小米批准此应用使用焦点通知后，超级岛才能显示录制状态。Shizuku 无法授予系统不识别的权限。</string>
     <string name="island_body_on">当您录制时，岛上会显示一个小图标和计时器；敲击可暂停和停止。每当状态栏被拉下时，HyperOS 就会自行隐藏它。如果您不想拥有任何岛屿，请选择“隐藏”；无论哪种方式，通知都会保持不变。</string>
-    <string name="island_enable">通过 Shizuku 启用</string>
+    <string name="island_enable">检查权限</string>
     <string name="island_disable">关闭</string>
     <string name="island_need_shizuku_title">需要Shizuku</string>
     <string name="island_need_shizuku_body">超级岛目前处于测试阶段，仅适用于小米手机。 Android 不允许普通应用程序请求岛屿权限，因此 DenRecorder 需要 Shizuku 一次。安装 Shizuku，启动它（无线调试或 root），然后回到这里。</string>
@@ -319,7 +319,7 @@
     <string name="island_done_title">超级岛已上线</string>
     <string name="island_done_body">现在岛上应该会出现一个小的测试条目。如果没有，这个 HyperOS 版本会保留系统应用程序的孤岛；录像通知仍然像以前一样有效。</string>
     <string name="island_failed_title">未获得建岛许可</string>
-    <string name="island_failed_body">SystemUI仍然不允许DenRecorder在岛上绘制。在许多构建中，只有 root 可以授予此权限。Shizuku说：%1$s</string>
+    <string name="island_failed_body">SystemUI 仍不允许 DenRecorder 显示在超级岛上。详情：%1$s</string>
     <string name="island_denied_body">Shizuku不允许 DenRecorder。再次点击“启用”，然后在 Shizuku 的对话框中选择“允许”。</string>
     <string name="island_request_again">再试一次</string>
     <string name="island_no_xiaomi">超级岛只存在于小米手机上</string>
@@ -340,7 +340,7 @@
     </plurals>
 
     <string name="recordings_search">搜索录像</string>
-    <string name="recordings_no_match">没有匹配的录像。换一个词或选择“所有视频”。</string>
+    <string name="recordings_no_match">未找到匹配的录制内容。</string>
     <string name="sort_title">录像排序</string>
     <string name="sort_newest">最新优先</string>
     <string name="sort_oldest">最早优先</string>

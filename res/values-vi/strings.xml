@@ -97,9 +97,9 @@
     <string name="row_orientation">Hướng màn hình</string>
 
     <string name="row_performance">Hiệu năng khi chơi game</string>
-    <string name="performance_on">Ưu tiên game · 60 fps gốc · không lớp nổi</string>
+    <string name="performance_on">Ưu tiên game · 60 fps gốc</string>
     <string name="performance_off">Tắt</string>
-    <string name="hint_performance">Chế độ game quay toàn màn hình ở độ phân giải gốc, 60 fps; tự tắt nút nổi, vẽ và chọn vùng trong lúc quay. Dừng bằng thông báo hoặc ô Quick Settings.</string>
+    <string name="hint_performance">Chế độ game quay toàn màn hình ở độ phân giải gốc, 60 fps. Chọn vùng sẽ tắt; nút vẽ nổi vẫn dùng được nếu đã bật. Khi chọn công cụ vẽ, thao tác chạm sẽ vẽ lên video thay vì điều khiển game. Dừng bằng thông báo hoặc ô Quick Settings.</string>
     <string name="title_orientation">Hướng màn hình</string>
     <string name="orientation_auto">Tự động</string>
     <string name="orientation_portrait">Dọc</string>
@@ -323,14 +323,14 @@
 
     <string name="section_beta">BẢN BETA</string>
     <string name="row_island">Super Island</string>
-    <string name="hint_island_beta">Bản beta, chỉ trên máy Xiaomi. Trong lúc quay, đảo hiện một biểu tượng nhỏ kèm đồng hồ đếm; chạm vào đảo để tạm dừng hoặc dừng. HyperOS tự ẩn đảo khi bạn kéo thanh trạng thái xuống, và thông báo ở đó có đúng hai nút này. Cần Shizuku một lần để cấp quyền.</string>
+    <string name="hint_island_beta">Bản beta, chỉ trên máy Xiaomi. Xiaomi cần phê duyệt quyền Thông báo tập trung cho ứng dụng trước khi HyperOS hiện đảo. Shizuku không thể cấp quyền hệ thống mà ROM không nhận diện.</string>
     <string name="island_value_off">Tắt · beta</string>
     <string name="island_value_on">Đang bật · beta</string>
     <string name="island_value_need">Cần Shizuku</string>
     <string name="island_title">Super Island (beta)</string>
-    <string name="island_body">HyperOS hiện bản ghi trên Super Island: một biểu tượng nhỏ kèm đồng hồ đếm. Chạm vào đảo để tạm dừng hoặc dừng. HyperOS tự ẩn đảo ngay khi bạn kéo thanh trạng thái xuống, thông báo ở đó có đúng hai nút này. Quyền này chỉ cấp được qua Shizuku.</string>
+    <string name="island_body">HyperOS có thể hiện bản ghi trên Super Island sau khi Xiaomi phê duyệt ứng dụng dùng Thông báo tập trung. Shizuku không cấp được quyền nếu ROM không nhận diện quyền đó.</string>
     <string name="island_body_on">Trong lúc quay, đảo hiện một biểu tượng nhỏ kèm đồng hồ đếm; chạm vào đảo để tạm dừng hoặc dừng. HyperOS tự ẩn đảo khi bạn kéo thanh trạng thái xuống. Chọn Ẩn nếu bạn không muốn có đảo; thông báo thường vẫn giữ nguyên.</string>
-    <string name="island_enable">Bật bằng Shizuku</string>
+    <string name="island_enable">Kiểm tra quyền</string>
     <string name="island_disable">Tắt</string>
     <string name="island_need_shizuku_title">Cần Shizuku</string>
     <string name="island_need_shizuku_body">Super Island là bản beta và chỉ có trên máy Xiaomi. Android không cho ứng dụng thường xin quyền hiện đảo, nên DenRecorder cần Shizuku một lần. Cài Shizuku, khởi động nó (qua gỡ lỗi không dây hoặc root) rồi quay lại đây.</string>
@@ -342,7 +342,10 @@
     <string name="island_done_title">Đã bật Super Island</string>
     <string name="island_done_body">Một mục thử nhỏ sẽ hiện trên đảo ngay bây giờ. Nếu không thấy, bản HyperOS này chỉ cho ứng dụng hệ thống hiện đảo; thông báo quay vẫn hoạt động như cũ.</string>
     <string name="island_failed_title">Chưa cấp được quyền hiện đảo</string>
-    <string name="island_failed_body">SystemUI vẫn không cho DenRecorder hiện trên đảo. Nhiều bản ROM chỉ cấp quyền này khi Shizuku chạy bằng root. Shizuku trả lời: %1$s</string>
+    <string name="island_failed_body">SystemUI chưa cho DenRecorder hiện trên đảo. Chi tiết: %1$s</string>
+    <string name="island_permission_title">Cần Xiaomi phê duyệt</string>
+    <string name="island_permission_body">Điện thoại báo không nhận diện quyền Thông báo tập trung, nên Shizuku không thể cấp quyền này. Xiaomi cần phê duyệt và bật quyền cho DenRecorder qua chương trình nhà phát triển.</string>
+    <string name="island_permission_docs">Mở hướng dẫn Xiaomi</string>
     <string name="island_denied_body">Shizuku chưa cho phép DenRecorder. Bấm Bật lại rồi chọn Cho phép trong hộp thoại của Shizuku.</string>
     <string name="island_request_again">Thử lại</string>
     <string name="island_no_xiaomi">Super Island chỉ có trên điện thoại Xiaomi</string>
@@ -360,7 +363,7 @@
     <string name="island_mode_always">Luôn hiện</string>
 
     <string name="recordings_search">Tìm bản ghi</string>
-    <string name="recordings_no_match">Không có bản ghi nào khớp. Thử từ khác hoặc chọn “Tất cả video”.</string>
+    <string name="recordings_no_match">Không tìm thấy bản ghi phù hợp.</string>
     <string name="sort_title">Sắp xếp bản ghi</string>
     <string name="sort_newest">Mới nhất trước</string>
     <string name="sort_oldest">Cũ nhất trước</string>

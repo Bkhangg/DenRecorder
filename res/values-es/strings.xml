@@ -300,14 +300,14 @@
     <string name="player_rotate">Girar pantalla</string>
     <string name="section_beta">BETA</string>
     <string name="row_island">Súper Isla</string>
-    <string name="hint_island_beta">Beta, solo Xiaomi. Mientras grabas, la isla muestra un pequeño icono y el cronómetro; un toque le da una pausa y se detiene. HyperOS oculta la isla cada vez que se baja la barra de estado, por lo que la notificación contiene los mismos botones. Se necesita a Shizuku una vez para otorgar el permiso.</string>
+    <string name="hint_island_beta">Beta, solo Xiaomi. Xiaomi debe aprobar esta app para las notificaciones Focus. Shizuku no puede conceder un permiso que el sistema desconoce.</string>
     <string name="island_value_off">Apagado · beta</string>
     <string name="island_value_on">En · beta</string>
     <string name="island_value_need">Necesita Shizuku</string>
     <string name="island_title">Súper Isla (beta)</string>
-    <string name="island_body">HyperOS puede mostrar la grabación en su Super Island: un pequeño icono y el temporizador. Toca la isla para hacer una pausa y detenerte. HyperOS oculta la isla por sí solo tan pronto como se baja la barra de estado y la notificación tiene los mismos botones. Ese permiso sólo puede otorgarse a través de Shizuku.</string>
+    <string name="island_body">Super Island solo mostrará la grabación cuando Xiaomi apruebe esta app para las notificaciones Focus. Shizuku no puede conceder un permiso desconocido para el sistema.</string>
     <string name="island_body_on">Mientras grabas, la isla muestra un pequeño icono y el cronómetro; un toque da pausa y parada. HyperOS lo oculta por sí solo cada vez que se baja la barra de estado. Elija Oculto si prefiere no tener ninguna isla; la notificación permanece de cualquier manera.</string>
-    <string name="island_enable">Habilitar con Shizuku</string>
+    <string name="island_enable">Comprobar acceso</string>
     <string name="island_disable">Apagar</string>
     <string name="island_need_shizuku_title">Se necesita Shizuku</string>
     <string name="island_need_shizuku_body">Super Island es beta y solo funciona en teléfonos Xiaomi. Android no permite que una aplicación normal solicite permiso de la isla, por lo que DenRecorder necesita a Shizuku una vez. Instale Shizuku, inícielo (depuración inalámbrica o root), luego regrese aquí.</string>
@@ -319,7 +319,7 @@
     <string name="island_done_title">La súper isla está encendida.</string>
     <string name="island_done_body">Ahora debería aparecer una pequeña entrada de prueba en la isla. Si no es así, esta versión de HyperOS mantiene la isla para las aplicaciones del sistema; la notificación de grabación sigue funcionando como antes.</string>
     <string name="island_failed_title">El permiso de la isla no fue concedido.</string>
-    <string name="island_failed_body">SystemUI todavía no permite que DenRecorder dibuje en la isla. En muchas compilaciones sólo el root puede conceder esto. Shizuku dijo: %1$s</string>
+    <string name="island_failed_body">SystemUI todavía no permite que DenRecorder aparezca en la isla. Detalles: %1$s</string>
     <string name="island_denied_body">Shizuku no permitió que DenRecorder. Toque Habilitar nuevamente y elija Permitir en el cuadro de diálogo de Shizuku.</string>
     <string name="island_request_again">Inténtalo de nuevo</string>
     <string name="island_no_xiaomi">Super Island solo existe en teléfonos Xiaomi</string>
@@ -335,7 +335,7 @@
     <string name="island_mode_pull">Oculto</string>
     <string name="island_mode_always">Siempre visible</string>
     <string name="recordings_search">Buscar grabaciones</string>
-    <string name="recordings_no_match">Nada coincide con eso. Prueba con otra palabra o "Todos los vídeos".</string>
+    <string name="recordings_no_match">No se encontraron grabaciones coincidentes.</string>
     <string name="sort_title">Ordenar grabaciones</string>
     <string name="sort_newest">Lo nuevo primero</string>
     <string name="sort_oldest">El más viejo primero</string>

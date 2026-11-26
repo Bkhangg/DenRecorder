@@ -300,14 +300,14 @@
     <string name="player_rotate">Ekranı döndür</string>
     <string name="section_beta">BETA</string>
     <string name="row_island">Süper Ada</string>
-    <string name="hint_island_beta">Beta, yalnızca Xiaomi. Siz kayıt yaparken adada küçük bir simge ve zamanlayıcı gösterilir; üzerine bir dokunuş duraklatma ve durdurma sağlar. HyperOS, durum çubuğu aşağı çekildiğinde adayı gizler, böylece buradaki bildirim aynı düğmeleri taşır. İzni vermek için Shizuku\'ya bir kez ihtiyaç vardır.</string>
+    <string name="hint_island_beta">Beta, yalnızca Xiaomi. Xiaomi bu uygulamayı Focus Bildirimleri için onaylamalıdır. Shizuku, ROM’un tanımadığı sistem iznini veremez.</string>
     <string name="island_value_off">Kapalı · beta</string>
     <string name="island_value_on">Açık · beta</string>
     <string name="island_value_need">Shizuku\'ya ihtiyaç var</string>
     <string name="island_title">Süper Ada (beta)</string>
-    <string name="island_body">HyperOS, kaydı Süper Adasında gösterebilir: küçük bir simge ve zamanlayıcı. Duraklatmak ve durdurmak için adaya dokunun. Durum çubuğu aşağı çekilir çekilmez HyperOS adayı kendi başına gizler ve oradaki bildirimde de aynı düğmeler bulunur. Bu izin yalnızca Shizuku aracılığıyla verilebilir.</string>
+    <string name="island_body">Super Island kaydı ancak Xiaomi bu uygulamayı Focus Bildirimleri için onayladıktan sonra gösterebilir. Shizuku sistemin tanımadığı izni veremez.</string>
     <string name="island_body_on">Siz kayıt yaparken adada küçük bir simge ve zamanlayıcı gösterilir; bir dokunuş duraklatma ve durdurma sağlar. Durum çubuğu aşağı çekildiğinde HyperOS bunu kendi kendine gizler. Hiç adanın olmamasını tercih ediyorsanız Gizli\'yi seçin; bildirim her iki durumda da kalır.</string>
-    <string name="island_enable">Shizuku ile etkinleştir</string>
+    <string name="island_enable">Erişimi denetle</string>
     <string name="island_disable">Kapat</string>
     <string name="island_need_shizuku_title">Shizuku\'ya ihtiyaç var</string>
     <string name="island_need_shizuku_body">Super Island beta sürümüdür ve yalnızca Xiaomi telefonlarda çalışır. Android normal bir uygulamanın ada izni istemesine izin vermez, bu nedenle DenRecorder\'ın Shizuku\'ya bir kez ihtiyacı vardır. Shizuku\'yu yükleyin, başlatın (kablosuz hata ayıklama veya kök), sonra buraya geri dönün.</string>
@@ -319,7 +319,7 @@
     <string name="island_done_title">Süper Ada devrede</string>
     <string name="island_done_body">Şimdi adada küçük bir test girişi görünmeli. Aksi takdirde bu HyperOS yapısı, adayı sistem uygulamaları için korur; kayıt bildirimi hâlâ eskisi gibi çalışıyor.</string>
     <string name="island_failed_title">Ada izni verilmedi</string>
-    <string name="island_failed_body">SystemUI hala DenRecorder\'ın adada çizim yapmasına izin vermiyor. Birçok yapıda bunu yalnızca kök sağlayabilir. Shizuku dedi ki: %1$s</string>
+    <string name="island_failed_body">SystemUI, DenRecorder’ın adada görünmesine hâlâ izin vermiyor. Ayrıntılar: %1$s</string>
     <string name="island_denied_body">Shizuku, DenRecorder\'a izin vermedi. Tekrar Etkinleştir\'e dokunun ve Shizuku\'nun iletişim kutusunda İzin Ver\'i seçin.</string>
     <string name="island_request_again">Tekrar dene</string>
     <string name="island_no_xiaomi">Süper Ada yalnızca Xiaomi telefonlarında mevcuttur</string>
@@ -335,7 +335,7 @@
     <string name="island_mode_pull">Gizli</string>
     <string name="island_mode_always">Her zaman görünür</string>
     <string name="recordings_search">Kayıtları ara</string>
-    <string name="recordings_no_match">Hiçbir şey buna uymuyor. Başka bir kelimeyi veya "Tüm videolar"ı deneyin.</string>
+    <string name="recordings_no_match">Eşleşen kayıt bulunamadı.</string>
     <string name="sort_title">Kayıtları sırala</string>
     <string name="sort_newest">Önce en yeni</string>
     <string name="sort_oldest">Önce en eski</string>

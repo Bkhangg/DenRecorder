@@ -300,14 +300,14 @@
     <string name="player_rotate">画面を回転する</string>
     <string name="section_beta">ベータ版</string>
     <string name="row_island">スーパーアイランド</string>
-    <string name="hint_island_beta">ベータ版、Xiaomi のみ。録画中、島には小さなアイコンとタイマーが表示されます。それをタップすると一時停止と停止が行われます。 HyperOS はステータス バーが引き下げられるたびにアイランドを非表示にするため、そこにある通知には同じボタンが表示されます。許可を与えるにはShizukuが一度必要となります。</string>
+    <string name="hint_island_beta">ベータ版、Xiaomi のみ。Focus 通知には Xiaomi によるアプリの承認が必要です。Shizuku ではシステムが認識しない権限を付与できません。</string>
     <string name="island_value_off">オフ・ベータ版</string>
     <string name="island_value_on">オン・ベータ版</string>
     <string name="island_value_need">Shizukuが必要</string>
     <string name="island_title">スーパーアイランド（ベータ版）</string>
-    <string name="island_body">HyperOS は、スーパー アイランドに録画を小さなアイコンとタイマーで表示できます。島をタップすると一時停止したり停止したりできます。 HyperOS はステータス バーが引き下げられるとすぐに自動的にアイランドを非表示にし、そこにある通知にも同じボタンが表示されます。その許可はShizukuにしか与えられない。</string>
+    <string name="island_body">Xiaomi がこのアプリを Focus 通知用に承認した場合のみ、Super Island に録画を表示できます。Shizuku ではシステムが認識しない権限を付与できません。</string>
     <string name="island_body_on">録画中、島には小さなアイコンとタイマーが表示されます。タップすると一時停止と停止ができます。 HyperOS は、ステータス バーが引き下げられるたびに、それを自動的に非表示にします。島をまったく持たない場合は、[非表示] を選択します。通知はどちらの方法でも残ります。</string>
-    <string name="island_enable">Shizukuで有効にする</string>
+    <string name="island_enable">権限を確認</string>
     <string name="island_disable">オフにする</string>
     <string name="island_need_shizuku_title">Shizukuは必要だ</string>
     <string name="island_need_shizuku_body">スーパー アイランドはベータ版であり、Xiaomi スマートフォンでのみ動作します。 Android では通常のアプリが島の許可を求めることができないため、DenRecorder は一度Shizuku を必要とします。 Shizuku をインストールして起動し (ワイヤレス デバッグまたは root)、ここに戻ってきます。</string>
@@ -319,7 +319,7 @@
     <string name="island_done_title">スーパーアイランド開催中</string>
     <string name="island_done_body">小さなテスト エントリが島に表示されるはずです。そうでない場合、この HyperOS ビルドはシステム アプリ用のアイランドを保持します。録画通知は以前と同様に機能します。</string>
     <string name="island_failed_title">島の許可が下りなかった</string>
-    <string name="island_failed_body">SystemUI ではまだ DenRecorder がアイランドに描画できません。多くのビルドでは、root のみがこれを許可できます。Shizukuは言いました: %1$s</string>
+    <string name="island_failed_body">SystemUI はまだ DenRecorder をアイランドに表示できません。詳細: %1$s</string>
     <string name="island_denied_body">ShizukuはDenRecorderを許可しなかった。もう一度「有効にする」をタップし、Shizuku のダイアログで「許可」を選択します。</string>
     <string name="island_request_again">もう一度やり直してください</string>
     <string name="island_no_xiaomi">スーパー アイランドは Xiaomi 携帯電話にのみ存在します</string>
@@ -340,7 +340,7 @@
     </plurals>
 
     <string name="recordings_search">録画を検索</string>
-    <string name="recordings_no_match">一致する録画がありません。別の言葉か「すべての動画」を試してください。</string>
+    <string name="recordings_no_match">一致する録画が見つかりません。</string>
     <string name="sort_title">録画の並べ替え</string>
     <string name="sort_newest">新しい順</string>
     <string name="sort_oldest">古い順</string>

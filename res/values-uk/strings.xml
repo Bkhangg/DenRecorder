@@ -300,14 +300,14 @@
     <string name="player_rotate">Повернути екран</string>
     <string name="section_beta">БЕТА</string>
     <string name="row_island">Супер острів</string>
-    <string name="hint_island_beta">Бета, тільки Xiaomi. Під час запису на острові відображається маленький значок і таймер; натискання на нього призведе до паузи та зупинки. HyperOS приховує острів щоразу, коли рядок стану опускається вниз, тому сповіщення там містять ті самі кнопки. Шизуку потрібен один раз, щоб надати дозвіл.</string>
+    <string name="hint_island_beta">Бета, лише Xiaomi. Xiaomi має схвалити цей застосунок для Focus Notifications. Shizuku не може надати дозвіл, невідомий системі.</string>
     <string name="island_value_off">Вимкнено · бета</string>
     <string name="island_value_on">На · бета-версії</string>
     <string name="island_value_need">Потрібен Шизуку</string>
     <string name="island_title">Супер острів (бета)</string>
-    <string name="island_body">HyperOS може показувати запис у своєму Super Island: маленька іконка та таймер. Торкніться острова, щоб призупинити та зупинити. HyperOS самостійно приховує острів, як тільки рядок стану опускається вниз, а сповіщення там має ті самі кнопки. Цей дозвіл можна надати лише через Shizuku.</string>
+    <string name="island_body">Super Island зможе показувати запис лише після схвалення Xiaomi для цього застосунку. Shizuku не може надати системі невідомий дозвіл.</string>
     <string name="island_body_on">Під час запису на острові відображається маленький значок і таймер; натискання дає паузу та зупинку. HyperOS приховує його самостійно щоразу, коли рядок стану опускається вниз. Виберіть «Прихований», якщо ви не бажаєте мати острова взагалі; сповіщення залишається в будь-якому випадку.</string>
-    <string name="island_enable">Увімкнути за допомогою Shizuku</string>
+    <string name="island_enable">Перевірити доступ</string>
     <string name="island_disable">Вимкнути</string>
     <string name="island_need_shizuku_title">Шизуку потрібен</string>
     <string name="island_need_shizuku_body">Super Island є бета-версією і працює лише на телефонах Xiaomi. Android не дозволяє звичайному додатку запитувати дозвіл на острів, тому DenRecorder один раз потребує Shizuku. Встановіть Shizuku, запустіть його (бездротове налагодження або root), а потім поверніться сюди.</string>
@@ -319,7 +319,7 @@
     <string name="island_done_title">Супер острів увімкнено</string>
     <string name="island_done_body">Зараз на острові має з’явитися невеликий тестовий запис. Якщо це не так, ця збірка HyperOS зберігає острів для системних програм; сповіщення про запис все ще працює, як і раніше.</string>
     <string name="island_failed_title">Дозвіл на острів не було надано</string>
-    <string name="island_failed_body">SystemUI все ще не дозволяє DenRecorder малювати на острові. У багатьох збірках це може надати лише root. Шизуку сказав: %1$s</string>
+    <string name="island_failed_body">SystemUI досі не дозволяє DenRecorder відображатися на острові. Докладніше: %1$s</string>
     <string name="island_denied_body">Шизуку не дозволив DenRecorder. Знову торкніться «Увімкнути» та виберіть «Дозволити» у діалоговому вікні Shizuku.</string>
     <string name="island_request_again">Спробуйте знову</string>
     <string name="island_no_xiaomi">Super Island існує лише на телефонах Xiaomi</string>
@@ -335,7 +335,7 @@
     <string name="island_mode_pull">Прихований</string>
     <string name="island_mode_always">Завжди видно</string>
     <string name="recordings_search">Пошук записів</string>
-    <string name="recordings_no_match">Ніщо не відповідає цьому. Спробуйте інше слово або «Усі відео».</string>
+    <string name="recordings_no_match">Відповідних записів не знайдено.</string>
     <string name="sort_title">Сортування записів</string>
     <string name="sort_newest">Спочатку найновіші</string>
     <string name="sort_oldest">Спочатку найстаріші</string>

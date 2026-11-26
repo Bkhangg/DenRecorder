@@ -564,6 +564,10 @@ public class DrawOverlayService extends Service {
             try {
                 windowManager.addView(layer, layerParams);
                 layerAttached = true;
+                // A touchable full-screen layer is above windows added earlier.
+                // Keep the tool bar and its bubble above it so selecting tools,
+                // colors, pause and stop still receives their own touch events.
+                raiseControlsAboveLayer();
             } catch (Exception e) {
                 Log.w("DrawOverlayService", "Could not attach drawing layer", e);
                 return;
@@ -584,6 +588,23 @@ public class DrawOverlayService extends Service {
         if (!drawing && layerAttached && !layer.hasShapes()) {
             remove(layer);
             layerAttached = false;
+        }
+    }
+
+    /** Reinsert the small control windows after the full-screen drawing window. */
+    private void raiseControlsAboveLayer() {
+        if (windowManager == null || layer == null || !layerAttached) return;
+        try {
+            if (bubble != null && bubble.getParent() != null) {
+                windowManager.removeView(bubble);
+                windowManager.addView(bubble, bubbleParams);
+            }
+            if (panel != null && panel.getParent() != null) {
+                windowManager.removeView(panel);
+                windowManager.addView(panel, panelParams);
+            }
+        } catch (Exception e) {
+            Log.w("DrawOverlayService", "Could not raise drawing controls", e);
         }
     }
 

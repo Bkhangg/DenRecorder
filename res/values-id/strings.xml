@@ -300,14 +300,14 @@
     <string name="player_rotate">Putar layar</string>
     <string name="section_beta">BETA</string>
     <string name="row_island">Pulau Super</string>
-    <string name="hint_island_beta">Beta, hanya Xiaomi. Saat Anda merekam, pulau menampilkan ikon kecil dan pengatur waktu; ketukan di atasnya memberi jeda dan berhenti. HyperOS menyembunyikan pulau tersebut setiap kali bilah status ditarik ke bawah, sehingga notifikasi di sana membawa tombol yang sama. Shizuku diperlukan satu kali untuk memberikan izin.</string>
+    <string name="hint_island_beta">Beta, hanya Xiaomi. Xiaomi harus menyetujui aplikasi ini untuk Focus Notifications. Shizuku tidak dapat memberikan izin sistem yang tidak dikenal ROM.</string>
     <string name="island_value_off">Mati · beta</string>
     <string name="island_value_on">Aktif · beta</string>
     <string name="island_value_need">Membutuhkan Shizuku</string>
     <string name="island_title">Pulau Super (beta)</string>
-    <string name="island_body">HyperOS dapat menampilkan rekaman di Pulau Supernya: ikon kecil dan pengatur waktu. Ketuk pulau untuk jeda dan berhenti. HyperOS menyembunyikan pulau itu sendiri segera setelah bilah status ditarik ke bawah, dan pemberitahuan di sana memiliki tombol yang sama. Izin itu hanya bisa diberikan melalui Shizuku.</string>
+    <string name="island_body">Super Island hanya dapat menampilkan rekaman setelah Xiaomi menyetujui aplikasi ini untuk Focus Notifications. Shizuku tidak dapat memberikan izin yang tidak dikenal sistem.</string>
     <string name="island_body_on">Saat Anda merekam, pulau menampilkan ikon kecil dan pengatur waktu; satu ketukan memberi jeda dan berhenti. HyperOS menyembunyikannya dengan sendirinya setiap kali bilah status ditarik ke bawah. Pilih Tersembunyi jika Anda lebih suka tidak memiliki pulau sama sekali; notifikasi tetap ada.</string>
-    <string name="island_enable">Aktifkan dengan Shizuku</string>
+    <string name="island_enable">Periksa akses</string>
     <string name="island_disable">Matikan</string>
     <string name="island_need_shizuku_title">Shizuku dibutuhkan</string>
     <string name="island_need_shizuku_body">Super Island adalah versi beta dan hanya berfungsi di ponsel Xiaomi. Android tidak mengizinkan aplikasi normal meminta izin pulau, jadi DenRecorder memerlukan Shizuku sekali. Instal Shizuku, mulai (debug nirkabel atau root), lalu kembali ke sini.</string>
@@ -319,7 +319,7 @@
     <string name="island_done_title">Pulau Super aktif</string>
     <string name="island_done_body">Entri tes kecil akan muncul di pulau sekarang. Jika tidak, versi HyperOS ini akan mempertahankan pulau tersebut untuk aplikasi sistem; notifikasi rekaman masih berfungsi seperti semula.</string>
     <string name="island_failed_title">Izin pulau tidak diberikan</string>
-    <string name="island_failed_body">SystemUI masih tidak mengizinkan DenRecorder menggambar di pulau itu. Pada banyak build, hanya root yang dapat memberikan ini. Shizuku berkata: %1$s</string>
+    <string name="island_failed_body">SystemUI masih tidak mengizinkan DenRecorder muncul di Island. Detail: %1$s</string>
     <string name="island_denied_body">Shizuku tidak mengizinkan DenRecorder. Ketuk Aktifkan lagi dan pilih Izinkan dalam dialog Shizuku.</string>
     <string name="island_request_again">Coba lagi</string>
     <string name="island_no_xiaomi">Super Island hanya ada di ponsel Xiaomi</string>
@@ -335,7 +335,7 @@
     <string name="island_mode_pull">Tersembunyi</string>
     <string name="island_mode_always">Selalu terlihat</string>
     <string name="recordings_search">Cari rekaman</string>
-    <string name="recordings_no_match">Tidak ada yang cocok dengan itu. Coba kata lain atau “Semua video”.</string>
+    <string name="recordings_no_match">Tidak ada rekaman yang cocok.</string>
     <string name="sort_title">Urutkan rekaman</string>
     <string name="sort_newest">Yang terbaru dulu</string>
     <string name="sort_oldest">Yang tertua terlebih dahulu</string>

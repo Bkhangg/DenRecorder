@@ -140,7 +140,6 @@ public class MainActivity extends Activity {
     private TextView islandValueView;
     private TextView islandModeValueView;
     private TextView shizukuValueView;
-    /** Set while the Shizuku permission request is on its way. */
     private TextView storageValueView;
     private TextView orientationValueView;
     private TextView drawValueView;
@@ -151,16 +150,11 @@ public class MainActivity extends Activity {
     private LinearLayout recordingsList;
     private TextView recordingsSummary;
     private TextView recordingsHint;
-    private TextView recentTab;
-    private TextView allTab;
-    private boolean showAllRecordings;
-    /** Search text, filter (0 all, 1 today, 2 yesterday, 3 week, 4 month) and order of the list. */
+    /** Search text and order of the recordings list. */
     private String recSearch = "";
-    private int recFilter;
     private int recSort;
     private EditText recordingsSearchField;
     private TextView recSortChip;
-    private TextView recFilterChip;
     private boolean recordingsSelectMode;
     /** What the rows on screen were built from, to skip needless rebuilds. */
     private String recordingsSignature = "";
@@ -355,7 +349,9 @@ public class MainActivity extends Activity {
         drawSize = prefs.getInt("drawSize", 1);
         drawAutoHide = prefs.getBoolean("drawAutoHide", false);
         screenOffAction = prefs.getString("screenOffAction", "stop");
-        recFilter = prefs.getInt("recFilter", 0);
+        // Recent/all tabs and the "All videos" filter control were removed;
+        // discard an old filter preference so upgrades always show the full list.
+        prefs.edit().remove("recFilter").apply();
         recSort = prefs.getInt("recSort", 0);
         handler = new Handler(Looper.getMainLooper());
         buildUi();
@@ -868,32 +864,8 @@ public class MainActivity extends Activity {
         recordingsScroll.addView(list, new ScrollView.LayoutParams(MATCH, WRAP));
         recordingsPageList = list;
 
-        LinearLayout tabs = new LinearLayout(this);
-        tabs.setOrientation(LinearLayout.HORIZONTAL);
-        tabs.setBackground(round(CARD, 12, BORDER));
-        tabs.setPadding(dp(4), dp(4), dp(4), dp(4));
-        list.addView(tabs, lp(MATCH, WRAP, 0, 10, 0, 0));
-
-        recentTab = tabLabel(getString(R.string.recordings_recent));
-        recentTab.setOnClickListener(v -> {
-            showAllRecordings = false;
-            recordingsVisible = 20;
-            recordingsRedraw = true;
-            loadRecordings();
-        });
-        tabs.addView(recentTab, new LinearLayout.LayoutParams(0, dp(40), 1f));
-
-        allTab = tabLabel(getString(R.string.recordings_all));
-        allTab.setOnClickListener(v -> {
-            showAllRecordings = true;
-            recordingsVisible = 20;
-            recordingsRedraw = true;
-            loadRecordings();
-        });
-        tabs.addView(allTab, new LinearLayout.LayoutParams(0, dp(40), 1f));
-
         // Search a long list by name, folder, day or size, then narrow it by
-        // date and order it.
+        // order it.
         recordingsSearchField = new EditText(this);
         recordingsSearchField.setHint(getString(R.string.recordings_search));
         recordingsSearchField.setText(recSearch);
@@ -924,13 +896,7 @@ public class MainActivity extends Activity {
 
         recSortChip = chipLabel("");
         recSortChip.setOnClickListener(v -> chooseRecordingSort());
-        controls.addView(recSortChip, new LinearLayout.LayoutParams(0, WRAP, 1f));
-
-        recFilterChip = chipLabel("");
-        recFilterChip.setOnClickListener(v -> chooseRecordingFilter());
-        LinearLayout.LayoutParams filterParams = new LinearLayout.LayoutParams(0, WRAP, 1f);
-        filterParams.setMargins(dp(8), 0, 0, 0);
-        controls.addView(recFilterChip, filterParams);
+        controls.addView(recSortChip, new LinearLayout.LayoutParams(MATCH, WRAP));
         updateRecordingChips();
 
         LinearLayout summaryRow = new LinearLayout(this);
@@ -973,7 +939,6 @@ public class MainActivity extends Activity {
 
     private void updateRecordingChips() {
         if (recSortChip != null) recSortChip.setText(sortName(recSort));
-        if (recFilterChip != null) recFilterChip.setText(filterName(recFilter));
     }
 
     private String sortName(int which) {
@@ -985,18 +950,6 @@ public class MainActivity extends Activity {
             case 4: res = R.string.sort_longest; break;
             case 5: res = R.string.sort_shortest; break;
             default: res = R.string.sort_newest; break;
-        }
-        return getString(res);
-    }
-
-    private String filterName(int which) {
-        int res;
-        switch (which) {
-            case 1: res = R.string.day_today; break;
-            case 2: res = R.string.day_yesterday; break;
-            case 3: res = R.string.filter_week; break;
-            case 4: res = R.string.filter_month; break;
-            default: res = R.string.filter_all; break;
         }
         return getString(res);
     }
@@ -1014,25 +967,11 @@ public class MainActivity extends Activity {
         });
     }
 
-    private void chooseRecordingFilter() {
-        String[] names = new String[5];
-        for (int i = 0; i < names.length; i++) names[i] = filterName(i);
-        showChoices(getString(R.string.filter_title), names, recFilter, which -> {
-            recFilter = which;
-            prefs.edit().putInt("recFilter", recFilter).apply();
-            updateRecordingChips();
-            recordingsVisible = 20;
-            recordingsRedraw = true;
-            renderRecordings(recordingsCache, true);
-        });
-    }
-
-    /** The videos the search, filter and order leave on screen. */
+    /** The videos the search and order leave on screen. */
     private List<Recording> recordingsView(List<Recording> items) {
         List<Recording> out = new ArrayList<>();
         String query = recSearch == null ? "" : recSearch.toLowerCase(Locale.getDefault());
         for (Recording item : items) {
-            if (!matchesFilter(item)) continue;
             if (!query.isEmpty() && !matchesSearch(item, query)) continue;
             out.add(item);
         }
@@ -1049,38 +988,12 @@ public class MainActivity extends Activity {
         return out;
     }
 
-    private boolean matchesFilter(Recording item) {
-        if (recFilter == 0) return true;
-        long days = dayDifference(item.added);
-        switch (recFilter) {
-            case 1: return days == 0;
-            case 2: return days == 1;
-            case 3: return days >= 0 && days < 7;
-            default: return days >= 0 && days < 30;
-        }
-    }
-
     private boolean matchesSearch(Recording item, String query) {
         if (item.name != null && item.name.toLowerCase(Locale.getDefault()).contains(query)) return true;
         if (item.folder != null && item.folder.toLowerCase(Locale.getDefault()).contains(query)) return true;
         if (dayLabel(item.added).toLowerCase(Locale.getDefault()).contains(query)) return true;
         return (item.width + "x" + item.height).contains(query.replace(" ", ""))
                 || (item.width + "×" + item.height).contains(query.replace(" ", ""));
-    }
-
-    private TextView tabLabel(String text) {
-        TextView view = label(text, 13, MUTED, true);
-        view.setGravity(Gravity.CENTER);
-        view.setClickable(true);
-        return view;
-    }
-
-    private void styleTabs() {
-        if (recentTab == null || allTab == null) return;
-        recentTab.setBackground(!showAllRecordings ? round(NAV_ACTIVE, 10, 0) : null);
-        recentTab.setTextColor(!showAllRecordings ? TEXT : FAINT);
-        allTab.setBackground(showAllRecordings ? round(NAV_ACTIVE, 10, 0) : null);
-        allTab.setTextColor(showAllRecordings ? TEXT : FAINT);
     }
 
     /**
@@ -1097,7 +1010,6 @@ public class MainActivity extends Activity {
             askedMediaAccess = true;
             requestPermissions(new String[]{Manifest.permission.READ_MEDIA_VIDEO}, REQ_MEDIA);
         }
-        styleTabs();
         if (recordingsHint != null) {
             recordingsHint.setText(getString(R.string.hint_recordings, saveFolder()));
         }
@@ -1183,14 +1095,13 @@ public class MainActivity extends Activity {
             recordingsCache.addAll(items);
         }
         List<Recording> visible = recordingsView(items);
-        String signature = signatureOf(visible) + "#" + recSort + "#" + recFilter + "#" + recSearch;
+        String signature = signatureOf(visible) + "#" + recSort + "#" + recSearch;
         if (!force && !recordingsRedraw && recordingsLoaded
                 && signature.equals(recordingsSignature)) return;
         recordingsRedraw = false;
         recordingsSignature = signature;
         recordingsLoaded = true;
 
-        styleTabs();
         recordingsList.removeAllViews();
 
         // A selection only lasts as long as the video exists.
@@ -1214,11 +1125,9 @@ public class MainActivity extends Activity {
         }
         updateSelectBar();
 
-        int shown = showAllRecordings
-                ? Math.min(recordingsVisible, visible.size())
-                : Math.min(10, visible.size());
+        int shown = Math.min(recordingsVisible, visible.size());
         if (shown == 0) {
-            boolean narrowed = !recSearch.isEmpty() || recFilter != 0;
+            boolean narrowed = !recSearch.isEmpty();
             TextView empty = label(getString(narrowed
                     ? R.string.recordings_no_match : R.string.recordings_empty), 13, FAINT, false);
             empty.setLineSpacing(dp(3), 1f);
@@ -1270,7 +1179,7 @@ public class MainActivity extends Activity {
             }
         }
 
-        if (showAllRecordings && visible.size() > shown) {
+        if (visible.size() > shown) {
             final TextView more = label(getString(R.string.recordings_more, visible.size() - shown),
                     13, TEXT, true);
             more.setGravity(Gravity.CENTER);
@@ -3512,21 +3421,35 @@ public class MainActivity extends Activity {
         Toast.makeText(this, R.string.island_off_toast, Toast.LENGTH_SHORT).show();
     }
 
-    /** Never grants private ROM permissions through shell or touch injection. */
     private void enableIslandIfAuthorized() {
         if (!Island.isXiaomi()) {
             Toast.makeText(this, R.string.island_no_xiaomi, Toast.LENGTH_LONG).show();
             return;
         }
-        if (!ShizukuBridge.hasIslandPermission(this) || !Island.allowed(this)) {
-            showCard(getString(R.string.island_failed_title),
-                    getString(R.string.island_failed_body, "Permission must be granted by the system"),
+        Island.forgetVerdict();
+        if (Island.allowed(this)) {
+            Island.setEnabled(this, true);
+            updateIslandValue();
+            Island.showTest(this);
+            handler.postDelayed(() -> Island.hideTest(this), 15_000);
+            showCard(getString(R.string.island_done_title),
+                    getString(R.string.island_done_body),
                     getString(R.string.dialog_ok), null, null, null);
             return;
         }
-        Island.setEnabled(this, true);
-        updateIslandValue();
-        Toast.makeText(this, R.string.island_off_toast, Toast.LENGTH_SHORT).show();
+        showCard(getString(R.string.island_permission_title),
+                getString(R.string.island_permission_body),
+                getString(R.string.island_permission_docs), this::openIslandPermissionDocs,
+                getString(R.string.dialog_cancel), null);
+    }
+
+    private void openIslandPermissionDocs() {
+        try {
+            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(
+                    "https://dev.mi.com/xiaomihyperos/documentation/detail?pId=2146")));
+        } catch (Exception e) {
+            Toast.makeText(this, R.string.island_no_browser, Toast.LENGTH_LONG).show();
+        }
     }
 
     private void openShizukuApp() {

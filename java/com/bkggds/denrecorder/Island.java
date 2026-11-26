@@ -21,8 +21,8 @@ import org.json.JSONObject;
  * HyperOS picks an island entry up from the extras of an ongoing notification:
  * a JSON template in "miui.focus.param", the pictures in "miui.focus.pics" and
  * the buttons in "miui.focus.actions". SystemUI only reads them from apps it
- * allows, so the permission miui.permission.USE_FOCUS_NOTIFICATION has to be
- * granted by Shizuku first. Everything here is best effort: when the phone does
+ * allows. Xiaomi must approve an app for Focus Notifications; a regular install
+ * or Shizuku cannot create a permission that the ROM does not define. Everything here is best effort: when the phone does
  * not know the island the notification simply stays a normal notification.
  */
 public final class Island {
@@ -97,7 +97,7 @@ public final class Island {
         return allowed;
     }
 
-    /** Called after Shizuku granted the permission, so the result is fresh. */
+    /** Invalidate the cached Xiaomi Focus Notification authorization check. */
     public static void forgetVerdict() {
         allowedAt = 0;
     }

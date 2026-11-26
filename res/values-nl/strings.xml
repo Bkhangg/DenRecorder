@@ -300,14 +300,14 @@
     <string name="player_rotate">Scherm draaien</string>
     <string name="section_beta">BÈTA</string>
     <string name="row_island">Super eiland</string>
-    <string name="hint_island_beta">Alleen bèta, Xiaomi. Terwijl je opneemt, toont het eiland een klein pictogram en de timer; een tik erop geeft pauze en stop. HyperOS verbergt het eiland wanneer de statusbalk naar beneden wordt getrokken, zodat de melding daar dezelfde knoppen bevat. Shizuku is eenmalig nodig om de toestemming te verlenen.</string>
+    <string name="hint_island_beta">Bèta, alleen Xiaomi. Xiaomi moet deze app goedkeuren voor Focus-meldingen. Shizuku kan geen systeemtoestemming geven die de ROM niet kent.</string>
     <string name="island_value_off">Uit · bèta</string>
     <string name="island_value_on">Aan · bèta</string>
     <string name="island_value_need">Shizuku nodig</string>
     <string name="island_title">Supereiland (bèta)</string>
-    <string name="island_body">HyperOS kan de opname in zijn Super Island tonen: een klein icoontje en de timer. Tik op het eiland om te pauzeren en stoppen. HyperOS verbergt het eiland op zichzelf zodra de statusbalk naar beneden wordt getrokken, en de melding daar heeft dezelfde knoppen. Die toestemming kan alleen via Shizuku worden gegeven.</string>
+    <string name="island_body">Super Island kan de opname pas tonen nadat Xiaomi deze app heeft goedgekeurd voor Focus-meldingen. Shizuku kan geen onbekende systeemtoestemming geven.</string>
     <string name="island_body_on">Terwijl je opneemt, toont het eiland een klein pictogram en de timer; een tik geeft pauze en stop. HyperOS verbergt het zelf wanneer de statusbalk naar beneden wordt getrokken. Kies Verborgen als je liever helemaal geen eiland hebt; de melding blijft hoe dan ook staan.</string>
-    <string name="island_enable">Schakel in met Shizuku</string>
+    <string name="island_enable">Toegang controleren</string>
     <string name="island_disable">Schakel uit</string>
     <string name="island_need_shizuku_title">Shizuku is nodig</string>
     <string name="island_need_shizuku_body">Super Island is bèta en werkt alleen op Xiaomi-telefoons. Android laat een normale app niet om toestemming van het eiland vragen, dus DenRecorder heeft Shizuku een keer nodig. Installeer Shizuku, start het (draadloos debuggen of rooten) en kom dan hier terug.</string>
@@ -319,7 +319,7 @@
     <string name="island_done_title">Supereiland staat aan</string>
     <string name="island_done_body">Er zou nu een kleine testinzending op het eiland moeten verschijnen. Als dat niet het geval is, behoudt deze HyperOS-build het eiland voor systeemapps; de opnamemelding werkt nog steeds zoals voorheen.</string>
     <string name="island_failed_title">De eilandvergunning werd niet verleend</string>
-    <string name="island_failed_body">SystemUI laat DenRecorder nog steeds niet op het eiland tekenen. Bij veel builds kan alleen root dit toestaan. Shizuku zei: %1$s</string>
+    <string name="island_failed_body">SystemUI staat DenRecorder nog steeds niet toe op het eiland. Details: %1$s</string>
     <string name="island_denied_body">Shizuku stond DenRecorder niet toe. Tik nogmaals op Inschakelen en kies Toestaan ​​in het dialoogvenster van Shizuku.</string>
     <string name="island_request_again">Probeer het opnieuw</string>
     <string name="island_no_xiaomi">Super Island bestaat alleen op Xiaomi-telefoons</string>
@@ -335,7 +335,7 @@
     <string name="island_mode_pull">Verborgen</string>
     <string name="island_mode_always">Altijd zichtbaar</string>
     <string name="recordings_search">Zoek opnames</string>
-    <string name="recordings_no_match">Niets komt daarmee overeen. Probeer een ander woord of \'Alle video\'s\'.</string>
+    <string name="recordings_no_match">Geen overeenkomende opnamen gevonden.</string>
     <string name="sort_title">Opnames sorteren</string>
     <string name="sort_newest">Nieuwste eerst</string>
     <string name="sort_oldest">Oudste eerst</string>

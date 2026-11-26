@@ -300,14 +300,14 @@
     <string name="player_rotate">تدوير الشاشة</string>
     <string name="section_beta">بيتا</string>
     <string name="row_island">جزيرة سوبر</string>
-    <string name="hint_island_beta">بيتا وشاومي فقط. أثناء التسجيل، تظهر الجزيرة رمزًا صغيرًا والمؤقت؛ النقر عليه يعطي وقفة وتوقف. يقوم HyperOS بإخفاء الجزيرة عندما يتم سحب شريط الحالة لأسفل، وبالتالي فإن الإشعار هناك يحمل نفس الأزرار. شيزوكو مطلوب مرة واحدة لمنح الإذن.</string>
+    <string name="hint_island_beta">تجريبي، Xiaomi فقط. يجب أن توافق Xiaomi على إشعارات التركيز لهذا التطبيق. لا يستطيع Shizuku منح إذن غير معروف للنظام.</string>
     <string name="island_value_off">معطلة · بيتا</string>
     <string name="island_value_on">على · بيتا</string>
     <string name="island_value_need">يحتاج شيزوكو</string>
     <string name="island_title">سوبر آيلاند (نسخة تجريبية)</string>
-    <string name="island_body">يمكن لنظام HyperOS عرض التسجيل في Super Island: أيقونة صغيرة ومؤقت. اضغط على الجزيرة للتوقف والتوقف. يقوم HyperOS بإخفاء الجزيرة من تلقاء نفسه بمجرد سحب شريط الحالة لأسفل، ويحتوي الإشعار هناك على نفس الأزرار. لا يمكن منح هذا الإذن إلا من خلال شيزوكو.</string>
+    <string name="island_body">لا يمكن عرض التسجيل في Super Island إلا بعد موافقة Xiaomi على التطبيق لإشعارات التركيز. لا يستطيع Shizuku منح إذن لا يتعرف عليه النظام.</string>
     <string name="island_body_on">أثناء التسجيل، تظهر الجزيرة رمزًا صغيرًا والمؤقت؛ الصنبور يعطي وقفة وتوقف. يخفيه HyperOS من تلقاء نفسه عندما يتم سحب شريط الحالة لأسفل. اختر "مخفي" إذا كنت تفضل عدم وجود جزيرة على الإطلاق؛ يبقى الإخطار في كلتا الحالتين.</string>
-    <string name="island_enable">تمكين مع شيزوكو</string>
+    <string name="island_enable">تحقق من الإذن</string>
     <string name="island_disable">إيقاف</string>
     <string name="island_need_shizuku_title">شيزوكو مطلوب</string>
     <string name="island_need_shizuku_body">Super Island هو إصدار تجريبي ويعمل فقط على هواتف Xiaomi. لا يسمح نظام Android لأي تطبيق عادي بطلب إذن الجزيرة، لذا يحتاج DenRecorder إلى Shizuku مرة واحدة. قم بتثبيت Shizuku، وابدأ تشغيله (تصحيح الأخطاء اللاسلكية أو الجذر)، ثم عد إلى هنا.</string>
@@ -319,7 +319,7 @@
     <string name="island_done_title">سوبر آيلاند قيد التشغيل</string>
     <string name="island_done_body">يجب أن يظهر إدخال اختباري صغير في الجزيرة الآن. إذا لم يحدث ذلك، فإن إصدار HyperOS هذا يحتفظ بالجزيرة لتطبيقات النظام؛ لا يزال إشعار التسجيل يعمل كما كان من قبل.</string>
     <string name="island_failed_title">لم يتم منح إذن الجزيرة</string>
-    <string name="island_failed_body">لا يزال SystemUI لا يسمح لـ DenRecorder بالرسم في الجزيرة. في العديد من البنيات، يمكن للجذر فقط منح ذلك. قال شيزوكو: %1$s</string>
+    <string name="island_failed_body">لم تسمح SystemUI لـ DenRecorder بالظهور على الجزيرة. تفاصيل: %1$s</string>
     <string name="island_denied_body">شيزوكو لم يسمح بـ DenRecorder. اضغط على "تمكين" مرة أخرى واختر "السماح" في مربع حوار Shizuku.</string>
     <string name="island_request_again">حاول مرة أخرى</string>
     <string name="island_no_xiaomi">Super Island موجود فقط على هواتف Xiaomi</string>
@@ -335,7 +335,7 @@
     <string name="island_mode_pull">مخفي</string>
     <string name="island_mode_always">مرئية دائما</string>
     <string name="recordings_search">بحث في التسجيلات</string>
-    <string name="recordings_no_match">لا شيء يطابق ذلك. جرّب كلمة أخرى أو "جميع مقاطع الفيديو".</string>
+    <string name="recordings_no_match">لا توجد تسجيلات مطابقة.</string>
     <string name="sort_title">فرز التسجيلات</string>
     <string name="sort_newest">الأحدث أولاً</string>
     <string name="sort_oldest">الأقدم أولاً</string>

@@ -300,14 +300,14 @@
     <string name="player_rotate">Faire pivoter l\'écran</string>
     <string name="section_beta">BÊTA</string>
     <string name="row_island">Super île</string>
-    <string name="hint_island_beta">Bêta, Xiaomi uniquement. Pendant que vous enregistrez, l\'îlot affiche une petite icône et la minuterie ; une pression dessus donne une pause et s\'arrête. HyperOS masque l\'îlot chaque fois que la barre d\'état est abaissée, de sorte que la notification comporte les mêmes boutons. Shizuku est nécessaire une fois pour accorder la permission.</string>
+    <string name="hint_island_beta">Bêta, Xiaomi uniquement. Xiaomi doit approuver cette application pour les notifications Focus. Shizuku ne peut pas accorder une autorisation inconnue du système.</string>
     <string name="island_value_off">Désactivé · bêta</string>
     <string name="island_value_on">En · version bêta</string>
     <string name="island_value_need">A besoin de Shizuku</string>
     <string name="island_title">Super Île (bêta)</string>
-    <string name="island_body">HyperOS peut afficher l\'enregistrement dans sa Super Island : une petite icône et le minuteur. Appuyez sur l\'île pour faire une pause et arrêter. HyperOS masque l\'île toute seule dès que la barre d\'état est abaissée, et la notification comporte les mêmes boutons. Cette autorisation ne peut être donnée que par l\'intermédiaire de Shizuku.</string>
+    <string name="island_body">Super Island ne peut afficher l’enregistrement qu’après l’approbation de cette application par Xiaomi pour les notifications Focus. Shizuku ne peut pas accorder une autorisation inconnue du système.</string>
     <string name="island_body_on">Pendant que vous enregistrez, l\'îlot affiche une petite icône et la minuterie ; un robinet donne une pause et s\'arrête. HyperOS le cache tout seul chaque fois que la barre d\'état est abaissée. Choisissez Caché si vous préférez ne pas avoir d\'île du tout ; la notification reste dans les deux cas.</string>
-    <string name="island_enable">Activer avec Shizuku</string>
+    <string name="island_enable">Vérifier l’accès</string>
     <string name="island_disable">Éteindre</string>
     <string name="island_need_shizuku_title">Shizuku est nécessaire</string>
     <string name="island_need_shizuku_body">Super Island est en version bêta et ne fonctionne que sur les téléphones Xiaomi. Android ne permet pas à une application normale de demander l\'autorisation de l\'île, donc DenRecorder a besoin de Shizuku une fois. Installez Shizuku, démarrez-le (débogage sans fil ou root), puis revenez ici.</string>
@@ -319,7 +319,7 @@
     <string name="island_done_title">Super Island est activé</string>
     <string name="island_done_body">Une petite entrée de test devrait maintenant apparaître sur l\'île. Si ce n\'est pas le cas, cette version d\'HyperOS conserve l\'îlot pour les applications système ; la notification d\'enregistrement fonctionne toujours comme avant.</string>
     <string name="island_failed_title">La permission de l\'île n\'a pas été accordée</string>
-    <string name="island_failed_body">SystemUI ne permet toujours pas à DenRecorder de dessiner sur l\'île. Sur de nombreuses versions, seul root peut l\'accorder. Shizuku a dit : %1$s</string>
+    <string name="island_failed_body">SystemUI ne permet toujours pas à DenRecorder d’apparaître sur l’île. Détails : %1$s</string>
     <string name="island_denied_body">Shizuku n\'a pas autorisé DenRecorder. Appuyez à nouveau sur Activer et choisissez Autoriser dans la boîte de dialogue de Shizuku.</string>
     <string name="island_request_again">Réessayez</string>
     <string name="island_no_xiaomi">Super Island n\'existe que sur les téléphones Xiaomi</string>
@@ -335,7 +335,7 @@
     <string name="island_mode_pull">Caché</string>
     <string name="island_mode_always">Toujours visible</string>
     <string name="recordings_search">Rechercher des enregistrements</string>
-    <string name="recordings_no_match">Rien ne correspond à cela. Essayez un autre mot ou « Toutes les vidéos ».</string>
+    <string name="recordings_no_match">Aucun enregistrement correspondant trouvé.</string>
     <string name="sort_title">Trier les enregistrements</string>
     <string name="sort_newest">Le plus récent en premier</string>
     <string name="sort_oldest">Le plus ancien en premier</string>

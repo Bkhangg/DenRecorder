@@ -97,9 +97,9 @@
     <string name="row_orientation">Screen orientation</string>
 
     <string name="row_performance">Game performance</string>
-    <string name="performance_on">Game priority · native 60 fps · no overlay</string>
+    <string name="performance_on">Game priority · native 60 fps</string>
     <string name="performance_off">Off</string>
-    <string name="hint_performance">Game priority mode records the full display at native resolution and 60 fps. It disables floating windows, drawing and region controls while recording; stop with the notification or Quick Settings tile.</string>
+    <string name="hint_performance">Game priority mode records the full display at native resolution and 60 fps. Region selection stays off. The optional drawing button can remain on; while a drawing tool is selected, touches draw on the video instead of controlling the game. Stop with the notification or Quick Settings tile.</string>
     <string name="title_orientation">Screen orientation</string>
     <string name="orientation_auto">Automatic</string>
     <string name="orientation_portrait">Portrait</string>
@@ -323,14 +323,14 @@
 
     <string name="section_beta">BETA</string>
     <string name="row_island">Super Island</string>
-    <string name="hint_island_beta">Beta, Xiaomi only. While you record, the island shows a small icon and the timer; a tap on it gives pause and stop. HyperOS hides the island whenever the status bar is pulled down, so the notification there carries the same buttons. Shizuku is needed once to grant the permission.</string>
+    <string name="hint_island_beta">Beta, Xiaomi only. Focus Notification must be approved by Xiaomi for this app before HyperOS can show the island. Shizuku cannot grant an unknown system permission.</string>
     <string name="island_value_off">Off · beta</string>
     <string name="island_value_on">On · beta</string>
     <string name="island_value_need">Needs Shizuku</string>
     <string name="island_title">Super Island (beta)</string>
-    <string name="island_body">HyperOS can show the recording in its Super Island: a small icon and the timer. Tap the island for pause and stop. HyperOS hides the island on its own as soon as the status bar is pulled down, and the notification there has the same buttons. That permission can only be given through Shizuku.</string>
+    <string name="island_body">HyperOS can show the recording in Super Island after Xiaomi approves this app for Focus Notifications. Shizuku cannot grant the permission when this ROM does not define it.</string>
     <string name="island_body_on">While you record, the island shows a small icon and the timer; a tap gives pause and stop. HyperOS hides it by itself whenever the status bar is pulled down. Choose Hidden if you would rather have no island at all; the notification stays either way.</string>
-    <string name="island_enable">Enable with Shizuku</string>
+    <string name="island_enable">Check access</string>
     <string name="island_disable">Turn off</string>
     <string name="island_need_shizuku_title">Shizuku is needed</string>
     <string name="island_need_shizuku_body">Super Island is beta and only works on Xiaomi phones. Android does not let a normal app ask for the island permission, so DenRecorder needs Shizuku once. Install Shizuku, start it (wireless debugging or root), then come back here.</string>
@@ -342,7 +342,10 @@
     <string name="island_done_title">Super Island is on</string>
     <string name="island_done_body">A small test entry should appear in the island now. If it does not, this HyperOS build keeps the island for system apps; the recording notification still works as before.</string>
     <string name="island_failed_title">The island permission was not granted</string>
-    <string name="island_failed_body">SystemUI still does not let DenRecorder draw in the island. On many builds only root can grant this. Shizuku said: %1$s</string>
+    <string name="island_failed_body">SystemUI still does not allow DenRecorder on the island. Details: %1$s</string>
+    <string name="island_permission_title">Xiaomi approval required</string>
+    <string name="island_permission_body">This phone reports the Focus Notification permission as unknown, so Shizuku cannot grant it. Xiaomi must approve and enable Focus Notifications for DenRecorder through its developer program.</string>
+    <string name="island_permission_docs">Open Xiaomi guide</string>
     <string name="island_denied_body">Shizuku did not allow DenRecorder. Tap Enable again and choose Allow in Shizuku\'s dialog.</string>
     <string name="island_request_again">Try again</string>
     <string name="island_no_xiaomi">Super Island only exists on Xiaomi phones</string>
@@ -360,7 +363,7 @@
     <string name="island_mode_always">Always visible</string>
 
     <string name="recordings_search">Search recordings</string>
-    <string name="recordings_no_match">Nothing matches that. Try another word or “All videos”.</string>
+    <string name="recordings_no_match">No matching recordings found.</string>
     <string name="sort_title">Sort recordings</string>
     <string name="sort_newest">Newest first</string>
     <string name="sort_oldest">Oldest first</string>

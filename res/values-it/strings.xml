@@ -300,14 +300,14 @@
     <string name="player_rotate">Ruota lo schermo</string>
     <string name="section_beta">BETA</string>
     <string name="row_island">La superisola</string>
-    <string name="hint_island_beta">Beta, solo Xiaomi. Durante la registrazione l\'isola mostra una piccola icona e il timer; un tocco su di esso dà pausa e si ferma. HyperOS nasconde l\'isola ogni volta che la barra di stato viene abbassata, quindi la notifica contiene gli stessi pulsanti. Shizuku è necessario una volta per concedere il permesso.</string>
+    <string name="hint_island_beta">Beta, solo Xiaomi. Xiaomi deve approvare questa app per le notifiche Focus. Shizuku non può concedere un’autorizzazione sconosciuta al sistema.</string>
     <string name="island_value_off">Disattivato · beta</string>
     <string name="island_value_on">Su · beta</string>
     <string name="island_value_need">Ha bisogno di Shizuku</string>
     <string name="island_title">Super Isola (beta)</string>
-    <string name="island_body">HyperOS può mostrare la registrazione nella sua Super Isola: una piccola icona e il timer. Tocca l\'isola per mettere in pausa e fermarti. HyperOS nasconde l\'isola da sola non appena la barra di stato viene abbassata e la notifica ha gli stessi pulsanti. Tale permesso può essere concesso solo tramite Shizuku.</string>
+    <string name="island_body">Super Island può mostrare la registrazione solo dopo che Xiaomi approva questa app per le notifiche Focus. Shizuku non può concedere un’autorizzazione sconosciuta al sistema.</string>
     <string name="island_body_on">Durante la registrazione l\'isola mostra una piccola icona e il timer; un tocco dà pausa e stop. HyperOS lo nasconde da solo ogni volta che la barra di stato viene abbassata. Scegli Nascosto se preferisci non avere alcuna isola; la notifica rimane in entrambi i casi.</string>
-    <string name="island_enable">Abilita con Shizuku</string>
+    <string name="island_enable">Verifica accesso</string>
     <string name="island_disable">Spegni</string>
     <string name="island_need_shizuku_title">C\'è bisogno di Shizuku</string>
     <string name="island_need_shizuku_body">Super Island è beta e funziona solo sui telefoni Xiaomi. Android non consente a un\'app normale di richiedere il permesso dell\'isola, quindi DenRecorder ha bisogno di Shizuku una volta. Installa Shizuku, avvialo (debug wireless o root), quindi torna qui.</string>
@@ -319,7 +319,7 @@
     <string name="island_done_title">Super Isola è attiva</string>
     <string name="island_done_body">Ora sull\'isola dovrebbe apparire una piccola voce di prova. In caso contrario, questa build HyperOS mantiene l\'isola per le app di sistema; la notifica di registrazione funziona ancora come prima.</string>
     <string name="island_failed_title">Il permesso dell\'isola non è stato concesso</string>
-    <string name="island_failed_body">SystemUI continua a non consentire a DenRecorder di disegnare nell\'isola. Su molte build solo root può garantirlo. Shizuku ha detto: %1$s</string>
+    <string name="island_failed_body">SystemUI continua a non consentire a DenRecorder di apparire nell’isola. Dettagli: %1$s</string>
     <string name="island_denied_body">Shizuku non ha consentito l\'uso di DenRecorder. Tocca di nuovo Abilita e scegli Consenti nella finestra di dialogo di Shizuku.</string>
     <string name="island_request_again">Riprova</string>
     <string name="island_no_xiaomi">Super Island esiste solo sui telefoni Xiaomi</string>
@@ -335,7 +335,7 @@
     <string name="island_mode_pull">Nascosto</string>
     <string name="island_mode_always">Sempre visibile</string>
     <string name="recordings_search">Cerca registrazioni</string>
-    <string name="recordings_no_match">Niente corrisponde a questo. Prova un\'altra parola o "Tutti i video".</string>
+    <string name="recordings_no_match">Nessuna registrazione corrispondente trovata.</string>
     <string name="sort_title">Ordina le registrazioni</string>
     <string name="sort_newest">Prima il più recente</string>
     <string name="sort_oldest">Prima il più vecchio</string>

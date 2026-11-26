@@ -300,14 +300,14 @@
     <string name="player_rotate">स्क्रीन घुमाएँ</string>
     <string name="section_beta">बीटा</string>
     <string name="row_island">सुपर आइलैंड</string>
-    <string name="hint_island_beta">बीटा, केवल Xiaomi। जब आप रिकॉर्ड करते हैं, तो द्वीप एक छोटा आइकन और टाइमर दिखाता है; इस पर टैप करने से रुक-रुक कर रुक जाता है। जब भी स्टेटस बार को नीचे खींचा जाता है तो हाइपरओएस द्वीप को छुपा देता है, इसलिए वहां अधिसूचना में वही बटन होते हैं। अनुमति देने के लिए एक बार शिज़ुकु की आवश्यकता होती है।</string>
+    <string name="hint_island_beta">बीटा, केवल Xiaomi। Focus Notifications के लिए Xiaomi को इस ऐप को मंज़ूरी देनी होगी। Shizuku ऐसी सिस्टम अनुमति नहीं दे सकता जिसे ROM पहचानता न हो।</string>
     <string name="island_value_off">बंद · बीटा</string>
     <string name="island_value_on">चालू · बीटा</string>
     <string name="island_value_need">शिज़ुकु की जरूरत है</string>
     <string name="island_title">सुपर आइलैंड (बीटा)</string>
-    <string name="island_body">हाइपरओएस अपने सुपर आइलैंड में रिकॉर्डिंग दिखा सकता है: एक छोटा आइकन और टाइमर। रुकने और रुकने के लिए द्वीप पर टैप करें। जैसे ही स्टेटस बार को नीचे खींचा जाता है, हाइपरओएस द्वीप को अपने आप छिपा देता है, और वहां अधिसूचना में समान बटन होते हैं। वह अनुमति केवल शिज़ुकु के माध्यम से ही दी जा सकती है।</string>
+    <string name="island_body">Super Island रिकॉर्डिंग तभी दिखाएगा जब Xiaomi इस ऐप को Focus Notifications के लिए मंज़ूरी देगा। Shizuku अनजान सिस्टम अनुमति नहीं दे सकता।</string>
     <string name="island_body_on">जब आप रिकॉर्ड करते हैं, तो द्वीप एक छोटा आइकन और टाइमर दिखाता है; एक नल रुक-रुक कर रुकता है। जब भी स्टेटस बार को नीचे खींचा जाता है तो हाइपरओएस इसे अपने आप छुपा देता है। यदि आप चाहेंगे कि आपके पास कोई द्वीप ही न हो तो छिपा हुआ चुनें; अधिसूचना किसी भी तरह से रहती है।</string>
-    <string name="island_enable">शिज़ुकु के साथ सक्षम करें</string>
+    <string name="island_enable">अनुमति जाँचें</string>
     <string name="island_disable">बंद करो</string>
     <string name="island_need_shizuku_title">शिज़ुकु की जरूरत है</string>
     <string name="island_need_shizuku_body">सुपर आइलैंड बीटा है और केवल Xiaomi फोन पर काम करता है। एंड्रॉइड एक सामान्य ऐप को द्वीप की अनुमति मांगने की अनुमति नहीं देता है, इसलिए डेनरिकॉर्डर को एक बार शिज़ुकु की आवश्यकता होती है। शिज़ुकु स्थापित करें, इसे प्रारंभ करें (वायरलेस डिबगिंग या रूट), फिर यहां वापस आएं।</string>
@@ -319,7 +319,7 @@
     <string name="island_done_title">सुपर आइलैंड चालू है</string>
     <string name="island_done_body">अब द्वीप में एक छोटी परीक्षण प्रविष्टि प्रदर्शित होनी चाहिए। यदि ऐसा नहीं होता है, तो यह हाइपरओएस बिल्ड सिस्टम ऐप्स के लिए द्वीप रखता है; रिकॉर्डिंग अधिसूचना अभी भी पहले की तरह काम करती है।</string>
     <string name="island_failed_title">द्वीप की अनुमति नहीं दी गई</string>
-    <string name="island_failed_body">SystemUI अभी भी DenRecorder को द्वीप में आने नहीं देता है। कई बिल्ड पर केवल रूट ही यह अनुदान दे सकता है। शिज़ुकु ने कहा: %1$s</string>
+    <string name="island_failed_body">SystemUI अभी भी DenRecorder को Island पर नहीं दिखा रहा। विवरण: %1$s</string>
     <string name="island_denied_body">शिज़ुकु ने डेनरिकॉर्डर को अनुमति नहीं दी। फिर से सक्षम करें टैप करें और शिज़ुकु के संवाद में अनुमति चुनें चुनें।</string>
     <string name="island_request_again">पुनः प्रयास करें</string>
     <string name="island_no_xiaomi">सुपर आइलैंड केवल Xiaomi फोन पर मौजूद है</string>
@@ -335,7 +335,7 @@
     <string name="island_mode_pull">छिपा हुआ</string>
     <string name="island_mode_always">सदैव दृश्यमान</string>
     <string name="recordings_search">रिकॉर्डिंग खोजें</string>
-    <string name="recordings_no_match">उससे कुछ भी मेल नहीं खाता. कोई अन्य शब्द या "सभी वीडियो" आज़माएँ।</string>
+    <string name="recordings_no_match">कोई मिलती-जुलती रिकॉर्डिंग नहीं मिली।</string>
     <string name="sort_title">रिकॉर्डिंग क्रमबद्ध करें</string>
     <string name="sort_newest">सबसे पहले नवीनतम</string>
     <string name="sort_oldest">सबसे पुराना पहला</string>

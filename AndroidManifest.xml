@@ -3,8 +3,8 @@
     package="com.bkggds.denrecorder">
 
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
-    <!-- Beta: Shizuku grants this app the Xiaomi focus-notification (Super
-         Island) permission, which a normal install can not get. -->
+    <!-- Optional Xiaomi Focus Notification permission; Xiaomi must approve it
+         for this app before HyperOS will accept island notifications. -->
     <uses-permission android:name="miui.permission.USE_FOCUS_NOTIFICATION" />
     <uses-permission android:name="moe.shizuku.manager.permission.API_V23" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />

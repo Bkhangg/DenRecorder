@@ -300,14 +300,14 @@
     <string name="player_rotate">หมุนหน้าจอ</string>
     <string name="section_beta">เบต้า</string>
     <string name="row_island">ซุปเปอร์ไอส์แลนด์</string>
-    <string name="hint_island_beta">เบต้า Xiaomi เท่านั้น ในขณะที่คุณบันทึก เกาะจะแสดงไอคอนขนาดเล็กและตัวจับเวลา การแตะที่มันจะหยุดชั่วคราวและหยุด HyperOS จะซ่อนเกาะทุกครั้งที่ดึงแถบสถานะลงมา ดังนั้นการแจ้งเตือนจึงมีปุ่มเดียวกัน ชิซูกุจำเป็นหนึ่งครั้งจึงจะอนุญาตได้</string>
+    <string name="hint_island_beta">เบต้า เฉพาะ Xiaomi เท่านั้น Xiaomi ต้องอนุมัติแอปนี้สำหรับ Focus Notifications ชิซูกุไม่สามารถให้สิทธิ์ระบบที่ ROM ไม่รู้จักได้</string>
     <string name="island_value_off">ปิด · เบต้า</string>
     <string name="island_value_on">เปิด · เบต้า</string>
     <string name="island_value_need">ต้องการชิซูกุ</string>
     <string name="island_title">ซูเปอร์ไอส์แลนด์ (เบต้า)</string>
-    <string name="island_body">HyperOS สามารถแสดงการบันทึกใน Super Island: ไอคอนขนาดเล็กและตัวจับเวลา แตะที่เกาะเพื่อหยุดชั่วคราวและหยุด HyperOS จะซ่อนเกาะด้วยตัวเองทันทีที่แถบสถานะถูกดึงลงมา และการแจ้งเตือนจะมีปุ่มเดียวกัน การอนุญาตนั้นสามารถทำได้ผ่านชิซูกุเท่านั้น</string>
+    <string name="island_body">Super Island จะแสดงการบันทึกได้หลังจาก Xiaomi อนุมัติแอปนี้สำหรับ Focus Notifications เท่านั้น ชิซูกุให้สิทธิ์ที่ระบบไม่รู้จักไม่ได้</string>
     <string name="island_body_on">ในขณะที่คุณบันทึก เกาะจะแสดงไอคอนขนาดเล็กและตัวจับเวลา การแตะให้หยุดและหยุด HyperOS จะซ่อนมันไว้เองทุกครั้งที่ดึงแถบสถานะลงมา เลือกซ่อนไว้หากคุณต้องการไม่มีเกาะเลย การแจ้งเตือนยังคงอยู่ไม่ทางใดก็ทางหนึ่ง</string>
-    <string name="island_enable">เปิดใช้งานกับชิซูกุ</string>
+    <string name="island_enable">ตรวจสอบสิทธิ์</string>
     <string name="island_disable">ปิดเครื่อง</string>
     <string name="island_need_shizuku_title">ชิซึกุเป็นสิ่งจำเป็น</string>
     <string name="island_need_shizuku_body">Super Island เป็นเวอร์ชันเบต้าและใช้ได้กับโทรศัพท์ Xiaomi เท่านั้น Android ไม่อนุญาตให้แอปปกติขออนุญาตเกาะ ดังนั้น DenRecorder จึงต้องการ Shizuku สักครั้ง ติดตั้ง Shizuku เริ่มต้นใช้งาน (การดีบักแบบไร้สายหรือรูท) จากนั้นกลับมาที่นี่</string>
@@ -319,7 +319,7 @@
     <string name="island_done_title">ซุปเปอร์ไอส์แลนด์เปิดแล้ว</string>
     <string name="island_done_body">รายการทดสอบเล็กๆ ควรจะปรากฏบนเกาะในขณะนี้ หากไม่เป็นเช่นนั้น HyperOS build นี้จะคงเกาะสำหรับแอประบบ การแจ้งเตือนการบันทึกยังคงทำงานเหมือนเดิม</string>
     <string name="island_failed_title">ไม่ได้รับอนุญาตให้เกาะ</string>
-    <string name="island_failed_body">SystemUI ยังคงไม่ยอมให้ DenRecorder เข้ามาเกาะ ในหลายบิลด์มีเพียงรูทเท่านั้นที่สามารถให้สิ่งนี้ได้ ชิซูกุกล่าวว่า: %1$s</string>
+    <string name="island_failed_body">SystemUI ยังไม่อนุญาตให้ DenRecorder แสดงบนเกาะ รายละเอียด: %1$s</string>
     <string name="island_denied_body">ชิซูกุไม่อนุญาตให้ DenRecorder แตะเปิดใช้งานอีกครั้งและเลือกอนุญาตในกล่องโต้ตอบของ Shizuku</string>
     <string name="island_request_again">ลองอีกครั้ง</string>
     <string name="island_no_xiaomi">Super Island มีเฉพาะบนโทรศัพท์ Xiaomi เท่านั้น</string>
@@ -335,7 +335,7 @@
     <string name="island_mode_pull">ซ่อนเร้น</string>
     <string name="island_mode_always">มองเห็นได้เสมอ</string>
     <string name="recordings_search">ค้นหาบันทึก</string>
-    <string name="recordings_no_match">ไม่มีอะไรตรงกับสิ่งนั้น ลองใช้คำอื่นหรือ "วิดีโอทั้งหมด"</string>
+    <string name="recordings_no_match">ไม่พบรายการบันทึกที่ตรงกัน</string>
     <string name="sort_title">จัดเรียงการบันทึก</string>
     <string name="sort_newest">ใหม่ล่าสุดก่อน</string>
     <string name="sort_oldest">เก่าแก่ที่สุดก่อน</string>

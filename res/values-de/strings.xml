@@ -300,14 +300,14 @@
     <string name="player_rotate">Bildschirm drehen</string>
     <string name="section_beta">BETA</string>
     <string name="row_island">Super Insel</string>
-    <string name="hint_island_beta">Beta, nur Xiaomi. Während Sie aufnehmen, werden auf der Insel ein kleines Symbol und der Timer angezeigt. Ein Tipp darauf gibt Pause und Stopp. HyperOS blendet die Insel aus, wenn die Statusleiste heruntergezogen wird, sodass die Benachrichtigung dort dieselben Schaltflächen enthält. Shizuku wird einmal benötigt, um die Erlaubnis zu erteilen.</string>
+    <string name="hint_island_beta">Beta, nur Xiaomi. Xiaomi muss diese App für Fokusbenachrichtigungen freischalten. Shizuku kann eine dem System unbekannte Berechtigung nicht vergeben.</string>
     <string name="island_value_off">Aus · Beta</string>
     <string name="island_value_on">Auf · Beta</string>
     <string name="island_value_need">Benötigt Shizuku</string>
     <string name="island_title">Super Island (Beta)</string>
-    <string name="island_body">HyperOS kann die Aufnahme in seiner Superinsel anzeigen: ein kleines Symbol und den Timer. Tippen Sie auf die Insel, um anzuhalten und anzuhalten. HyperOS blendet die Insel von selbst aus, sobald die Statusleiste heruntergezogen wird, und die Benachrichtigung verfügt dort über die gleichen Schaltflächen. Diese Erlaubnis kann nur durch Shizuku erteilt werden.</string>
+    <string name="island_body">Super Island kann die Aufnahme erst anzeigen, wenn Xiaomi diese App für Fokusbenachrichtigungen freigibt. Shizuku kann keine dem System unbekannte Berechtigung vergeben.</string>
     <string name="island_body_on">Während Sie aufnehmen, werden auf der Insel ein kleines Symbol und der Timer angezeigt. Ein Antippen gibt Pause und Stopp. HyperOS blendet es automatisch aus, wenn die Statusleiste heruntergezogen wird. Wählen Sie „Versteckt“, wenn Sie lieber gar keine Insel haben möchten; Die Benachrichtigung bleibt so oder so bestehen.</string>
-    <string name="island_enable">Mit Shizuku aktivieren</string>
+    <string name="island_enable">Berechtigung prüfen</string>
     <string name="island_disable">Ausschalten</string>
     <string name="island_need_shizuku_title">Shizuku wird gebraucht</string>
     <string name="island_need_shizuku_body">Super Island ist Beta und funktioniert nur auf Xiaomi-Telefonen. Android lässt nicht zu, dass eine normale App nach der Inselerlaubnis fragt, daher benötigt DenRecorder Shizuku einmal. Installieren Sie Shizuku, starten Sie es (drahtloses Debuggen oder Root) und kehren Sie dann hierher zurück.</string>
@@ -319,7 +319,7 @@
     <string name="island_done_title">Super Island läuft</string>
     <string name="island_done_body">Auf der Insel sollte nun ein kleiner Testeintrag erscheinen. Ist dies nicht der Fall, behält dieser HyperOS-Build die Insel für System-Apps; Die Aufnahmebenachrichtigung funktioniert weiterhin wie zuvor.</string>
     <string name="island_failed_title">Die Inselgenehmigung wurde nicht erteilt</string>
-    <string name="island_failed_body">SystemUI lässt DenRecorder immer noch nicht auf der Insel zeichnen. Bei vielen Builds kann nur Root dies gewähren. Shizuku sagte: %1$s</string>
+    <string name="island_failed_body">SystemUI erlaubt DenRecorder weiterhin nicht auf der Insel. Details: %1$s</string>
     <string name="island_denied_body">Shizuku hat DenRecorder nicht zugelassen. Tippen Sie erneut auf „Aktivieren“ und wählen Sie „Zulassen“ im Shizukus-Dialogfeld.</string>
     <string name="island_request_again">Versuchen Sie es erneut</string>
     <string name="island_no_xiaomi">Super Island gibt es nur auf Xiaomi-Telefonen</string>
@@ -335,7 +335,7 @@
     <string name="island_mode_pull">Versteckt</string>
     <string name="island_mode_always">Immer sichtbar</string>
     <string name="recordings_search">Aufnahmen suchen</string>
-    <string name="recordings_no_match">Nichts passt dazu. Versuchen Sie es mit einem anderen Wort oder „Alle Videos“.</string>
+    <string name="recordings_no_match">Keine passenden Aufnahmen gefunden.</string>
     <string name="sort_title">Aufnahmen sortieren</string>
     <string name="sort_newest">Das Neueste zuerst</string>
     <string name="sort_oldest">Älteste zuerst</string>
