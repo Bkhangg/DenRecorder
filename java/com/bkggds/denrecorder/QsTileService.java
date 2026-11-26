@@ -3,6 +3,7 @@ package com.bkggds.denrecorder;
 import android.app.PendingIntent;
 import android.content.Intent;
 import android.os.Build;
+import android.util.Log;
 import android.service.quicksettings.Tile;
 import android.service.quicksettings.TileService;
 
@@ -11,6 +12,16 @@ import android.service.quicksettings.TileService;
  * tap again to stop it.
  */
 public class QsTileService extends TileService {
+
+    private static final String TAG = "DenRecorderTile";
+
+    private static volatile boolean promptPending;
+    private static volatile long lastStartClick;
+    private static final long START_CLICK_GUARD_MS = 1400;
+
+    static void promptFinished() {
+        promptPending = false;
+    }
 
     @Override
     protected void attachBaseContext(android.content.Context newBase) {
@@ -36,7 +47,7 @@ public class QsTileService extends TileService {
     public void onClick() {
         super.onClick();
 
-        if (RecorderService.isRecording) {
+        if (RecorderService.isBusy()) {
             RecorderService.requestStop(this);
             applyState(false); // stopping takes a moment: show it right away
             handler.postDelayed(new Runnable() {
@@ -48,8 +59,17 @@ public class QsTileService extends TileService {
             return;
         }
 
+        long now = android.os.SystemClock.elapsedRealtime();
+        synchronized (QsTileService.class) {
+            // MIUI and several Android skins can deliver rapid repeated tile
+            // clicks while the panel is collapsing. Launch one consent flow.
+            if (promptPending || now - lastStartClick < START_CLICK_GUARD_MS) return;
+            promptPending = true;
+            lastStartClick = now;
+        }
+
         Intent intent = new Intent(this, CapturePromptActivity.class)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         try {
             if (Build.VERSION.SDK_INT >= 34) {
                 PendingIntent pending = PendingIntent.getActivity(this, 0, intent,
@@ -59,9 +79,8 @@ public class QsTileService extends TileService {
                 startActivityAndCollapse(intent);
             }
         } catch (Exception e) {
-            try {
-                startActivity(intent);
-            } catch (Exception ignored) { }
+            Log.e(TAG, "Could not launch the capture consent activity", e);
+            promptFinished();
         }
         updateTile();
     }

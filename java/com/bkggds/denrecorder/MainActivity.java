@@ -73,9 +73,6 @@ public class MainActivity extends Activity {
     private static final int REQ_WRITE_SETTINGS = 1003;
     private static final int REQ_OVERLAY = 1004;
     private static final int REQ_FOLDER = 1005;
-    private static final int REQ_SHIZUKU = 1006;
-    private static final int REQ_SHIZUKU_FAST = 1011;
-    private static final int REQ_SHIZUKU_STATUS = 1012;
     private static final int REQ_REGION_OVERLAY = 1012;
 
     /** Every file DenRecorder writes starts with this name. */
@@ -142,12 +139,8 @@ public class MainActivity extends Activity {
     private TextView themeValueView;
     private TextView islandValueView;
     private TextView islandModeValueView;
-    private TextView fastStartValueView;
     private TextView shizukuValueView;
     /** Set while the Shizuku permission request is on its way. */
-    private boolean islandRequestPending;
-    private boolean fastStartRequestPending;
-    private boolean shizukuStatusRequestPending;
     private TextView storageValueView;
     private TextView orientationValueView;
     private TextView drawValueView;
@@ -354,7 +347,7 @@ public class MainActivity extends Activity {
         videoFps = prefs.getInt("fps", 60);
         bitrateMbps = prefs.getInt("bitrateMbps", 32);
         codec = prefs.getString("codec", "avc");
-        language = prefs.getString(LocaleHelper.KEY, "en");
+        language = LocaleHelper.chosen(this);
         theme = prefs.getString("theme", "auto");
         orientation = prefs.getString("orientation", "auto");
         perfMode = prefs.getBoolean("perfMode", true);
@@ -365,10 +358,6 @@ public class MainActivity extends Activity {
         recFilter = prefs.getInt("recFilter", 0);
         recSort = prefs.getInt("recSort", 0);
         handler = new Handler(Looper.getMainLooper());
-        try {
-            rikka.shizuku.Shizuku.addRequestPermissionResultListener(islandPermissionListener);
-        } catch (Throwable ignored) { }
-
         buildUi();
         boolean openSettings = prefs.getBoolean("openSettingsNext", false);
         if (openSettings) prefs.edit().putBoolean("openSettingsNext", false).apply();
@@ -377,7 +366,6 @@ public class MainActivity extends Activity {
         updateAudioValue();
         updateBatteryValue();
         updateTileValue();
-        updateFastStartValue();
         updateLanguageValue();
         handleAutoStart(getIntent());
         maybeShowSetup();
@@ -474,9 +462,6 @@ public class MainActivity extends Activity {
         try {
             unregisterReceiver(regionSaved);
         } catch (Exception ignored) { }
-        try {
-            rikka.shizuku.Shizuku.removeRequestPermissionResultListener(islandPermissionListener);
-        } catch (Throwable ignored) { }
         if (dotAnimator != null) {
             dotAnimator.cancel();
             dotAnimator = null;
@@ -766,6 +751,8 @@ public class MainActivity extends Activity {
         divider(qualityCard);
         codecValueView = addRow(qualityCard, R.drawable.ic_chip, R.string.row_codec,
                 "", true, this::chooseCodec);
+        divider(qualityCard);
+        addHint(qualityCard, R.string.hint_performance);
 
         LinearLayout audioCard = settingsSection(list, tabRow, R.string.tab_audio);
         audioValueView = addRow(audioCard, R.drawable.ic_mic, R.string.row_audio,
@@ -787,9 +774,6 @@ public class MainActivity extends Activity {
 
         // Everything that goes through Shizuku lives in one tab as well.
         LinearLayout shizukuCard = settingsSection(list, tabRow, R.string.tab_shizuku);
-        fastStartValueView = addRow(shizukuCard, R.drawable.ic_chip,
-                R.string.row_fast_start, "", true, this::toggleFastStart);
-        divider(shizukuCard);
         shizukuValueView = addRow(shizukuCard, R.drawable.ic_chip, R.string.row_shizuku,
                 "", true, this::openShizukuStatus);
         // Super Island is a Xiaomi feature, so the rows only exist there.
@@ -2066,7 +2050,6 @@ public class MainActivity extends Activity {
             updateAudioValue();
             updateBatteryValue();
             updateTileValue();
-            updateFastStartValue();
             updateShizukuValue();
             updateLanguageValue();
             updateThemeValue();
@@ -2394,6 +2377,7 @@ public class MainActivity extends Activity {
     }
 
     private String resolutionLabel() {
+        if (perfMode) return getString(R.string.value_native, dims(0));
         if (resWidth <= 0) return getString(R.string.value_native, dims(0));
         return getString(R.string.value_class_size, resolutionClass(resWidth), dims(resWidth));
     }
@@ -2408,23 +2392,27 @@ public class MainActivity extends Activity {
 
     /** The frame rate actually used: performance mode caps it at 60. */
     private int effectiveFps() {
-        return perfMode ? Math.min(videoFps, 60) : videoFps;
+        return perfMode ? 60 : videoFps;
     }
 
     private String summaryLine() {
         // The chosen area is what the video holds, whatever the resolution is.
-        String size = prefs.getBoolean("regionOn", false)
+        String size = !perfMode && prefs.getBoolean("regionOn", false)
                 ? getString(R.string.value_region_custom, regionSize()[0], regionSize()[1])
-                : dims(resWidth);
+                : dims(perfMode ? 0 : resWidth);
+        int effectiveBitrate = perfMode
+                ? Math.min(bitrateMbps, ScreenRecorder.GAMING_MAX_BITRATE_MBPS) : bitrateMbps;
         return size + " · " + effectiveFps() + " fps · "
-                + (hevc() ? "H.265" : "H.264") + " · " + bitrateMbps + " Mbps";
+                + (hevc() ? "H.265" : "H.264") + " · " + effectiveBitrate + " Mbps";
     }
 
     private void updateQualityValues() {
         setValue(resolutionValueView, resolutionLabel());
         updateRegionValue();
-        setValue(bitrateValueView, getString(R.string.value_mbps, bitrateMbps));
-        setValue(fpsValueView, getString(R.string.value_fps, videoFps));
+        setValue(bitrateValueView, getString(R.string.value_mbps,
+                perfMode ? Math.min(bitrateMbps, ScreenRecorder.GAMING_MAX_BITRATE_MBPS)
+                        : bitrateMbps));
+        setValue(fpsValueView, getString(R.string.value_fps, effectiveFps()));
         setValue(codecValueView, codecLabel());
         setValue(performanceValueView, getString(perfMode
                 ? R.string.performance_on
@@ -2444,13 +2432,7 @@ public class MainActivity extends Activity {
 
     private void updateLanguageValue() {
         if (languageValueView == null) return;
-        int res;
-        if ("vi".equals(language)) res = R.string.language_vi;
-        else if ("zh".equals(language)) res = R.string.language_zh;
-        else if ("ja".equals(language)) res = R.string.language_ja;
-        else if ("ko".equals(language)) res = R.string.language_ko;
-        else res = R.string.language_en;
-        setValue(languageValueView, getString(res));
+        setValue(languageValueView, LocaleHelper.nativeName(language));
     }
 
     private void updateTileValue() {
@@ -2458,54 +2440,6 @@ public class MainActivity extends Activity {
         setValue(tileValueView, getString(prefs.getBoolean("tileAdded", false)
                 ? R.string.value_tile_added
                 : R.string.value_tile_missing));
-    }
-
-    private void updateFastStartValue() {
-        if (fastStartValueView == null) return;
-        int res;
-        if (!FastStart.enabled(this)) res = R.string.value_fast_off;
-        else if (FastStart.available()) res = R.string.value_fast_on;
-        else res = R.string.value_fast_need;
-        setValue(fastStartValueView, getString(res));
-    }
-
-    /** One tap starts a recording: Shizuku presses Android's own button. */
-    private void toggleFastStart() {
-        if (FastStart.enabled(this)) {
-            FastStart.setEnabled(this, false);
-            updateFastStartValue();
-            Toast.makeText(this, R.string.fast_start_off_toast, Toast.LENGTH_SHORT).show();
-            return;
-        }
-        showCard(getString(R.string.fast_start_title), getString(R.string.fast_start_body),
-                getString(R.string.fast_start_enable), this::enableFastStart,
-                getString(R.string.dialog_cancel), null);
-    }
-
-    private void enableFastStart() {
-        if (!ShizukuBridge.installed(this)) {
-            showCard(getString(R.string.fast_start_need_title),
-                    getString(R.string.fast_start_need_body),
-                    getString(R.string.island_install_shizuku), this::openShizukuDownload,
-                    getString(R.string.dialog_cancel), null);
-            return;
-        }
-        if (!ShizukuBridge.running()) {
-            showCard(getString(R.string.fast_start_need_title),
-                    getString(R.string.island_waiting_shizuku),
-                    getString(R.string.island_open_shizuku), this::openShizukuApp,
-                    getString(R.string.dialog_cancel), null);
-            return;
-        }
-        if (!ShizukuBridge.allowed()) {
-            fastStartRequestPending = true;
-            Toast.makeText(this, R.string.island_allow_in_shizuku, Toast.LENGTH_LONG).show();
-            ShizukuBridge.requestPermission(REQ_SHIZUKU_FAST);
-            return;
-        }
-        FastStart.setEnabled(this, true);
-        updateFastStartValue();
-        Toast.makeText(this, R.string.fast_start_on_toast, Toast.LENGTH_SHORT).show();
     }
 
     // ---------- Shizuku status ----------
@@ -2517,8 +2451,7 @@ public class MainActivity extends Activity {
         if (!ShizukuBridge.installed(this)) res = R.string.shizuku_not_installed;
         else if (!ShizukuBridge.running()) res = R.string.shizuku_not_running;
         else if (!ShizukuBridge.allowed()) res = R.string.shizuku_no_permission;
-        else res = ShizukuBridge.isRoot()
-                    ? R.string.shizuku_connected_root : R.string.shizuku_connected;
+        else res = R.string.shizuku_connected;
         setValue(shizukuValueView, getString(res));
     }
 
@@ -2538,13 +2471,9 @@ public class MainActivity extends Activity {
                     getString(R.string.dialog_cancel), null);
             return;
         }
-        if (!ShizukuBridge.allowed()) {
-            shizukuStatusRequestPending = true;
-            Toast.makeText(this, R.string.island_allow_in_shizuku, Toast.LENGTH_LONG).show();
-            ShizukuBridge.requestPermission(REQ_SHIZUKU_STATUS);
-            return;
-        }
-        Toast.makeText(this, R.string.shizuku_connected_toast, Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, ShizukuBridge.allowed()
+                ? R.string.shizuku_connected_toast : R.string.shizuku_no_permission,
+                Toast.LENGTH_SHORT).show();
     }
 
     // ---------- Updates ----------
@@ -2894,6 +2823,11 @@ public class MainActivity extends Activity {
         titleView.setPadding(dp(12), 0, dp(12), dp(6));
         card.addView(titleView, lp(MATCH, WRAP, 0, 0, 0, 0));
 
+        // A long list (nineteen languages) scrolls, with the title and Cancel
+        // still in sight.
+        LinearLayout rows = new LinearLayout(this);
+        rows.setOrientation(LinearLayout.VERTICAL);
+
         for (int i = 0; i < items.length; i++) {
             final int index = i;
             LinearLayout row = new LinearLayout(this);
@@ -2905,6 +2839,10 @@ public class MainActivity extends Activity {
             row.setFocusable(true);
 
             TextView item = label(items[i], 14, i == checked ? TEXT : MUTED, i == checked);
+            // A Latin name in an Arabic screen still reads from the right.
+            boolean rtl = getResources().getConfiguration().getLayoutDirection()
+                    == View.LAYOUT_DIRECTION_RTL;
+            item.setGravity((rtl ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
             row.addView(item, new LinearLayout.LayoutParams(0, WRAP, 1f));
 
             ImageView check = new ImageView(this);
@@ -2917,8 +2855,15 @@ public class MainActivity extends Activity {
                 dialog.dismiss();
                 onPick.pick(index);
             });
-            card.addView(row, lp(MATCH, WRAP, 0, 0, 0, 0));
+            rows.addView(row, lp(MATCH, WRAP, 0, 0, 0, 0));
         }
+
+        ScrollView scroller = new ScrollView(this);
+        scroller.setVerticalScrollBarEnabled(false);
+        scroller.addView(rows, new ScrollView.LayoutParams(MATCH, WRAP));
+        LinearLayout.LayoutParams listParams = new LinearLayout.LayoutParams(MATCH,
+                items.length > 9 ? dp(46) * 9 : WRAP);
+        card.addView(scroller, listParams);
 
         Button cancel = new Button(this);
         cancel.setAllCaps(false);
@@ -3053,6 +2998,10 @@ public class MainActivity extends Activity {
     /** A whole-screen recording or just a chosen part of the screen. */
     private void chooseRegion() {
         if (blockWhileRecording()) return;
+        if (perfMode) {
+            status(R.string.region_disabled_game_mode, MUTED);
+            return;
+        }
         boolean on = prefs.getBoolean("regionOn", false);
         String[] items = {
                 getString(R.string.value_region_full),
@@ -3093,7 +3042,7 @@ public class MainActivity extends Activity {
 
     private void updateRegionValue() {
         if (regionValueView == null) return;
-        if (!prefs.getBoolean("regionOn", false)) {
+        if (perfMode || !prefs.getBoolean("regionOn", false)) {
             setValue(regionValueView, getString(R.string.value_region_full));
             return;
         }
@@ -3426,6 +3375,10 @@ public class MainActivity extends Activity {
         if (blockWhileRecording()) return;
         perfMode = !perfMode;
         prefs.edit().putBoolean("perfMode", perfMode).apply();
+        if (perfMode) {
+            DrawOverlayService.stop(this);
+            RegionPickerService.stop(this);
+        }
         updateQualityValues();
         status(perfMode ? R.string.performance_on : R.string.performance_off, MUTED);
     }
@@ -3470,15 +3423,15 @@ public class MainActivity extends Activity {
     }
 
     private void chooseLanguage() {
-        // English first, then the rest alphabetically by their English name.
-        final String[] values = {"en", "zh", "ja", "ko", "vi"};
-        final String[] names = {
-                getString(R.string.language_en),
-                getString(R.string.language_zh),
-                getString(R.string.language_ja),
-                getString(R.string.language_ko),
-                getString(R.string.language_vi)
-        };
+        // Each language is written the way
+        // it writes itself, so nobody has to read English to find their own.
+        String[][] languages = LocaleHelper.LANGUAGES;
+        final String[] values = new String[languages.length];
+        final String[] names = new String[languages.length];
+        for (int i = 0; i < languages.length; i++) {
+            values[i] = languages[i][0];
+            names[i] = languages[i][1];
+        }
         int checked = 0;
         for (int i = 0; i < values.length; i++) {
             if (values[i].equals(language)) checked = i;
@@ -3519,72 +3472,13 @@ public class MainActivity extends Activity {
 
     // ---------- Super Island (beta) ----------
 
-    /** Shizuku answers here after the user allows DenRecorder in its dialog. */
-    private final rikka.shizuku.Shizuku.OnRequestPermissionResultListener islandPermissionListener =
-            new rikka.shizuku.Shizuku.OnRequestPermissionResultListener() {
-                @Override
-                public void onRequestPermissionResult(int requestCode, int grantResult) {
-                    if (requestCode == REQ_SHIZUKU_FAST) {
-                        if (!fastStartRequestPending) return;
-                        fastStartRequestPending = false;
-                        handler.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                if (grantResult == android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                                    enableFastStart();
-                                } else {
-                                    showCard(getString(R.string.fast_start_need_title),
-                                            getString(R.string.fast_start_denied_body),
-                                            getString(R.string.island_request_again),
-                                            MainActivity.this::enableFastStart,
-                                            getString(R.string.dialog_cancel), null);
-                                }
-                            }
-                        });
-                        return;
-                    }
-                    if (requestCode == REQ_SHIZUKU_STATUS) {
-                        if (!shizukuStatusRequestPending) return;
-                        shizukuStatusRequestPending = false;
-                        handler.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                updateShizukuValue();
-                                if (grantResult == android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                                    Toast.makeText(MainActivity.this,
-                                            R.string.shizuku_connected_toast,
-                                            Toast.LENGTH_SHORT).show();
-                                }
-                            }
-                        });
-                        return;
-                    }
-                    if (requestCode != REQ_SHIZUKU || !islandRequestPending) return;
-                    islandRequestPending = false;
-                    handler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            if (grantResult == android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                                grantIslandPermission();
-                            } else {
-                                showCard(getString(R.string.island_failed_title),
-                                        getString(R.string.island_denied_body),
-                                        getString(R.string.island_request_again),
-                                        MainActivity.this::askShizukuPermission,
-                                        getString(R.string.dialog_cancel), null);
-                            }
-                        }
-                    });
-                }
-            };
-
     private void chooseIsland() {
         final boolean on = Island.enabled(this);
         String body = getString(R.string.island_body);
         if (on) body = getString(R.string.island_body_on);
         showCard(getString(R.string.island_title), body,
                 getString(on ? R.string.island_disable : R.string.island_enable),
-                on ? this::disableIsland : this::askShizukuPermission,
+                on ? this::disableIsland : this::enableIslandIfAuthorized,
                 getString(R.string.dialog_cancel), null);
     }
 
@@ -3618,70 +3512,21 @@ public class MainActivity extends Activity {
         Toast.makeText(this, R.string.island_off_toast, Toast.LENGTH_SHORT).show();
     }
 
-    /** Shizuku: installed, running, allowed, then the one permission, then a test. */
-    private void askShizukuPermission() {
+    /** Never grants private ROM permissions through shell or touch injection. */
+    private void enableIslandIfAuthorized() {
         if (!Island.isXiaomi()) {
             Toast.makeText(this, R.string.island_no_xiaomi, Toast.LENGTH_LONG).show();
             return;
         }
-        if (!ShizukuBridge.installed(this)) {
-            showCard(getString(R.string.island_need_shizuku_title),
-                    getString(R.string.island_need_shizuku_body),
-                    getString(R.string.island_install_shizuku), this::openShizukuDownload,
-                    getString(R.string.dialog_cancel), null);
+        if (!ShizukuBridge.hasIslandPermission(this) || !Island.allowed(this)) {
+            showCard(getString(R.string.island_failed_title),
+                    getString(R.string.island_failed_body, "Permission must be granted by the system"),
+                    getString(R.string.dialog_ok), null, null, null);
             return;
         }
-        if (!ShizukuBridge.running()) {
-            showCard(getString(R.string.island_need_shizuku_title),
-                    getString(R.string.island_waiting_shizuku),
-                    getString(R.string.island_open_shizuku), this::openShizukuApp,
-                    getString(R.string.dialog_cancel), null);
-            return;
-        }
-        if (ShizukuBridge.allowed()) {
-            grantIslandPermission();
-            return;
-        }
-        islandRequestPending = true;
-        Toast.makeText(this, R.string.island_allow_in_shizuku, Toast.LENGTH_LONG).show();
-        ShizukuBridge.requestPermission(REQ_SHIZUKU);
-    }
-
-    private void grantIslandPermission() {
-        Toast.makeText(this, R.string.island_granting, Toast.LENGTH_SHORT).show();
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                final String output = ShizukuBridge.grantIslandPermission(MainActivity.this);
-                Island.forgetVerdict();
-                final boolean ok = Island.allowed(MainActivity.this);
-                handler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (ok) {
-                            Island.setEnabled(MainActivity.this, true);
-                            updateIslandValue();
-                            Island.showTest(MainActivity.this);
-                            handler.postDelayed(new Runnable() {
-                                @Override
-                                public void run() {
-                                    Island.hideTest(MainActivity.this);
-                                }
-                            }, 15_000);
-                            showCard(getString(R.string.island_done_title),
-                                    getString(R.string.island_done_body),
-                                    getString(R.string.dialog_ok), null, null, null);
-                        } else {
-                            showCard(getString(R.string.island_failed_title),
-                                    getString(R.string.island_failed_body, output),
-                                    getString(R.string.island_request_again),
-                                    MainActivity.this::askShizukuPermission,
-                                    getString(R.string.dialog_cancel), null);
-                        }
-                    }
-                });
-            }
-        }, "island-grant").start();
+        Island.setEnabled(this, true);
+        updateIslandValue();
+        Toast.makeText(this, R.string.island_off_toast, Toast.LENGTH_SHORT).show();
     }
 
     private void openShizukuApp() {
@@ -3805,7 +3650,6 @@ public class MainActivity extends Activity {
             }
             projectionRequested = true;
             startActivityForResult(capture, REQ_PROJECTION);
-            FastStart.arm(this);
             status(R.string.status_allow_capture, MUTED);
         } catch (Exception e) {
             projectionRequested = false;

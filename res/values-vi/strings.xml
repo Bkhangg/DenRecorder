@@ -39,6 +39,7 @@
     <string name="row_region">Vùng quay</string>
     <string name="value_region_full">Toàn màn hình</string>
     <string name="value_region_custom">Vùng tự chọn · %1$d × %2$d</string>
+    <string name="region_disabled_game_mode">Tắt ưu tiên game để đổi vùng quay</string>
     <string name="title_region">Vùng quay</string>
     <string name="region_pick">Chọn vùng quay…</string>
     <string name="region_hint">Kéo khung lên phần màn hình muốn quay, rồi bấm Lưu</string>
@@ -64,18 +65,6 @@
     <string name="row_audio">Nguồn âm thanh</string>
     <string name="row_battery">Sử dụng pin</string>
     <string name="row_tile">Nút quay nhanh</string>
-    <string name="row_fast_start">Quay không cần hỏi</string>
-    <string name="value_fast_on">Bật · qua Shizuku</string>
-    <string name="value_fast_off">Tắt</string>
-    <string name="value_fast_need">Cần Shizuku</string>
-    <string name="fast_start_title">Quay không cần hỏi</string>
-    <string name="fast_start_body">Android hỏi quyền mỗi lần bắt đầu quay. Có Shizuku, DenRecorder tự bấm nút "Chia sẻ màn hình" của hệ thống, nên chỉ cần một lần chạm: hộp thoại hiện qua rồi quay luôn. Quyền vẫn là của Android và vẫn hiện trên màn hình, và chỉ dùng được khi Shizuku đang chạy.</string>
-    <string name="fast_start_enable">Bật</string>
-    <string name="fast_start_need_title">Cần Shizuku</string>
-    <string name="fast_start_need_body">Muốn bỏ bước hỏi thì cần Shizuku, vì chỉ ứng dụng có quyền của nó mới bấm được nút của hệ thống. Cài Shizuku, khởi động nó (qua gỡ lỗi không dây hoặc root) rồi bật lại mục này.</string>
-    <string name="fast_start_denied_body">Shizuku chưa cho phép DenRecorder. Bật lại và chọn Cho phép trong hộp thoại của Shizuku.</string>
-    <string name="fast_start_on_toast">Từ giờ quay là chạy luôn</string>
-    <string name="fast_start_off_toast">Mỗi lần quay sẽ hỏi lại như cũ</string>
     <string name="row_language">Ngôn ngữ</string>
     <string name="row_storage">Lưu vào</string>
     <string name="row_version">Phiên bản</string>
@@ -108,8 +97,9 @@
     <string name="row_orientation">Hướng màn hình</string>
 
     <string name="row_performance">Hiệu năng khi chơi game</string>
-    <string name="performance_on">Mượt · 60 fps · cỡ màn hình</string>
+    <string name="performance_on">Ưu tiên game · 60 fps gốc · không lớp nổi</string>
     <string name="performance_off">Tắt</string>
+    <string name="hint_performance">Chế độ game quay toàn màn hình ở độ phân giải gốc, 60 fps; tự tắt nút nổi, vẽ và chọn vùng trong lúc quay. Dừng bằng thông báo hoặc ô Quick Settings.</string>
     <string name="title_orientation">Hướng màn hình</string>
     <string name="orientation_auto">Tự động</string>
     <string name="orientation_portrait">Dọc</string>
@@ -251,10 +241,6 @@
 
     <string name="codec_avc_item">H.264 AVC (tương thích nhất)</string>
     <string name="codec_hevc_item">H.265 HEVC (file nhỏ hơn)</string>
-    <string name="language_en">English</string>
-    <string name="language_zh">中文</string>
-    <string name="language_ja">日本語</string>
-    <string name="language_ko">한국어</string>
 
     <string name="dialog_cancel">Hủy</string>
     <string name="dialog_close">Đóng</string>

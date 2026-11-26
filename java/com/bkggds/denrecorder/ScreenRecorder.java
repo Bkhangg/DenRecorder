@@ -61,6 +61,8 @@ public class ScreenRecorder {
     private static final int VIDEO_BITRATE = 32_000_000; // 32 Mbps
     private static final int TARGET_FPS = 60;
     private static final int AUDIO_BITRATE = 192_000;
+    /** Gaming mode keeps the user's requested quality, capped at 30 Mbps. */
+    public static final int GAMING_MAX_BITRATE_MBPS = 30;
     private static final int SAMPLE_RATE = 48_000;
     private static final int CHANNELS = 2;
     public static final String DEFAULT_FOLDER = "Movies/Screen Recorder";
@@ -465,7 +467,10 @@ public class ScreenRecorder {
     }
 
     private void prepareVideo(int screenWidth, int screenHeight) throws Exception {
-        MediaCodecInfo encoder = chooseVideoEncoder(mime);
+        MediaCodecInfo encoder = chooseVideoEncoder(mime, capToScreen);
+        if (capToScreen && encoder == null) {
+            throw new Exception("Game mode requires a hardware surface encoder for " + codecLabel);
+        }
         MediaCodecInfo.VideoCapabilities caps = null;
         MediaCodecInfo.CodecCapabilities codecCaps = null;
         if (encoder != null) {
@@ -504,10 +509,13 @@ public class ScreenRecorder {
         addCandidate(candidates, new int[]{align(screenWidth, alignW), align(screenHeight, alignH)});
         addCandidate(candidates, chooseVideoSize(caps, screenWidth, screenHeight));
 
-        // Frame rates to try: the one picked by the user, then lower ones, so a
-        // heavy combination still records instead of failing outright.
+        // Frame rates to try: performance mode must never fall back to a rate
+        // above its requested cap, or it can unexpectedly compete with a game.
         List<Integer> fpsOptions = new ArrayList<>();
-        for (int option : new int[]{requestedFps, 60, 30}) {
+        int[] fallbackFps = capToScreen
+                ? new int[]{requestedFps}
+                : new int[]{requestedFps, 60, 30};
+        for (int option : fallbackFps) {
             if (option > 0 && !fpsOptions.contains(option)) fpsOptions.add(option);
         }
 
@@ -564,6 +572,9 @@ public class ScreenRecorder {
                         plain.setInteger(MediaFormat.KEY_BIT_RATE, candidateBitrate);
                         plain.setInteger(MediaFormat.KEY_FRAME_RATE, candidateFps);
                         plain.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 1);
+                        if (Build.VERSION.SDK_INT >= 23) {
+                            plain.setInteger(MediaFormat.KEY_PRIORITY, capToScreen ? 1 : 0);
+                        }
                         codec.configure(plain, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
                     } catch (Exception e2) {
                         failure = e2;
@@ -650,11 +661,11 @@ public class ScreenRecorder {
             format.setInteger(MediaFormat.KEY_BITRATE_MODE,
                     MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_VBR);
         }
-        // Let the encoder drop frames instead of stalling the system when the
-        // phone is busy (app switching, scrolling), and never encode more than
-        // the requested frame rate.
+        // Game-performance mode gives the game first claim on codec resources.
+        // Android defines priority 1 as best-effort; the encoder may drop frames
+        // under load rather than compete with real-time game rendering.
         if (Build.VERSION.SDK_INT >= 23) {
-            format.setInteger(MediaFormat.KEY_PRIORITY, 0);
+            format.setInteger(MediaFormat.KEY_PRIORITY, capToScreen ? 1 : 0);
         }
         format.setFloat(MediaFormat.KEY_OPERATING_RATE, (float) fps);
         if (Build.VERSION.SDK_INT >= 29) {
@@ -716,13 +727,15 @@ public class ScreenRecorder {
         return Math.max(alignment, aligned);
     }
 
-    private static MediaCodecInfo chooseVideoEncoder(String mime) {
+    private static MediaCodecInfo chooseVideoEncoder(String mime, boolean requireHardware) {
         MediaCodecInfo best = null;
         int bestScore = Integer.MIN_VALUE;
         try {
             MediaCodecList list = new MediaCodecList(MediaCodecList.REGULAR_CODECS);
             for (MediaCodecInfo info : list.getCodecInfos()) {
                 if (!info.isEncoder() || !supportsType(info, mime)) continue;
+                if (requireHardware && Build.VERSION.SDK_INT >= 29
+                        && (info.isSoftwareOnly() || !info.isHardwareAccelerated())) continue;
                 MediaCodecInfo.CodecCapabilities caps;
                 try {
                     caps = info.getCapabilitiesForType(mime);
@@ -860,7 +873,9 @@ public class ScreenRecorder {
     }
 
     private void runVideo() {
-        android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_DISPLAY);
+        // Draining and muxing surface-encoded output does not need display
+        // scheduling priority; that can starve the game and input dispatcher.
+        android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_DEFAULT);
         MediaCodec.BufferInfo info = new MediaCodec.BufferInfo();
         long firstPts = -1;
         try {
@@ -1029,12 +1044,11 @@ public class ScreenRecorder {
     }
 
     public void stop() {
-        if (!started) {
-            cleanupOutput();
-            return;
-        }
+        // Cleanup is also required when start() failed halfway through setup:
+        // codecs, AudioRecord, surfaces and an output row may already exist
+        // even though the VirtualDisplay and drain threads never started.
         stopping = true;
-        Log.i(TAG, "Stopping recording");
+        Log.i(TAG, started ? "Stopping recording" : "Cleaning partial start");
 
         if (cropMirror != null) {
             // Its own display and GL surface have to be gone before the encoder

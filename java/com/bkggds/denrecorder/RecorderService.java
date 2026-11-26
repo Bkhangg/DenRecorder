@@ -84,6 +84,7 @@ public class RecorderService extends Service {
     private static final long LOW_SPACE_BYTES = 150L * 1024 * 1024;
 
     private ScreenRecorder recorder;
+    private final Object recorderLock = new Object();
     private MediaProjection projection;
     private Handler handler;
     /** The once-a-second island timer gets a thread of its own: building a
@@ -93,6 +94,14 @@ public class RecorderService extends Service {
     private android.os.HandlerThread islandThread;
     private volatile boolean finishing;
     private volatile boolean selfStop;
+    private volatile boolean startPending;
+
+    /** True while a permission-approved start or recording is being handled. */
+    public static boolean isBusy() {
+        RecorderService service = instance;
+        return isRecording || (service != null
+                && (service.startPending || service.finishing));
+    }
 
     /** Keeps the display awake while a recording runs. */
     private android.os.PowerManager.WakeLock screenLock;
@@ -208,6 +217,11 @@ public class RecorderService extends Service {
     }
 
     private void begin(Intent intent) {
+        if (startPending || isRecording || finishing) {
+            Log.i(TAG, "Ignoring duplicate start while session is busy");
+            return;
+        }
+        startPending = true;
         final int resultCode = intent.getIntExtra(EXTRA_RESULT_CODE, Activity.RESULT_CANCELED);
         Intent extra;
         if (Build.VERSION.SDK_INT >= 33) {
@@ -224,8 +238,10 @@ public class RecorderService extends Service {
         // Keep the screen turned the way the user picked, so the video keeps one
         // orientation while it records. Their own rotation setting comes back
         // as soon as the recording ends.
-        final String orientation = prefs.getString("orientation", "auto");
-        final boolean rotationLocked = RotationLock.apply(this, orientation);
+        final boolean gameMode = prefs.getBoolean("perfMode", true);
+        final String orientation = gameMode ? "auto"
+                : prefs.getString("orientation", "auto");
+        final boolean rotationLocked = !gameMode && RotationLock.apply(this, orientation);
 
         int type = ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION;
         if (audio == ScreenRecorder.AUDIO_MIC || audio == ScreenRecorder.AUDIO_INTERNAL_MIC) {
@@ -248,6 +264,8 @@ public class RecorderService extends Service {
             // video is recorded in the picked orientation.
             awaitRotation(orientation, 30, capture);
         } else {
+            // Allow SystemUI to finish dismissing the consent dialog before
+            // codec setup and virtual-display creation start.
             handler.post(capture);
         }
     }
@@ -364,24 +382,38 @@ public class RecorderService extends Service {
         resetTimer();
         isRecording = true;
         handler.post(ticker);
-        if (Island.enabled(this) && islandHandler != null) islandHandler.post(islandTicker);
+        boolean gameMode = prefs.getBoolean("perfMode", true);
+        if (gameMode) {
+            RegionPickerService.stop(this);
+            DrawOverlayService.stop(this);
+        }
+        if (!gameMode && Island.enabled(this) && islandHandler != null) {
+            islandHandler.post(islandTicker);
+        }
 
         try {
             int resWidth = prefs.getInt("resWidth", 0);
             int fps = prefs.getInt("fps", 60);
-            boolean perfMode = prefs.getBoolean("perfMode", true);
-            if (perfMode && fps > 60) {
-                // Keep a game next to the recorder smooth: 60 fps is enough.
+            boolean perfMode = gameMode;
+            if (perfMode) {
+                // The game profile always records the native display at 60 fps.
+                resWidth = 0;
                 fps = 60;
             }
-            int bitrate = prefs.getInt("bitrateMbps", 32) * 1_000_000;
+            int bitrateMbps = prefs.getInt("bitrateMbps", 32);
+            // Native 60 fps already asks the encoder to process every game
+            // frame. Keep the bitrate practical for mobile hardware so rate
+            // control and storage IO do not compete unnecessarily with play.
+            if (perfMode) bitrateMbps = Math.min(bitrateMbps,
+                    ScreenRecorder.GAMING_MAX_BITRATE_MBPS);
+            int bitrate = bitrateMbps * 1_000_000;
             String codec = prefs.getString("codec", "avc");
             // In performance mode the video never grows past the screen: an
             // upscaled 4K frame costs the GPU the game needs.
             boolean capToScreen = perfMode;
             // A chosen area is recorded instead of the whole screen.
             float[] region = null;
-            if (prefs.getBoolean("regionOn", false)) {
+            if (!perfMode && prefs.getBoolean("regionOn", false)) {
                 float left = prefs.getFloat("regionX", 0f);
                 float top = prefs.getFloat("regionY", 0f);
                 float width = prefs.getFloat("regionW", 1f);
@@ -390,26 +422,51 @@ public class RecorderService extends Service {
                     region = new float[]{left, top, width, height};
                 }
             }
+            final float[] selectedRegion = region;
             recorder = new ScreenRecorder(getApplicationContext(), projection, audio,
                     resWidth, fps, bitrate,
                     "hevc".equals(codec) ? ScreenRecorder.CODEC_HEVC : ScreenRecorder.CODEC_AVC,
-                    rotationLocked ? orientation : "auto", capToScreen, region);
-            recorder.start();
-            updateNotification();
-            refreshTile();
-            // The frame that picks the recorded area did its job: its ball
-            // becomes the stop button for this recording.
-            if (RegionPickerService.isRunning()) {
-                if (region != null) RegionPickerService.recordingStarted(this);
-                else RegionPickerService.stop(this);
-            }
-            if (prefs.getBoolean("drawOverlay", true)) {
-                DrawOverlayService.start(this);
-            }
-            // A short buzz, not a toast: the screen is recorded exactly as it
-            // is, so anything drawn on it would land in the video. The
-            // notification and the floating button show the same thing.
-            buzz(new long[]{0, 40});
+                    rotationLocked ? orientation : "auto", capToScreen, selectedRegion);
+            final ScreenRecorder active = recorder;
+            Thread initializer = new Thread(() -> {
+                try {
+                    // Codec negotiation and AudioRecord setup can be expensive.
+                    // Keep it off the service/UI thread and let the game win CPU
+                    // scheduling while the capture pipeline comes up.
+                    android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND);
+                    synchronized (recorderLock) {
+                        active.start();
+                    }
+                    handler.post(() -> {
+                        if (finishing || recorder != active) return;
+                        startPending = false;
+                        updateNotification();
+                        refreshTile();
+                        if (perfMode) {
+                            // Game mode is deliberately zero-overlay: use the
+                            // notification or QS tile to stop, never a window
+                            // above the game's touch surface.
+                            RegionPickerService.stop(this);
+                            DrawOverlayService.stop(this);
+                        } else if (RegionPickerService.isRunning()) {
+                            if (selectedRegion != null) RegionPickerService.recordingStarted(this);
+                            else RegionPickerService.stop(this);
+                        }
+                        if (!perfMode && prefs.getBoolean("drawOverlay", true)) {
+                            DrawOverlayService.start(this);
+                        }
+                    });
+                } catch (Exception e) {
+                    Log.e(TAG, "Recording failed to start", e);
+                    handler.post(() -> {
+                        if (finishing || recorder != active) return;
+                        lastError = "Recording failed: "
+                                + (e.getMessage() == null ? e.toString() : e.getMessage());
+                        stopRecording(lastError);
+                    });
+                }
+            }, "recorder-init");
+            initializer.start();
         } catch (Exception e) {
             Log.e(TAG, "Recording failed to start", e);
             lastError = "Recording failed: " + (e.getMessage() == null ? e.toString() : e.getMessage());
@@ -421,6 +478,7 @@ public class RecorderService extends Service {
         if (finishing) return;
         finishing = true;
         isRecording = false;
+        startPending = false;
         handler.removeCallbacks(ticker);
         if (islandHandler != null) islandHandler.removeCallbacks(islandTicker);
 
@@ -433,8 +491,10 @@ public class RecorderService extends Service {
             public void run() {
                 try {
                     if (active != null) {
-                        active.stop();
-                        active.logTimeline();
+                        synchronized (recorderLock) {
+                            active.stop();
+                            active.logTimeline();
+                        }
                     }
                 } catch (Exception e) {
                     Log.w(TAG, "Error while stopping", e);
@@ -480,6 +540,7 @@ public class RecorderService extends Service {
                     @Override
                     public void run() {
                         finishing = false;
+                        startPending = false;
                         refreshTile();
                         // The recording is over: the ball is a record button again.
                         RegionPickerService.recordingStopped(RecorderService.this);
@@ -840,7 +901,9 @@ public class RecorderService extends Service {
         builder.addAction(stopAction);
         Notification notification = builder.build();
         // Beta: the same notification can live in Xiaomi's Super Island.
-        if (Island.enabled(this) && Island.allowed(this)) {
+        boolean gameMode = getSharedPreferences("settings", MODE_PRIVATE)
+                .getBoolean("perfMode", true);
+        if (!gameMode && Island.enabled(this) && Island.allowed(this)) {
             long elapsed = elapsedMs();
             String time = String.format(java.util.Locale.US, "%02d:%02d",
                     elapsed / 60000L, (elapsed / 1000L) % 60L);

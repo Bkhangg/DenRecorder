@@ -8,6 +8,7 @@ import android.media.projection.MediaProjectionConfig;
 import android.media.projection.MediaProjectionManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 
 /**
  * Invisible activity used by the Quick Settings tile: it shows only Android's
@@ -16,16 +17,42 @@ import android.os.Bundle;
  */
 public class CapturePromptActivity extends Activity {
 
+    private static final String TAG = "CapturePrompt";
     private static final int REQ_PROJECTION = 2001;
+    private boolean promptLaunched;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (RecorderService.isRecording) {
+            QsTileService.promptFinished();
             finish();
             overridePendingTransition(0, 0);
             return;
         }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (getWindow().getDecorView().hasWindowFocus()) launchCapturePrompt();
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (isFinishing()) QsTileService.promptFinished();
+        super.onDestroy();
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus) launchCapturePrompt();
+    }
+
+    private void launchCapturePrompt() {
+        if (isFinishing() || promptLaunched) return;
+        promptLaunched = true;
         MediaProjectionManager manager =
                 (MediaProjectionManager) getSystemService(MEDIA_PROJECTION_SERVICE);
         Intent capture;
@@ -41,8 +68,8 @@ public class CapturePromptActivity extends Activity {
         }
         try {
             startActivityForResult(capture, REQ_PROJECTION);
-            FastStart.arm(this);
         } catch (Exception e) {
+            QsTileService.promptFinished();
             finish();
             overridePendingTransition(0, 0);
         }
@@ -52,6 +79,7 @@ public class CapturePromptActivity extends Activity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode != REQ_PROJECTION) return;
+        QsTileService.promptFinished();
 
         if (resultCode == RESULT_OK && data != null) {
             SharedPreferences prefs = getSharedPreferences("settings", MODE_PRIVATE);
@@ -84,7 +112,9 @@ public class CapturePromptActivity extends Activity {
                 } else {
                     startService(service);
                 }
-            } catch (Exception ignored) { }
+            } catch (Exception e) {
+                Log.e(TAG, "Could not start the foreground recorder service", e);
+            }
         }
         finish();
         overridePendingTransition(0, 0);

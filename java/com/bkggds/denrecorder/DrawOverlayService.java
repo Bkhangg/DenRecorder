@@ -15,6 +15,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.provider.Settings;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -174,6 +175,7 @@ public class DrawOverlayService extends Service {
     private final Handler handler = new Handler(Looper.getMainLooper());
     private WindowManager windowManager;
     private DrawLayer layer;
+    private boolean layerAttached;
     private ImageView bubble;
     private LinearLayout panel;
     private LinearLayout toolbar;
@@ -289,7 +291,8 @@ public class DrawOverlayService extends Service {
         panelParams.y = bubbleY;
 
         try {
-            windowManager.addView(layer, layerParams);
+            // Avoid a full-screen transparent window while the user is playing.
+            // The drawing layer is added only when the drawing tools are used.
             windowManager.addView(bubble, bubbleParams);
             windowManager.addView(panel, panelParams);
         } catch (Exception e) {
@@ -394,6 +397,7 @@ public class DrawOverlayService extends Service {
         toolbar.addView(toolButton(R.drawable.ic_trash, R.string.overlay_clear, button, v -> {
             layer.clear();
             updateToolHighlight();
+            updateLayerTouchable();
         }));
         pauseButton = toolButton(R.drawable.ic_pause, R.string.action_pause, button, v -> {
             RecorderService.requestPause(this);
@@ -556,6 +560,15 @@ public class DrawOverlayService extends Service {
         // While the bar is open the layer takes the touches too: a tap beside
         // the bar closes it, and (with a tool picked) starts the stroke at once.
         boolean drawing = layer.getTool() != DrawLayer.TOOL_NONE || panelOpen;
+        if (drawing && !layerAttached) {
+            try {
+                windowManager.addView(layer, layerParams);
+                layerAttached = true;
+            } catch (Exception e) {
+                Log.w("DrawOverlayService", "Could not attach drawing layer", e);
+                return;
+            }
+        }
         int flags = layerParams.flags;
         if (drawing) {
             flags &= ~WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE;
@@ -567,6 +580,10 @@ public class DrawOverlayService extends Service {
             try {
                 windowManager.updateViewLayout(layer, layerParams);
             } catch (Exception ignored) { }
+        }
+        if (!drawing && layerAttached && !layer.hasShapes()) {
+            remove(layer);
+            layerAttached = false;
         }
     }
 
@@ -906,6 +923,10 @@ public class DrawOverlayService extends Service {
 
         int getTool() {
             return tool;
+        }
+
+        boolean hasShapes() {
+            return !shapes.isEmpty();
         }
 
         void setTool(int newTool) {

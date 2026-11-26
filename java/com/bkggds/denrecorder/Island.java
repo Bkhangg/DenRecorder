@@ -73,21 +73,9 @@ public final class Island {
         }
     }
 
-    /** persist.sys.feature.island, the ROM's own "there is an island" flag. */
-    public static boolean islandProperty() {
-        try {
-            Class<?> clazz = Class.forName("android.os.SystemProperties");
-            Object value = clazz.getMethod("getBoolean", String.class, boolean.class)
-                    .invoke(null, "persist.sys.feature.island", false);
-            return Boolean.TRUE.equals(value);
-        } catch (Throwable e) {
-            return false;
-        }
-    }
-
     /** True when this phone has an island at all (not necessarily for us). */
     public static boolean supported(Context context) {
-        return isXiaomi() && (protocol(context) > 0 || islandProperty());
+        return isXiaomi() && protocol(context) > 0;
     }
 
     /** SystemUI's verdict: may this app draw in the island? */

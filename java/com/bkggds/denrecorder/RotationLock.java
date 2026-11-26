@@ -12,10 +12,8 @@ import android.view.Surface;
  * does not turn halfway through when the phone is moved, and puts the phone's
  * own rotation back as soon as the recording ends.
  *
- * <p>The settings are changed directly when the app has the "modify system
- * settings" grant, and through Shizuku otherwise (a game can leave the phone
- * turned sideways even when the user had it locked, and that can be undone
- * without asking for a special permission).
+ * <p>The settings are changed only through Android's public WRITE_SETTINGS
+ * grant. If that grant is unavailable, recording follows the current display.
  *
  * <p>The values are only written back when they were really changed, and the
  * "locked by us" flag is cleared only once the write went through, so a crash
@@ -46,17 +44,9 @@ final class RotationLock {
         }
     }
 
-    /** True when the rotation can be changed: directly or through Shizuku. */
+    /** True when Android has granted the app permission to modify system settings. */
     static boolean usable(Context context) {
-        return canWrite(context) || shizukuReady();
-    }
-
-    private static boolean shizukuReady() {
-        try {
-            return ShizukuBridge.running() && ShizukuBridge.allowed();
-        } catch (Throwable e) {
-            return false;
-        }
+        return canWrite(context);
     }
 
     /**
@@ -233,24 +223,13 @@ final class RotationLock {
     }
 
     /**
-     * Writes a system setting (directly, or through Shizuku when the app has no
-     * "modify system settings" grant) and reports whether it really changed.
+     * Writes a system setting with Android's public Settings API.
      */
     private static boolean set(Context context, String key, int value) {
         try {
-            boolean wrote = false;
-            if (canWrite(context)) {
-                wrote = Settings.System.putInt(context.getContentResolver(), key, value);
-            }
-            if (!wrote && shizukuReady()) {
-                String out = ShizukuBridge.run("settings", "put", "system", key,
-                        String.valueOf(value));
-                Log.i(TAG, "settings put " + key + " " + value + ": " + out);
-            }
-            if (read(context, key, -1) == value) return true;
-            // A provider can lag behind by a moment.
-            Thread.sleep(80);
-            return read(context, key, -1) == value;
+            if (!canWrite(context)) return false;
+            boolean wrote = Settings.System.putInt(context.getContentResolver(), key, value);
+            return wrote && read(context, key, -1) == value;
         } catch (Exception e) {
             Log.w(TAG, "write " + key + " failed", e);
             return false;

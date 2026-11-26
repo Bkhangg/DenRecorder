@@ -39,6 +39,7 @@
     <string name="row_region">Recorded area</string>
     <string name="value_region_full">Whole screen</string>
     <string name="value_region_custom">Custom · %1$d × %2$d</string>
+    <string name="region_disabled_game_mode">Turn off game priority to change the capture area</string>
     <string name="title_region">Recorded area</string>
     <string name="region_pick">Choose an area…</string>
     <string name="region_hint">Drag the frame over what to record, then tap Save</string>
@@ -64,18 +65,6 @@
     <string name="row_audio">Audio source</string>
     <string name="row_battery">Battery use</string>
     <string name="row_tile">Quick Settings tile</string>
-    <string name="row_fast_start">Start without asking</string>
-    <string name="value_fast_on">On · through Shizuku</string>
-    <string name="value_fast_off">Off</string>
-    <string name="value_fast_need">Needs Shizuku</string>
-    <string name="fast_start_title">Start without asking</string>
-    <string name="fast_start_body">Android asks for permission every time a recording starts. With Shizuku, DenRecorder can press the system\'s Share screen button itself, so one tap is enough: the dialog flashes by and the recording starts. The permission is still Android\'s own, shown on your screen, and this only works while Shizuku is running.</string>
-    <string name="fast_start_enable">Turn on</string>
-    <string name="fast_start_need_title">Shizuku is needed</string>
-    <string name="fast_start_need_body">Starting without the question needs Shizuku, because only an app with its permission can press a system button. Install Shizuku, start it (wireless debugging or root), then turn this on again.</string>
-    <string name="fast_start_denied_body">Shizuku did not allow DenRecorder. Turn this on again and choose Allow in Shizuku\'s dialog.</string>
-    <string name="fast_start_on_toast">Recordings start on their own now</string>
-    <string name="fast_start_off_toast">The question is back before every recording</string>
     <string name="row_language">Language</string>
     <string name="row_storage">Save to</string>
     <string name="row_version">Version</string>
@@ -108,8 +97,9 @@
     <string name="row_orientation">Screen orientation</string>
 
     <string name="row_performance">Game performance</string>
-    <string name="performance_on">Smooth · 60 fps · screen size</string>
+    <string name="performance_on">Game priority · native 60 fps · no overlay</string>
     <string name="performance_off">Off</string>
+    <string name="hint_performance">Game priority mode records the full display at native resolution and 60 fps. It disables floating windows, drawing and region controls while recording; stop with the notification or Quick Settings tile.</string>
     <string name="title_orientation">Screen orientation</string>
     <string name="orientation_auto">Automatic</string>
     <string name="orientation_portrait">Portrait</string>
@@ -251,11 +241,6 @@
 
     <string name="codec_avc_item">H.264 AVC (most compatible)</string>
     <string name="codec_hevc_item">H.265 HEVC (smaller files)</string>
-    <string name="language_en">English</string>
-    <string name="language_vi">Tiếng Việt</string>
-    <string name="language_zh">中文</string>
-    <string name="language_ja">日本語</string>
-    <string name="language_ko">한국어</string>
 
     <string name="dialog_cancel">Cancel</string>
     <string name="dialog_close">Close</string>

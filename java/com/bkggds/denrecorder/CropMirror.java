@@ -115,7 +115,7 @@ final class CropMirror {
 
     void start() {
         running = true;
-        thread = new HandlerThread("rec-crop", android.os.Process.THREAD_PRIORITY_DISPLAY);
+        thread = new HandlerThread("rec-crop", android.os.Process.THREAD_PRIORITY_DEFAULT);
         thread.start();
         handler = new Handler(thread.getLooper());
         handler.post(this::setup);
