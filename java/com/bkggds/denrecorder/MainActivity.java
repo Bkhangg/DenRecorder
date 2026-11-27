@@ -30,6 +30,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.PowerManager;
 import android.provider.MediaStore;
@@ -52,6 +53,7 @@ import android.widget.ScrollView;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.VideoView;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -1536,103 +1538,174 @@ public class MainActivity extends Activity {
     }
 
     /**
-     * Two sliders cut the recording: the piece between them is saved as a new
-     * video, so nothing is lost if the cut is wrong.
+     * The cut screen: the whole video as a filmstrip with two handles. The piece
+     * between them is saved as a new video, the original stays as it is. The
+     * frame under the handle being dragged is shown above, and the piece can be
+     * played back before it is saved, so the cut is chosen by what is in it.
      */
     private void trimRecording(final Recording item) {
         if (item.duration < 1500) {
             Toast.makeText(this, R.string.trim_short, Toast.LENGTH_SHORT).show();
             return;
         }
-        final int seconds = (int) (item.duration / 1000L);
-        final int[] range = {0, seconds};
-        final boolean[] setting = {false};
+        final long durationMs = item.duration;
+        final long[] range = {0L, durationMs};
+        final long[] position = {0L};
         final boolean[] deleteOriginal = {false};
+        final boolean[] playing = {false};
 
         LinearLayout content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
 
-        // What the cut starts and ends on: the two frames follow the sliders,
-        // so the piece is chosen by what is in it, not by the clock alone.
-        LinearLayout previews = new LinearLayout(this);
-        previews.setOrientation(LinearLayout.HORIZONTAL);
-        content.addView(previews, lp(MATCH, WRAP, 0, 0, 0, 0));
+        // The frame shown follows the handle being dragged; the same box plays
+        // the piece back while it is being chosen.
+        final FrameLayout stage = new FrameLayout(this);
+        stage.setBackground(round(0xFF000000, 12, BORDER));
+        int stageHeight = dp(200);
+        int[] screen = nativeSize();
+        int innerWidth = screen[0] - dp(22 * 2) - dp(20 * 2);
+        if (item.width > 0 && item.height > 0 && innerWidth > 0) {
+            stageHeight = (int) (innerWidth * (long) item.height / item.width);
+        }
+        stageHeight = Math.max(dp(140), Math.min(dp(280), stageHeight));
+        content.addView(stage, lp(MATCH, stageHeight, 0, 0, 0, 0));
 
-        final ImageView fromPreview = trimPreview();
-        LinearLayout.LayoutParams fromParams = new LinearLayout.LayoutParams(0, dp(112), 1f);
-        previews.addView(fromPreview, fromParams);
+        final ImageView frameView = new ImageView(this);
+        frameView.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        stage.addView(frameView, new FrameLayout.LayoutParams(MATCH, MATCH));
 
-        final ImageView toPreview = trimPreview();
-        LinearLayout.LayoutParams toParams = new LinearLayout.LayoutParams(0, dp(112), 1f);
-        toParams.setMargins(dp(10), 0, 0, 0);
-        previews.addView(toPreview, toParams);
-
-        final TextView fromLabel = label(getString(R.string.trim_from, formatLength(0)),
-                13, MUTED, false);
-        content.addView(fromLabel, lp(MATCH, WRAP, 0, 12, 0, 0));
-        final SeekBar fromBar = new SeekBar(this);
-        fromBar.setMax(seconds);
-        fromBar.setProgress(0);
-        styleSeekBar(fromBar);
-        content.addView(fromBar, lp(MATCH, WRAP, 0, 4, 0, 0));
-
-        final TextView toLabel = label(
-                getString(R.string.trim_to, formatLength(item.duration)), 13, MUTED, false);
-        content.addView(toLabel, lp(MATCH, WRAP, 0, 14, 0, 0));
-        final SeekBar toBar = new SeekBar(this);
-        toBar.setMax(seconds);
-        toBar.setProgress(seconds);
-        styleSeekBar(toBar);
-        content.addView(toBar, lp(MATCH, WRAP, 0, 4, 0, 0));
-
-        // Frames are read off the UI thread; a drag throws away the pending
-        // read so only the frame the slider rests on is drawn.
-        final Handler previewHandler = new Handler(Looper.getMainLooper());
-        final Runnable[] previews2 = new Runnable[1];
-        final Runnable schedulePreviews = () -> {
-            if (previews2[0] != null) previewHandler.removeCallbacks(previews2[0]);
-            previews2[0] = () -> loadTrimPreviews(item, range[0] * 1000L, range[1] * 1000L,
-                    fromPreview, toPreview);
-            previewHandler.postDelayed(previews2[0], 160);
-        };
-
-        final Runnable update = () -> {
-            fromLabel.setText(getString(R.string.trim_from,
-                    formatLength(range[0] * 1000L)));
-            toLabel.setText(getString(R.string.trim_to,
-                    formatLength(range[1] * 1000L)));
-            schedulePreviews.run();
-        };
-
-        fromBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override public void onProgressChanged(SeekBar bar, int value, boolean user) {
-                if (setting[0]) return;
-                if (value >= range[1]) {
-                    value = Math.max(0, range[1] - 1);
-                    setting[0] = true;
-                    fromBar.setProgress(value);
-                    setting[0] = false;
-                }
-                range[0] = value;
-                update.run();
+        final VideoView player = new VideoView(this);
+        player.setVisibility(View.GONE);
+        stage.addView(player, new FrameLayout.LayoutParams(MATCH, MATCH));
+        // The player is given exactly the video's shape and centred, otherwise
+        // a portrait recording is drawn against the left edge of the box.
+        stage.addOnLayoutChangeListener((v, l, t, r, b, oldL, oldT, oldR, oldB) -> {
+            int boxWidth = r - l;
+            int boxHeight = b - t;
+            if (boxWidth <= 0 || boxHeight <= 0) return;
+            int videoWidth = boxWidth;
+            int videoHeight = boxHeight;
+            if (item.width > 0 && item.height > 0) {
+                float scale = Math.min(boxWidth / (float) item.width,
+                        boxHeight / (float) item.height);
+                videoWidth = Math.max(2, Math.round(item.width * scale));
+                videoHeight = Math.max(2, Math.round(item.height * scale));
             }
-            @Override public void onStartTrackingTouch(SeekBar bar) { }
-            @Override public void onStopTrackingTouch(SeekBar bar) { }
+            android.view.ViewGroup.LayoutParams current = player.getLayoutParams();
+            if (current != null && current.width == videoWidth
+                    && current.height == videoHeight) {
+                return;
+            }
+            player.setLayoutParams(new FrameLayout.LayoutParams(
+                    videoWidth, videoHeight, Gravity.CENTER));
         });
-        toBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override public void onProgressChanged(SeekBar bar, int value, boolean user) {
-                if (setting[0]) return;
-                if (value <= range[0]) {
-                    value = Math.min(seconds, range[0] + 1);
-                    setting[0] = true;
-                    toBar.setProgress(value);
-                    setting[0] = false;
-                }
-                range[1] = value;
-                update.run();
+
+        final ImageView playButton = new ImageView(this);
+        playButton.setImageResource(R.drawable.ic_play);
+        playButton.setColorFilter(Color.WHITE);
+        playButton.setBackground(round(0x59000000, 22, 0));
+        playButton.setPadding(dp(11), dp(11), dp(11), dp(11));
+        stage.addView(playButton, new FrameLayout.LayoutParams(dp(44), dp(44), Gravity.CENTER));
+
+        final TextView fromLabel = label(
+                getString(R.string.trim_from, formatLength(0)), 12, MUTED, true);
+        final TextView lengthLabel = label(formatLength(durationMs), 12, PRIMARY, true);
+        lengthLabel.setGravity(Gravity.CENTER);
+        final TextView toLabel = label(
+                getString(R.string.trim_to, formatLength(durationMs)), 12, MUTED, true);
+        toLabel.setGravity(Gravity.END);
+        LinearLayout times = new LinearLayout(this);
+        times.setOrientation(LinearLayout.HORIZONTAL);
+        times.addView(fromLabel, new LinearLayout.LayoutParams(0, WRAP, 1f));
+        times.addView(lengthLabel, new LinearLayout.LayoutParams(WRAP, WRAP));
+        times.addView(toLabel, new LinearLayout.LayoutParams(0, WRAP, 1f));
+        content.addView(times, lp(MATCH, WRAP, 0, 12, 0, 0));
+
+        final TrimBar bar = new TrimBar(this);
+        // The handles and the edge of the piece keep the app's red: it stands
+        // out on a bright or a dark frame alike, which a grey accent does not.
+        bar.setColors(RED, Color.WHITE, BORDER);
+        bar.setDuration(durationMs);
+        bar.setRange(0, durationMs);
+        bar.setPlayhead(0);
+        content.addView(bar, lp(MATCH, dp(64), 0, 8, 0, 0));
+
+        // Frames come off one background thread with one retriever; a drag only
+        // keeps the newest request, so the strip and the preview keep up.
+        final TrimFrames frames = new TrimFrames(item);
+        final Handler previewHandler = new Handler(Looper.getMainLooper());
+        final Runnable[] tick = new Runnable[1];
+        final Runnable[] stopPlayback = new Runnable[1];
+
+        final Runnable updateLabels = () -> {
+            fromLabel.setText(getString(R.string.trim_from, formatLength(range[0])));
+            toLabel.setText(getString(R.string.trim_to, formatLength(range[1])));
+            lengthLabel.setText(formatLength(range[1] - range[0]));
+        };
+
+        stopPlayback[0] = () -> {
+            if (!playing[0]) return;
+            playing[0] = false;
+            previewHandler.removeCallbacks(tick[0]);
+            try { player.pause(); } catch (Exception ignored) { }
+            player.setVisibility(View.GONE);
+            frameView.setVisibility(View.VISIBLE);
+            playButton.setImageResource(R.drawable.ic_play);
+            bar.setPlayhead(range[0]);
+            position[0] = range[0];
+            frames.frame(range[0], frameView);
+        };
+
+        tick[0] = () -> {
+            if (!playing[0]) return;
+            int now = 0;
+            try { now = player.getCurrentPosition(); } catch (Exception ignored) { }
+            bar.setPlayhead(now);
+            if (now >= range[1]) {
+                stopPlayback[0].run();
+                return;
             }
-            @Override public void onStartTrackingTouch(SeekBar bar) { }
-            @Override public void onStopTrackingTouch(SeekBar bar) { }
+            previewHandler.postDelayed(tick[0], 100);
+        };
+
+        bar.setListener(new TrimBar.Listener() {
+            @Override public void onRangeChanged(long start, long end) {
+                range[0] = start;
+                range[1] = end;
+                updateLabels.run();
+                if (playing[0]) stopPlayback[0].run();
+            }
+            @Override public void onScrub(long ms) {
+                position[0] = ms;
+                if (!playing[0]) frames.frame(ms, frameView);
+            }
+        });
+
+        playButton.setOnClickListener(v -> {
+            if (playing[0]) {
+                stopPlayback[0].run();
+                return;
+            }
+            frameView.setVisibility(View.GONE);
+            player.setVisibility(View.VISIBLE);
+            playing[0] = true;
+            playButton.setImageResource(R.drawable.ic_pause);
+            try {
+                player.setVideoURI(item.uri);
+                player.setOnPreparedListener(mp -> {
+                    if (!playing[0]) return;
+                    player.seekTo((int) range[0]);
+                    player.start();
+                    previewHandler.removeCallbacks(tick[0]);
+                    previewHandler.postDelayed(tick[0], 120);
+                });
+                player.setOnErrorListener((mp, what, extra) -> {
+                    stopPlayback[0].run();
+                    return true;
+                });
+            } catch (Exception e) {
+                stopPlayback[0].run();
+            }
         });
 
         final android.widget.CheckBox deleteBox = new android.widget.CheckBox(this);
@@ -1650,12 +1723,13 @@ public class MainActivity extends Activity {
         Dialog dialog = showCustomCard(getString(R.string.trim_title), content,
                 getString(R.string.trim_save),
                 () -> {
-                    final long start = range[0] * 1000L;
-                    final long end = range[1] * 1000L;
+                    final long start = range[0];
+                    final long end = range[1];
                     if (end - start < 1000L) {
                         Toast.makeText(this, R.string.trim_short, Toast.LENGTH_SHORT).show();
                         return false;
                     }
+                    stopPlayback[0].run();
                     Toast.makeText(this, R.string.trim_working, Toast.LENGTH_SHORT).show();
                     VideoTrimmer.start(this, item.uri, item.name, item.folder, start, end,
                             new VideoTrimmer.OnTrim() {
@@ -1680,55 +1754,121 @@ public class MainActivity extends Activity {
                 },
                 getString(R.string.dialog_cancel), null);
         dialog.setOnDismissListener(d -> {
-            if (previews2[0] != null) previewHandler.removeCallbacks(previews2[0]);
+            previewHandler.removeCallbacksAndMessages(null);
+            playing[0] = false;
+            try { player.stopPlayback(); } catch (Exception ignored) { }
+            bar.setFrames(null);
+            frames.close();
         });
-        previewHandler.postDelayed(schedulePreviews, 120);
+
+        frames.strip(bar);
+        frames.frame(0, frameView);
     }
 
-    private ImageView trimPreview() {
-        ImageView view = new ImageView(this);
-        // The whole frame, not a band cut out of its middle: a portrait screen
-        // recording is mostly empty in the middle, so cropping it shows nothing.
-        view.setScaleType(ImageView.ScaleType.FIT_CENTER);
-        view.setBackground(round(CARD, 10, BORDER));
-        view.setClipToOutline(true);
-        view.setImageDrawable(null);
-        return view;
-    }
+    /**
+     * Frames for the trim screen, read on one background thread with a single
+     * retriever (opening the video again for every frame is what makes an
+     * editor feel slow). Only the newest request is read.
+     */
+    private final class TrimFrames {
 
-    /** Two frames of the source video, read in the background. */
-    private void loadTrimPreviews(final Recording item, final long startMs, final long endMs,
-                                  final ImageView startView, final ImageView endView) {
-        new Thread(() -> {
-            android.media.MediaMetadataRetriever retriever =
-                    new android.media.MediaMetadataRetriever();
-            android.graphics.Bitmap first = null;
-            android.graphics.Bitmap last = null;
-            try {
-                retriever.setDataSource(this, item.uri);
-                first = frameAt(retriever, startMs, item.width, item.height);
-                last = frameAt(retriever, endMs, item.width, item.height);
-            } catch (Exception ignored) {
-            } finally {
-                try { retriever.release(); } catch (Exception ignored) { }
+        private final Recording item;
+        private final HandlerThread thread;
+        private final Handler worker;
+        private final Handler main = new Handler(Looper.getMainLooper());
+        private MediaMetadataRetriever retriever;
+        private volatile long wanted;
+        private volatile ImageView target;
+        private volatile boolean closed;
+
+        private final Runnable read = new Runnable() {
+            @Override
+            public void run() {
+                final long at = wanted;
+                final ImageView view = target;
+                if (closed || view == null) return;
+                Bitmap bitmap = null;
+                try {
+                    if (retriever == null) {
+                        retriever = new MediaMetadataRetriever();
+                        retriever.setDataSource(MainActivity.this, item.uri);
+                    }
+                    bitmap = frameAt(retriever, at, item.width, item.height, 480);
+                } catch (Exception ignored) {
+                }
+                if (bitmap == null) return;
+                final Bitmap frame = bitmap;
+                main.post(() -> {
+                    if (!closed && view.getParent() != null) view.setImageBitmap(frame);
+                });
             }
-            final android.graphics.Bitmap f = first;
-            final android.graphics.Bitmap l = last;
-            handler.post(() -> {
-                if (f != null) startView.setImageBitmap(f);
-                if (l != null) endView.setImageBitmap(l);
+        };
+
+        TrimFrames(Recording item) {
+            this.item = item;
+            thread = new HandlerThread("trim-frames");
+            thread.start();
+            worker = new Handler(thread.getLooper());
+        }
+
+        /** The frame at a position, drawn in the preview box when it is ready. */
+        void frame(long ms, ImageView view) {
+            if (closed) return;
+            wanted = ms;
+            target = view;
+            worker.removeCallbacks(read);
+            worker.post(read);
+        }
+
+        /** The filmstrip: frames spread evenly over the whole video. */
+        void strip(final TrimBar bar) {
+            if (closed) return;
+            worker.post(() -> {
+                final List<Bitmap> loaded = new ArrayList<>();
+                final int count = 14;
+                try {
+                    if (retriever == null) {
+                        retriever = new MediaMetadataRetriever();
+                        retriever.setDataSource(MainActivity.this, item.uri);
+                    }
+                    for (int i = 0; i < count; i++) {
+                        long at = (long) ((item.duration - 1L) * (i + 0.5) / count);
+                        Bitmap frame = frameAt(retriever, at, item.width, item.height, 260);
+                        // A null keeps its cell, so the frames stay evenly spaced.
+                        loaded.add(frame);
+                    }
+                } catch (Exception ignored) {
+                    loaded.clear();
+                }
+                main.post(() -> {
+                    if (!closed) bar.setFrames(loaded);
+                });
             });
-        }, "trim-preview").start();
+        }
+
+        void close() {
+            if (closed) return;
+            closed = true;
+            worker.removeCallbacks(read);
+            worker.post(() -> {
+                if (retriever != null) {
+                    try { retriever.release(); } catch (Exception ignored) { }
+                    retriever = null;
+                }
+            });
+            thread.quitSafely();
+        }
     }
 
-    /** A frame scaled to about 480 px on its long side, so a 4K video stays small. */
+    /** A frame scaled to about {@code longSide} px on its long side. */
     private static android.graphics.Bitmap frameAt(
-            android.media.MediaMetadataRetriever retriever, long ms, int width, int height) {
+            android.media.MediaMetadataRetriever retriever, long ms, int width, int height,
+            int longSide) {
         int w = width > 0 ? width : 16;
         int h = height > 0 ? height : 9;
-        int longSide = Math.max(w, h);
-        int targetW = Math.max(2, 480 * w / longSide);
-        int targetH = Math.max(2, 480 * h / longSide);
+        int longest = Math.max(w, h);
+        int targetW = Math.max(2, longSide * w / longest);
+        int targetH = Math.max(2, longSide * h / longest);
         if (Build.VERSION.SDK_INT >= 27) {
             return retriever.getScaledFrameAtTime(ms * 1000L,
                     android.media.MediaMetadataRetriever.OPTION_CLOSEST_SYNC, targetW, targetH);
