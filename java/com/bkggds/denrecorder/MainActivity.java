@@ -130,6 +130,7 @@ public class MainActivity extends Activity {
     private LinearLayout recordingsPageList;
     private boolean settingsRevealed;
     private boolean recordingsRevealed;
+    private int selectedSettingsTab = -1;
 
     private TextView heroTitle;
     private TextView heroBody;
@@ -186,7 +187,9 @@ public class MainActivity extends Activity {
     private final java.util.LinkedHashSet<String> selectedRecordings =
             new java.util.LinkedHashSet<>();
     private TextView selectButton;
+    private TextView selectAllButton;
     private TextView deleteSelectedButton;
+    private LinearLayout selectionActionRow;
 
     private LinearLayout navRecord;
     private LinearLayout navRecordings;
@@ -844,6 +847,9 @@ public class MainActivity extends Activity {
         divider(aboutCard);
         addRow(aboutCard, R.drawable.ic_info, R.string.row_credit,
                 getString(R.string.value_credit), false, null);
+        divider(aboutCard);
+        addRow(aboutCard, R.drawable.ic_info, R.string.row_sakuga_credit,
+                getString(R.string.value_sakuga_credit), true, this::openSakugaVfx);
 
         selectSettingsTab(0);
     }
@@ -873,6 +879,7 @@ public class MainActivity extends Activity {
 
     private void selectSettingsTab(int index) {
         if (index < 0 || index >= settingsSections.size()) return;
+        boolean changed = selectedSettingsTab >= 0 && selectedSettingsTab != index;
         for (int i = 0; i < settingsSections.size(); i++) {
             boolean on = i == index;
             View section = settingsSections.get(i);
@@ -883,6 +890,12 @@ public class MainActivity extends Activity {
                 tab.setTextColor(on ? TEXT : FAINT);
             }
         }
+        if (changed && index < settingsTabs.size()) {
+            TextView picked = settingsTabs.get(index);
+            pop(picked);
+            fireBurst(picked);
+        }
+        selectedSettingsTab = index;
         if (settingsScroll != null) settingsScroll.scrollTo(0, 0);
         // Keep the picked tab in sight: the row is wider than the screen when
         // there are many parts.
@@ -952,16 +965,37 @@ public class MainActivity extends Activity {
         recordingsSummary = label("", 12, FAINT, false);
         summaryRow.addView(recordingsSummary, new LinearLayout.LayoutParams(0, WRAP, 1f));
 
+        selectAllButton = label("", 12, TEXT, true);
+        selectAllButton.setGravity(Gravity.CENTER);
+        selectAllButton.setPadding(dp(10), 0, dp(10), 0);
+        selectAllButton.setVisibility(View.GONE);
+        selectAllButton.setOnClickListener(v -> {
+            pop(v);
+            fireBurst(v);
+            toggleSelectAllVisible();
+        });
         deleteSelectedButton = label("", 12, RED, true);
-        deleteSelectedButton.setPadding(dp(12), dp(8), dp(4), dp(8));
+        deleteSelectedButton.setGravity(Gravity.CENTER);
+        deleteSelectedButton.setPadding(dp(10), 0, dp(10), 0);
         deleteSelectedButton.setVisibility(View.GONE);
         deleteSelectedButton.setOnClickListener(v -> confirmDeleteSelected());
-        summaryRow.addView(deleteSelectedButton, new LinearLayout.LayoutParams(WRAP, WRAP));
 
         selectButton = label(getString(R.string.select_recordings), 12, TEXT, true);
-        selectButton.setPadding(dp(12), dp(8), dp(4), dp(8));
+        selectButton.setGravity(Gravity.CENTER);
+        selectButton.setMinimumHeight(dp(38));
+        selectButton.setPadding(dp(12), dp(7), dp(12), dp(7));
         selectButton.setOnClickListener(v -> setSelectMode(!recordingsSelectMode));
         summaryRow.addView(selectButton, new LinearLayout.LayoutParams(WRAP, WRAP));
+
+        selectionActionRow = new LinearLayout(this);
+        selectionActionRow.setOrientation(LinearLayout.HORIZONTAL);
+        selectionActionRow.setVisibility(View.GONE);
+        list.addView(selectionActionRow, lp(MATCH, dp(44), 0, 6, 0, 0));
+        LinearLayout.LayoutParams actionParams = new LinearLayout.LayoutParams(0, dp(40), 1f);
+        actionParams.setMargins(0, 0, dp(8), 0);
+        selectionActionRow.addView(selectAllButton, actionParams);
+        LinearLayout.LayoutParams deleteParams = new LinearLayout.LayoutParams(0, dp(40), 1f);
+        selectionActionRow.addView(deleteSelectedButton, deleteParams);
 
         recordingsHint = label("", 12, FAINT, false);
         recordingsHint.setLineSpacing(dp(3), 1f);
@@ -1478,13 +1512,33 @@ public class MainActivity extends Activity {
         String key = item.uri.toString();
         if (!selectedRecordings.remove(key)) selectedRecordings.add(key);
         styleSelectDot(dot, selectedRecordings.contains(key));
+        pop(dot);
         updateSelectBar();
+    }
+
+    /** Selects or clears every recording matching the current search. */
+    private void toggleSelectAllVisible() {
+        List<Recording> visible = recordingsView(recordingsCache);
+        if (visible.isEmpty()) return;
+        boolean allSelected = true;
+        for (Recording item : visible) {
+            if (!selectedRecordings.contains(item.uri.toString())) {
+                allSelected = false;
+                break;
+            }
+        }
+        if (allSelected) {
+            for (Recording item : visible) selectedRecordings.remove(item.uri.toString());
+        } else {
+            for (Recording item : visible) selectedRecordings.add(item.uri.toString());
+        }
+        renderRecordings(recordingsCache, true);
     }
 
     private void styleSelectDot(ImageView dot, boolean selected) {
         if (selected) {
             dot.setImageResource(R.drawable.ic_check);
-            dot.setColorFilter(Color.WHITE);
+            dot.setColorFilter(INK);
             dot.setPadding(dp(5), dp(5), dp(5), dp(5));
         } else {
             dot.setImageDrawable(null);
@@ -1492,7 +1546,8 @@ public class MainActivity extends Activity {
         GradientDrawable background = new GradientDrawable();
         background.setShape(GradientDrawable.OVAL);
         if (selected) {
-            background.setColor(RED);
+            background.setColor(ACCENT);
+            background.setStroke(dp(1.5f), INK);
         } else {
             background.setColor(Color.TRANSPARENT);
             background.setStroke(dp(2), BORDER);
@@ -1503,15 +1558,35 @@ public class MainActivity extends Activity {
     private void updateSelectBar() {
         if (selectButton == null) return;
         int count = selectedRecordings.size();
+        List<Recording> visible = recordingsView(recordingsCache);
+        boolean allSelected = !visible.isEmpty();
+        if (allSelected) {
+            for (Recording item : visible) {
+                if (!selectedRecordings.contains(item.uri.toString())) {
+                    allSelected = false;
+                    break;
+                }
+            }
+        }
+        selectAllButton.setVisibility(recordingsSelectMode && !visible.isEmpty()
+                ? View.VISIBLE : View.GONE);
+        setCenteredButtonText(selectAllButton,
+                getString(allSelected ? R.string.deselect_all : R.string.select_all), TEXT);
+        selectAllButton.setBackground(control(allSelected ? NAV_ACTIVE : CARD,
+                10, 1.5f, 2f));
+        deleteSelectedButton.setBackground(control(RED, 10, 1.5f, 2f));
+        selectionActionRow.setVisibility(recordingsSelectMode ? View.VISIBLE : View.GONE);
         setButtonText(selectButton, getString(recordingsSelectMode
                 ? R.string.dialog_cancel : R.string.select_recordings),
                 recordingsSelectMode ? R.drawable.ic_close : R.drawable.ic_check,
-                TEXT);
+                recordingsSelectMode ? TEXT : PRIMARY_FG);
+        selectButton.setBackground(control(recordingsSelectMode ? NAV_ACTIVE : PRIMARY,
+                10, 1.5f, 2f));
         deleteSelectedButton.setVisibility(
                 recordingsSelectMode && count > 0 ? View.VISIBLE : View.GONE);
         if (count > 0) {
-            setButtonText(deleteSelectedButton,
-                    getString(R.string.delete_selected, count), R.drawable.ic_trash, RED);
+            setCenteredButtonText(deleteSelectedButton,
+                    getString(R.string.delete_selected, count), Color.WHITE);
         }
         if (recordingsSelectMode) {
             recordingsSummary.setText(getString(R.string.selected_count, count));
@@ -1527,6 +1602,13 @@ public class MainActivity extends Activity {
         icon.setBounds(0, 0, dp(14), dp(14));
         view.setCompoundDrawables(icon, null, null, null);
         view.setCompoundDrawablePadding(dp(6));
+    }
+
+    /** Centered label for wide actions, avoiding an icon marooned at the edge. */
+    private void setCenteredButtonText(TextView view, CharSequence text, int color) {
+        view.setText(text);
+        view.setTextColor(color);
+        view.setCompoundDrawables(null, null, null, null);
     }
 
     private void confirmDeleteSelected() {
@@ -1575,6 +1657,16 @@ public class MainActivity extends Activity {
         try {
             startActivity(new Intent(Intent.ACTION_VIEW,
                     Uri.parse("https://github.com/Bkhangg/DenRecorder")));
+        } catch (Exception e) {
+            Toast.makeText(this, R.string.github_failed, Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    /** Opens the Sakuga VFX project credited for the visual inspiration. */
+    private void openSakugaVfx() {
+        try {
+            startActivity(new Intent(Intent.ACTION_VIEW,
+                    Uri.parse("https://github.com/finktheartist/sakuga-vfx")));
         } catch (Exception e) {
             Toast.makeText(this, R.string.github_failed, Toast.LENGTH_SHORT).show();
         }
@@ -2187,6 +2279,7 @@ public class MainActivity extends Activity {
     }
 
     private void showScreen(int index) {
+        int previousScreen = screen;
         screen = index;
         // The two other screens are built on their first visit.
         if (index == 1 && settingsList == null) buildSettings();
@@ -2202,6 +2295,12 @@ public class MainActivity extends Activity {
         styleNavItem(navRecord, navRecordIcon, navRecordLabel, index == 0);
         styleNavItem(navRecordings, navRecordingsIcon, navRecordingsLabel, index == 2);
         styleNavItem(navSettings, navSettingsIcon, navSettingsLabel, index == 1);
+        if (previousScreen != index) {
+            View selectedNav = index == 0 ? navRecord
+                    : index == 1 ? navSettings : navRecordings;
+            pop(selectedNav);
+            fireBurst(selectedNav);
+        }
         animateScreenIn(index == 0 ? homeScroll : index == 1 ? settingsScroll : recordingsScroll);
         // Settings and the recordings are built at start, so they get their
         // rise-in the first time they are actually opened.
@@ -2410,7 +2509,11 @@ public class MainActivity extends Activity {
         if (onClick != null) {
             row.setClickable(true);
             row.setFocusable(true);
-            row.setOnClickListener(v -> onClick.run());
+            row.setOnClickListener(v -> {
+                pop(v);
+                fireBurst(v);
+                onClick.run();
+            });
         }
 
         parent.addView(row, lp(MATCH, WRAP, 0, 0, 0, 0));

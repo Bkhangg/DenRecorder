@@ -159,6 +159,8 @@
     <string name="draw_color_white">Trắng</string>
     <string name="draw_color_black">Đen</string>
     <string name="select_recordings">Chọn</string>
+    <string name="select_all">Chọn tất cả</string>
+    <string name="deselect_all">Bỏ chọn tất cả</string>
     <string name="selected_count">Đã chọn %1$d</string>
     <string name="delete_selected">Xóa (%1$d)</string>
     <string name="delete_selected_title">Xóa %1$d video?</string>
@@ -197,6 +199,8 @@
     <string name="value_tile_added">Đã thêm ✓</string>
     <string name="value_tile_missing">Chưa thêm</string>
     <string name="value_credit">Made with ♥ by BKggDs</string>
+    <string name="row_sakuga_credit">Sakuga VFX</string>
+    <string name="value_sakuga_credit">Cảm hứng giao diện · Justin Finkelman</string>
     <string name="battery_on">Không hạn chế</string>
     <string name="battery_off">Đang tối ưu · chạm để đổi</string>
 

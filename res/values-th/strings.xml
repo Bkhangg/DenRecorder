@@ -151,6 +151,8 @@
     <string name="draw_color_white">ขาว</string>
     <string name="draw_color_black">สีดำ</string>
     <string name="select_recordings">เลือก</string>
+    <string name="select_all">เลือกทั้งหมด</string>
+    <string name="deselect_all">ล้างการเลือก</string>
     <string name="selected_count">เลือก %1$d แล้ว</string>
     <string name="delete_selected">ลบ (%1$d)</string>
     <string name="delete_selected_title">ลบ %1$d วิดีโอใช่ไหม</string>
@@ -188,6 +190,8 @@
     <string name="value_tile_added">เพิ่มแล้ว ✓</string>
     <string name="value_tile_missing">ไม่ได้เพิ่ม</string>
     <string name="value_credit">Made with ♥ by BKggDs</string>
+    <string name="row_sakuga_credit">Sakuga VFX</string>
+    <string name="value_sakuga_credit">แรงบันดาลใจด้าน UI · Justin Finkelman</string>
     <string name="battery_on">ไม่จำกัด</string>
     <string name="battery_off">ปรับให้เหมาะสมแล้ว · แตะเพื่อเปลี่ยนแปลง</string>
     <string name="audio_internal">เสียงของอุปกรณ์ (ภายใน)</string>

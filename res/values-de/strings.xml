@@ -151,6 +151,8 @@
     <string name="draw_color_white">Weiß</string>
     <string name="draw_color_black">Schwarz</string>
     <string name="select_recordings">Auswählen</string>
+    <string name="select_all">Alle auswählen</string>
+    <string name="deselect_all">Auswahl aufheben</string>
     <string name="selected_count">%1$d ausgewählt</string>
     <string name="delete_selected">Löschen (%1$d)</string>
     <string name="delete_selected_title">%1$d Videos löschen?</string>
@@ -188,6 +190,8 @@
     <string name="value_tile_added">✓ Hinzugefügt</string>
     <string name="value_tile_missing">Nicht hinzugefügt</string>
     <string name="value_credit">Made with ♥ by BKggDs</string>
+    <string name="row_sakuga_credit">Sakuga VFX</string>
+    <string name="value_sakuga_credit">Inspiration für die Oberfläche · Justin Finkelman</string>
     <string name="battery_on">Uneingeschränkt</string>
     <string name="battery_off">Optimiert · Zum Ändern tippen</string>
     <string name="audio_internal">Geräteaudio (intern)</string>

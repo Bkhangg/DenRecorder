@@ -151,6 +151,8 @@
     <string name="draw_color_white">白色</string>
     <string name="draw_color_black">黑色</string>
     <string name="select_recordings">选择</string>
+    <string name="select_all">全选</string>
+    <string name="deselect_all">取消全选</string>
     <string name="selected_count">%1$d 已选择</string>
     <string name="delete_selected">删除 (%1$d)</string>
     <string name="delete_selected_title">删除 %1$d 个视频吗？</string>
@@ -188,6 +190,8 @@
     <string name="value_tile_added">已添加 ✓</string>
     <string name="value_tile_missing">未添加</string>
     <string name="value_credit">Made with ♥ by BKggDs</string>
+    <string name="row_sakuga_credit">Sakuga VFX</string>
+    <string name="value_sakuga_credit">界面设计灵感 · Justin Finkelman</string>
     <string name="battery_on">无限制</string>
     <string name="battery_off">优化·点击更改</string>
     <string name="audio_internal">设备音频（内部）</string>

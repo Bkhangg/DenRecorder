@@ -1,7 +1,3 @@
-<p align="center">
-  <img src="docs/icon.png" width="96" alt="DenRecorder icon" />
-</p>
-
 # DenRecorder
 
 **A simple Android screen recorder for games, tutorials and everyday use.**
@@ -10,10 +6,29 @@ Record your screen, capture device audio or your microphone, then find, play and
 
 🇬🇧 English · [🇻🇳 Tiếng Việt](#tiếng-việt)
 
+## Screenshots
+
+**Light theme**
+
 <p align="center">
-  <img src="docs/screenshots/record.jpg" width="220" alt="Recording screen" />
-  <img src="docs/screenshots/recordings.jpg" width="220" alt="Recordings library" />
-  <img src="docs/screenshots/settings.jpg" width="220" alt="Settings" />
+  <img src="docs/screenshots/record-light.jpg" width="180" alt="Recording screen, light theme" />
+  <img src="docs/screenshots/recordings-light.jpg" width="180" alt="Recordings library, light theme" />
+  <img src="docs/screenshots/settings-general-light.jpg" width="180" alt="General settings, light theme" />
+</p>
+<p align="center">
+  <img src="docs/screenshots/settings-capture-light.jpg" width="180" alt="Capture settings, light theme" />
+  <img src="docs/screenshots/settings-drawing-light.jpg" width="180" alt="Drawing settings, light theme" />
+</p>
+
+**Dark theme**
+
+<p align="center">
+  <img src="docs/screenshots/record-dark.jpg" width="180" alt="Recording screen, dark theme" />
+  <img src="docs/screenshots/recordings-dark.jpg" width="180" alt="Recordings library, dark theme" />
+  <img src="docs/screenshots/settings-general-dark.jpg" width="180" alt="General settings, dark theme" />
+</p>
+<p align="center">
+  <img src="docs/screenshots/settings-capture-dark.jpg" width="180" alt="Capture settings, dark theme" />
 </p>
 
 ## English
@@ -28,7 +43,7 @@ Use DenRecorder to save gameplay, app walkthroughs, lessons or anything else sho
 - **Choose video quality:** select a resolution, frame rate, bitrate and H.264/AVC or H.265/HEVC. Available settings depend on the phone's encoder.
 - **Choose audio:** record device audio (Android 10+), microphone, both together, or no audio.
 - **Gaming mode:** records at the display's native size and 60 fps, caps the bitrate at 30 Mbps and asks the hardware encoder to yield resources to the game. The optional drawing toolbar follows its separate setting. Smoothness depends on the phone, game and temperature.
-- **Manage recordings:** browse by day, search and sort videos, and play, share, rename or delete them.
+- **Manage recordings:** browse by day, search and sort videos, and play, share, rename or delete them. Select individual videos or use **Select all** to select every result matching the current search; confirm once to delete the selection.
 - **Trim videos:** choose a start and end, preview the selection and save it as a new file. The original is kept unless you choose to delete it. Cuts start at a video keyframe, so the saved start can differ slightly from the selected point.
 - **Draw while recording:** use the optional floating drawing tools to mark the screen; pause or stop from the drawing toolbar.
 - **Play in the app:** watch recordings in the built-in player, seek through them and rotate the player for landscape video.
@@ -65,7 +80,7 @@ The APK is written to `build/DenRecorder-<version>.apk`. `app.properties` contai
 
 ### Credits
 
-The Settings and app visual style is inspired by [Sakuga VFX](https://github.com/finktheartist/sakuga-vfx) by Justin Finkelman. DenRecorder adapts the paper-like palette, ink outlines, offset shadows and impact-style feedback for native Android views. Sakuga VFX's web component code and artwork are not bundled in DenRecorder. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+The Settings and app visual style is inspired by [Sakuga VFX](https://github.com/finktheartist/sakuga-vfx) by Justin Finkelman. DenRecorder adapts the paper-like palette, ink outlines, offset shadows, springy control feedback and impact bursts for native Android views. The credit and a link to the source project are also in Settings → About. Sakuga VFX's web component code and artwork are not bundled in DenRecorder. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 ### License
 
@@ -87,7 +102,7 @@ DenRecorder dùng để quay lại màn hình Android — chẳng hạn lúc ch�
 - **Chọn chất lượng video:** chỉnh độ phân giải, tốc độ khung hình, bitrate và codec H.264/AVC hoặc H.265/HEVC. Mức hỗ trợ tùy bộ mã hóa của điện thoại.
 - **Chọn âm thanh:** thu tiếng trong máy (Android 10 trở lên), micrô, cả hai hoặc không thu tiếng.
 - **Chế độ chơi game:** quay ở độ phân giải màn hình gốc, 60 fps, giới hạn bitrate 30 Mbps và yêu cầu encoder nhường tài nguyên cho game. Thanh vẽ nổi bật/tắt riêng trong cài đặt Vẽ. Độ mượt còn tùy điện thoại, game và nhiệt độ máy.
-- **Quản lý bản ghi:** xem video theo ngày, tìm kiếm, sắp xếp; phát, chia sẻ, đổi tên hoặc xóa video.
+- **Quản lý bản ghi:** xem video theo ngày, tìm kiếm, sắp xếp; phát, chia sẻ, đổi tên hoặc xóa video. Chọn từng video hoặc bấm **Chọn tất cả** để chọn mọi kết quả khớp với nội dung tìm kiếm hiện tại; xác nhận một lần để xóa các video đã chọn.
 - **Cắt video:** chọn điểm đầu và điểm cuối, xem trước rồi lưu thành file mới. Bản gốc được giữ lại, trừ khi bạn chọn xóa. Video chỉ có thể bắt đầu tại khung hình khóa; điểm đầu file có thể lệch nhẹ so với vị trí đã chọn.
 - **Vẽ khi quay:** dùng thanh công cụ nổi để viết hoặc đánh dấu trên màn hình; có thể tạm dừng hay dừng quay tại đó.
 - **Phát video trong app:** xem, tua và xoay trình phát để xem video ngang.
@@ -124,7 +139,7 @@ APK nằm ở `build/DenRecorder-<version>.apk`. Phiên bản và Android tối 
 
 ### Ghi công
 
-Giao diện Cài đặt và phong cách hình ảnh của DenRecorder được gợi cảm hứng từ [Sakuga VFX](https://github.com/finktheartist/sakuga-vfx) của Justin Finkelman. DenRecorder tự triển khai lại bảng màu như giấy, viền mực, bóng lệch và hiệu ứng nhấn cho giao diện Android. DenRecorder không đóng gói mã component web hoặc tranh của Sakuga VFX. Xem [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+Giao diện Cài đặt và phong cách hình ảnh của DenRecorder được gợi cảm hứng từ [Sakuga VFX](https://github.com/finktheartist/sakuga-vfx) của Justin Finkelman. DenRecorder tự triển khai lại bảng màu như giấy, viền mực, bóng lệch, hiệu ứng nảy và burst khi chạm cho giao diện Android. Credit và liên kết dự án gốc cũng có trong Cài đặt → Thông tin. DenRecorder không đóng gói mã component web hoặc tranh của Sakuga VFX. Xem [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 ### Giấy phép
 

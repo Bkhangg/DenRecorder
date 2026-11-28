@@ -151,6 +151,8 @@
     <string name="draw_color_white">Biały</string>
     <string name="draw_color_black">Czarny</string>
     <string name="select_recordings">Wybierz</string>
+    <string name="select_all">Zaznacz wszystko</string>
+    <string name="deselect_all">Odznacz wszystko</string>
     <string name="selected_count">Wybrano %1$d</string>
     <string name="delete_selected">Usuń (%1$d)</string>
     <string name="delete_selected_title">Usunąć %1$d filmów?</string>
@@ -188,6 +190,8 @@
     <string name="value_tile_added">Dodano ✓</string>
     <string name="value_tile_missing">Nie dodano</string>
     <string name="value_credit">Made with ♥ by BKggDs</string>
+    <string name="row_sakuga_credit">Sakuga VFX</string>
+    <string name="value_sakuga_credit">Inspiracja interfejsu · Justin Finkelman</string>
     <string name="battery_on">Nieograniczony</string>
     <string name="battery_off">Zoptymalizowany · dotknij, aby zmienić</string>
     <string name="audio_internal">Dźwięk urządzenia (wewnętrzny)</string>

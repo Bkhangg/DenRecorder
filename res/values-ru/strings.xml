@@ -151,6 +151,8 @@
     <string name="draw_color_white">Белый</string>
     <string name="draw_color_black">Черный</string>
     <string name="select_recordings">Выбрать</string>
+    <string name="select_all">Выбрать все</string>
+    <string name="deselect_all">Снять выделение</string>
     <string name="selected_count">%1$d выбрано</string>
     <string name="delete_selected">Удалить (%1$d)</string>
     <string name="delete_selected_title">Удалить %1$d видео?</string>
@@ -188,6 +190,8 @@
     <string name="value_tile_added">Добавлено ✓</string>
     <string name="value_tile_missing">Не добавлено</string>
     <string name="value_credit">Made with ♥ by BKggDs</string>
+    <string name="row_sakuga_credit">Sakuga VFX</string>
+    <string name="value_sakuga_credit">Вдохновение для интерфейса · Justin Finkelman</string>
     <string name="battery_on">Неограниченный</string>
     <string name="battery_off">Оптимизировано · нажмите, чтобы изменить</string>
     <string name="audio_internal">Звук устройства (внутренний)</string>

@@ -159,6 +159,8 @@
     <string name="draw_color_white">White</string>
     <string name="draw_color_black">Black</string>
     <string name="select_recordings">Select</string>
+    <string name="select_all">Select all</string>
+    <string name="deselect_all">Clear selection</string>
     <string name="selected_count">%1$d selected</string>
     <string name="delete_selected">Delete (%1$d)</string>
     <string name="delete_selected_title">Delete %1$d videos?</string>
@@ -197,6 +199,8 @@
     <string name="value_tile_added">Added ✓</string>
     <string name="value_tile_missing">Not added</string>
     <string name="value_credit">Made with ♥ by BKggDs</string>
+    <string name="row_sakuga_credit">Sakuga VFX</string>
+    <string name="value_sakuga_credit">UI inspiration · Justin Finkelman</string>
     <string name="battery_on">Unrestricted</string>
     <string name="battery_off">Optimized · tap to change</string>
 

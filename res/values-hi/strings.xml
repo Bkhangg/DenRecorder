@@ -151,6 +151,8 @@
     <string name="draw_color_white">सफ़ेद</string>
     <string name="draw_color_black">काला</string>
     <string name="select_recordings">चयन करें</string>
+    <string name="select_all">सभी चुनें</string>
+    <string name="deselect_all">चयन हटाएं</string>
     <string name="selected_count">%1$d चयनित</string>
     <string name="delete_selected">हटाएं (%1$d)</string>
     <string name="delete_selected_title">%1$d वीडियो हटाएं?</string>
@@ -188,6 +190,8 @@
     <string name="value_tile_added">जोड़ा गया ✓</string>
     <string name="value_tile_missing">नहीं जोड़ा गया</string>
     <string name="value_credit">Made with ♥ by BKggDs</string>
+    <string name="row_sakuga_credit">Sakuga VFX</string>
+    <string name="value_sakuga_credit">इंटरफ़ेस प्रेरणा · Justin Finkelman</string>
     <string name="battery_on">अप्रतिबंधित</string>
     <string name="battery_off">अनुकूलित · बदलने के लिए टैप करें</string>
     <string name="audio_internal">डिवाइस ऑडियो (आंतरिक)</string>

@@ -151,6 +151,8 @@
     <string name="draw_color_white">Beyaz</string>
     <string name="draw_color_black">Siyah</string>
     <string name="select_recordings">Seç</string>
+    <string name="select_all">Tümünü seç</string>
+    <string name="deselect_all">Seçimi temizle</string>
     <string name="selected_count">%1$d seçildi</string>
     <string name="delete_selected">Sil (%1$d)</string>
     <string name="delete_selected_title">%1$d video silinsin mi?</string>
@@ -188,6 +190,8 @@
     <string name="value_tile_added">Eklendi ✓</string>
     <string name="value_tile_missing">Eklenmedi</string>
     <string name="value_credit">Made with ♥ by BKggDs</string>
+    <string name="row_sakuga_credit">Sakuga VFX</string>
+    <string name="value_sakuga_credit">Arayüz tasarım ilhamı · Justin Finkelman</string>
     <string name="battery_on">Sınırsız</string>
     <string name="battery_off">Optimize edildi · değiştirmek için dokunun</string>
     <string name="audio_internal">Cihaz sesi (dahili)</string>

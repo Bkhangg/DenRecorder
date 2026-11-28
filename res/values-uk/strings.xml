@@ -151,6 +151,8 @@
     <string name="draw_color_white">Білий</string>
     <string name="draw_color_black">Чорний</string>
     <string name="select_recordings">Виберіть</string>
+    <string name="select_all">Вибрати все</string>
+    <string name="deselect_all">Зняти вибір</string>
     <string name="selected_count">Вибрано %1$d</string>
     <string name="delete_selected">Видалити (%1$d)</string>
     <string name="delete_selected_title">Видалити %1$d відео?</string>
@@ -188,6 +190,8 @@
     <string name="value_tile_added">Додано ✓</string>
     <string name="value_tile_missing">Не додано</string>
     <string name="value_credit">Made with ♥ by BKggDs</string>
+    <string name="row_sakuga_credit">Sakuga VFX</string>
+    <string name="value_sakuga_credit">Натхнення для інтерфейсу · Justin Finkelman</string>
     <string name="battery_on">Без обмежень</string>
     <string name="battery_off">Оптимізовано · торкніться, щоб змінити</string>
     <string name="audio_internal">Звук пристрою (внутрішній)</string>

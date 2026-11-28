@@ -151,6 +151,8 @@
     <string name="draw_color_white">ホワイト</string>
     <string name="draw_color_black">ブラック</string>
     <string name="select_recordings">選択</string>
+    <string name="select_all">すべて選択</string>
+    <string name="deselect_all">選択を解除</string>
     <string name="selected_count">%1$d 個が選択されました</string>
     <string name="delete_selected">削除 (%1$d)</string>
     <string name="delete_selected_title">%1$d 個のビデオを削除しますか?</string>
@@ -188,6 +190,8 @@
     <string name="value_tile_added">追加 ✓</string>
     <string name="value_tile_missing">追加されていません</string>
     <string name="value_credit">Made with ♥ by BKggDs</string>
+    <string name="row_sakuga_credit">Sakuga VFX</string>
+    <string name="value_sakuga_credit">UI の着想 · Justin Finkelman</string>
     <string name="battery_on">無制限</string>
     <string name="battery_off">最適化済み · タップして変更します</string>
     <string name="audio_internal">デバイスオーディオ (内部)</string>

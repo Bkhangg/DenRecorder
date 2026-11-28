@@ -151,6 +151,8 @@
     <string name="draw_color_white">화이트</string>
     <string name="draw_color_black">블랙</string>
     <string name="select_recordings">선택</string>
+    <string name="select_all">모두 선택</string>
+    <string name="deselect_all">선택 해제</string>
     <string name="selected_count">%1$d개 선택됨</string>
     <string name="delete_selected">삭제(%1$d)</string>
     <string name="delete_selected_title">%1$d개의 동영상을 삭제하시겠습니까?</string>
@@ -188,6 +190,8 @@
     <string name="value_tile_added">✓ 추가됨</string>
     <string name="value_tile_missing">추가되지 않음</string>
     <string name="value_credit">Made with ♥ by BKggDs</string>
+    <string name="row_sakuga_credit">Sakuga VFX</string>
+    <string name="value_sakuga_credit">UI 영감 · Justin Finkelman</string>
     <string name="battery_on">무제한</string>
     <string name="battery_off">최적화됨 · 탭하여 변경</string>
     <string name="audio_internal">장치 오디오(내부)</string>

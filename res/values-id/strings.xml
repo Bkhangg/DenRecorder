@@ -151,6 +151,8 @@
     <string name="draw_color_white">Putih</string>
     <string name="draw_color_black">Hitam</string>
     <string name="select_recordings">Pilih</string>
+    <string name="select_all">Pilih semua</string>
+    <string name="deselect_all">Batalkan pilihan</string>
     <string name="selected_count">%1$d dipilih</string>
     <string name="delete_selected">Hapus (%1$d)</string>
     <string name="delete_selected_title">Hapus %1$d video?</string>
@@ -188,6 +190,8 @@
     <string name="value_tile_added">Ditambahkan ✓</string>
     <string name="value_tile_missing">Tidak ditambahkan</string>
     <string name="value_credit">Made with ♥ by BKggDs</string>
+    <string name="row_sakuga_credit">Sakuga VFX</string>
+    <string name="value_sakuga_credit">Inspirasi antarmuka · Justin Finkelman</string>
     <string name="battery_on">Tidak dibatasi</string>
     <string name="battery_off">Dioptimalkan · ketuk untuk mengubah</string>
     <string name="audio_internal">Audio perangkat (internal)</string>

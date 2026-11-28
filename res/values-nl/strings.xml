@@ -151,6 +151,8 @@
     <string name="draw_color_white">Wit</string>
     <string name="draw_color_black">Zwart</string>
     <string name="select_recordings">Selecteer</string>
+    <string name="select_all">Alles selecteren</string>
+    <string name="deselect_all">Selectie wissen</string>
     <string name="selected_count">%1$d geselecteerd</string>
     <string name="delete_selected">Verwijderen (%1$d)</string>
     <string name="delete_selected_title">%1$d video\'s verwijderen?</string>
@@ -188,6 +190,8 @@
     <string name="value_tile_added">Toegevoegd ✓</string>
     <string name="value_tile_missing">Niet toegevoegd</string>
     <string name="value_credit">Made with ♥ by BKggDs</string>
+    <string name="row_sakuga_credit">Sakuga VFX</string>
+    <string name="value_sakuga_credit">Inspiratie voor de interface · Justin Finkelman</string>
     <string name="battery_on">Onbeperkt</string>
     <string name="battery_off">Geoptimaliseerd · tik om te wijzigen</string>
     <string name="audio_internal">Apparaataudio (intern)</string>
