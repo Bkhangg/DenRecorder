@@ -109,12 +109,21 @@ final class VideoTrimmer {
             extractor.selectTrack(videoTrack);
             if (audioTrack >= 0) extractor.selectTrack(audioTrack);
 
-            // A cut can only begin on a key frame: the sync frame at or before
-            // the chosen second is where the video actually starts.
+            // A cut can only begin on a key frame of the video. It has to be
+            // looked up on the video track alone: the audio track has a sample
+            // every few milliseconds, so seeking with both tracks selected
+            // lands just after the key frame, the key frame is dropped, and a
+            // player then starts at the next one — which is what made a cut
+            // begin somewhere else than the frame that was chosen.
             long wantedUs = Math.max(0, startMs) * 1000L;
+            extractor.selectTrack(videoTrack);
             extractor.seekTo(wantedUs, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
             long baseUs = extractor.getSampleTime();
-            if (baseUs < 0) baseUs = wantedUs;
+            if (baseUs < 0) baseUs = 0;
+            if (audioTrack >= 0) {
+                extractor.selectTrack(audioTrack);
+                extractor.seekTo(baseUs, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
+            }
             long endUs = endMs * 1000L;
             if (endUs <= baseUs + 100000L) throw new Exception("The cut is empty");
 

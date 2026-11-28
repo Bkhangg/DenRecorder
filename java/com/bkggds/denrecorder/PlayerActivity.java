@@ -5,8 +5,12 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
+import android.media.AudioAttributes;
+import android.media.AudioFocusRequest;
+import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -28,6 +32,9 @@ import java.util.Locale;
  * proved unreliable (some galleries open the newest video instead of the one
  * that was tapped), and a player of our own also shows the video straight away
  * after it is recorded.
+ *
+ * The controls sit on soft gradients instead of solid bars, so a landscape
+ * game keeps its whole picture and nothing covers the middle of the frame.
  */
 public class PlayerActivity extends Activity {
 
@@ -35,27 +42,42 @@ public class PlayerActivity extends Activity {
     public static final String EXTRA_TITLE = "com.bkggds.denrecorder.extra.PLAYER_TITLE";
 
     private static final int TEXT = Color.parseColor("#FAFAFA");
-    private static final int MUTED = Color.parseColor("#A1A1AA");
-    private static final int PANEL = Color.parseColor("#E6111113");
+    private static final int MUTED = Color.parseColor("#C7C7CE");
 
     private static final int SEEK_STEP_MS = 10_000;
 
     private VideoView videoView;
-    private ImageView rotateButton;
-    private android.view.GestureDetector gestures;
-    private TextView seekHint;
     private LinearLayout topBar;
     private LinearLayout bottomBar;
     private ImageView playButton;
+    private ImageView centerPlay;
     private SeekBar seekBar;
     private TextView timeView;
+    private TextView seekHint;
     private TextView errorView;
+    private android.view.GestureDetector gestures;
+
+    private AudioManager audioManager;
+    private AudioFocusRequest focusRequest;
+    private boolean pausedByFocus;
+    private final AudioManager.OnAudioFocusChangeListener focusListener = change -> {
+        if (change == AudioManager.AUDIOFOCUS_LOSS
+                || change == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) {
+            pausedByFocus = videoView != null && videoView.isPlaying();
+            if (pausedByFocus) pause();
+        } else if (change == AudioManager.AUDIOFOCUS_GAIN && pausedByFocus) {
+            pausedByFocus = false;
+            play();
+        }
+    };
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private boolean dragging;
     private boolean prepared;
     private boolean controlsVisible = true;
     private boolean finished;
+    private boolean isResumed;
+    private boolean pendingPlay;
 
     private final Runnable hideControls = new Runnable() {
         @Override
@@ -83,6 +105,7 @@ public class PlayerActivity extends Activity {
         getWindow().setStatusBarColor(Color.BLACK);
         getWindow().setNavigationBarColor(Color.BLACK);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        goFullscreen();
 
         Uri uri = null;
         try {
@@ -92,6 +115,7 @@ public class PlayerActivity extends Activity {
             finish();
             return;
         }
+        audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
 
         FrameLayout root = new FrameLayout(this);
         root.setBackgroundColor(Color.BLACK);
@@ -103,24 +127,35 @@ public class PlayerActivity extends Activity {
                 FrameLayout.LayoutParams.MATCH_PARENT, Gravity.CENTER));
 
         topBar = createTopBar();
-        FrameLayout.LayoutParams topParams = new FrameLayout.LayoutParams(
+        root.addView(topBar, new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.WRAP_CONTENT, Gravity.TOP);
-        topParams.setMargins(dp(10), statusBarHeight() + dp(6), dp(10), 0);
-        root.addView(topBar, topParams);
+                FrameLayout.LayoutParams.WRAP_CONTENT, Gravity.TOP));
 
         bottomBar = createBottomBar();
-        FrameLayout.LayoutParams bottomParams = new FrameLayout.LayoutParams(
+        root.addView(bottomBar, new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM);
-        bottomParams.setMargins(dp(10), 0, dp(10), dp(10));
-        root.addView(bottomBar, bottomParams);
+                FrameLayout.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM));
+
+        // A big play button in the middle, so the player reads at a glance when
+        // it is paused.
+        centerPlay = new ImageView(this);
+        centerPlay.setImageResource(R.drawable.ic_play);
+        centerPlay.setColorFilter(Color.WHITE);
+        GradientDrawable circle = new GradientDrawable();
+        circle.setShape(GradientDrawable.OVAL);
+        circle.setColor(Color.parseColor("#73000000"));
+        centerPlay.setBackground(circle);
+        centerPlay.setPadding(dp(20), dp(20), dp(20), dp(20));
+        centerPlay.setContentDescription(getString(R.string.player_play));
+        centerPlay.setOnClickListener(v -> play());
+        centerPlay.setVisibility(View.GONE);
+        root.addView(centerPlay, new FrameLayout.LayoutParams(dp(76), dp(76), Gravity.CENTER));
 
         seekHint = new TextView(this);
         seekHint.setTextColor(TEXT);
         seekHint.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
         seekHint.setGravity(Gravity.CENTER);
-        seekHint.setBackground(round(PANEL, 16));
+        seekHint.setBackground(round(Color.parseColor("#CC000000"), 16));
         seekHint.setPadding(dp(16), dp(10), dp(16), dp(10));
         seekHint.setAlpha(0f);
         root.addView(seekHint, new FrameLayout.LayoutParams(
@@ -179,10 +214,18 @@ public class PlayerActivity extends Activity {
             @Override
             public void onPrepared(MediaPlayer player) {
                 prepared = true;
+                // Make playback use the media stream and the recording's own
+                // audio level rather than inheriting a notification/call route.
+                if (Build.VERSION.SDK_INT >= 21) {
+                    player.setAudioAttributes(new AudioAttributes.Builder()
+                            .setUsage(AudioAttributes.USAGE_MEDIA)
+                            .setContentType(AudioAttributes.CONTENT_TYPE_MOVIE)
+                            .build());
+                }
+                player.setVolume(1f, 1f);
                 seekBar.setMax(Math.max(1, videoView.getDuration()));
-                videoView.start();
+                play();
                 updateProgress();
-                handler.postDelayed(hideControls, 3000);
             }
         });
         videoView.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
@@ -209,70 +252,68 @@ public class PlayerActivity extends Activity {
         handler.post(tick);
     }
 
+    /** Hides the bars while the video plays, so the picture is the whole screen. */
+    private void goFullscreen() {
+        getWindow().getDecorView().setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                        | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                        | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                        | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                        | View.SYSTEM_UI_FLAG_FULLSCREEN
+                        | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+    }
+
     private LinearLayout createTopBar() {
         LinearLayout bar = new LinearLayout(this);
-        bar.setOrientation(LinearLayout.HORIZONTAL);
-        bar.setGravity(Gravity.CENTER_VERTICAL);
-        bar.setBackground(round(PANEL, 14));
-        bar.setPadding(dp(12), dp(10), dp(12), dp(10));
-        bar.setClickable(true);
+        bar.setOrientation(LinearLayout.VERTICAL);
+        bar.setBackground(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
+                new int[]{0xE6000000, 0x00000000}));
+        bar.setPadding(dp(8), dp(10), dp(8), dp(22));
 
-        ImageView close = new ImageView(this);
-        close.setImageResource(R.drawable.ic_close);
-        close.setColorFilter(TEXT);
-        close.setBackground(round(Color.parseColor("#27272A"), 16));
-        close.setPadding(dp(6), dp(6), dp(6), dp(6));
-        close.setContentDescription(getString(R.string.player_close));
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+
+        ImageView close = roundIcon(R.drawable.ic_close, getString(R.string.player_close));
         close.setOnClickListener(v -> finish());
-        bar.addView(close, new LinearLayout.LayoutParams(dp(30), dp(30)));
+        row.addView(close, new LinearLayout.LayoutParams(dp(38), dp(38)));
 
         TextView title = new TextView(this);
         title.setText(intentTitle());
         title.setTextColor(TEXT);
-        title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+        title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
         title.setSingleLine(true);
+        title.setEllipsize(android.text.TextUtils.TruncateAt.END);
         LinearLayout.LayoutParams titleParams =
                 new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
-        titleParams.setMargins(dp(10), 0, 0, 0);
-        bar.addView(title, titleParams);
+        titleParams.setMargins(dp(10), 0, dp(10), 0);
+        row.addView(title, titleParams);
 
         // Turns the player itself, so a phone with rotation lock on still gets
         // the landscape view.
-        rotateButton = new ImageView(this);
-        rotateButton.setImageResource(R.drawable.ic_rotate);
-        rotateButton.setColorFilter(TEXT);
-        rotateButton.setBackground(round(Color.parseColor("#27272A"), 16));
-        rotateButton.setPadding(dp(6), dp(6), dp(6), dp(6));
-        rotateButton.setContentDescription(getString(R.string.player_rotate));
-        rotateButton.setOnClickListener(v -> toggleOrientation());
-        LinearLayout.LayoutParams rotateParams =
-                new LinearLayout.LayoutParams(dp(30), dp(30));
-        rotateParams.setMargins(dp(10), 0, 0, 0);
-        bar.addView(rotateButton, rotateParams);
+        ImageView rotate = roundIcon(R.drawable.ic_rotate, getString(R.string.player_rotate));
+        rotate.setOnClickListener(v -> toggleOrientation());
+        row.addView(rotate, new LinearLayout.LayoutParams(dp(38), dp(38)));
+
+        bar.addView(row, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
         return bar;
     }
 
     private LinearLayout createBottomBar() {
         LinearLayout bar = new LinearLayout(this);
-        bar.setOrientation(LinearLayout.HORIZONTAL);
-        bar.setGravity(Gravity.CENTER_VERTICAL);
-        bar.setBackground(round(PANEL, 14));
-        bar.setPadding(dp(10), dp(6), dp(12), dp(6));
-        bar.setClickable(true);
-
-        playButton = new ImageView(this);
-        playButton.setImageResource(R.drawable.ic_play);
-        playButton.setColorFilter(TEXT);
-        playButton.setPadding(dp(6), dp(6), dp(6), dp(6));
-        playButton.setContentDescription(getString(R.string.player_play));
-        playButton.setOnClickListener(v -> togglePlay());
-        bar.addView(playButton, new LinearLayout.LayoutParams(dp(32), dp(32)));
+        bar.setOrientation(LinearLayout.VERTICAL);
+        bar.setBackground(new GradientDrawable(GradientDrawable.Orientation.BOTTOM_TOP,
+                new int[]{0xE6000000, 0x00000000}));
+        bar.setPadding(dp(16), dp(18), dp(16), dp(12));
 
         seekBar = new SeekBar(this);
-        LinearLayout.LayoutParams seekParams =
-                new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
-        seekParams.setMargins(dp(6), 0, dp(6), 0);
-        bar.addView(seekBar, seekParams);
+        seekBar.setProgressTintList(android.content.res.ColorStateList.valueOf(Color.WHITE));
+        seekBar.setThumbTintList(android.content.res.ColorStateList.valueOf(Color.WHITE));
+        seekBar.setProgressBackgroundTintList(
+                android.content.res.ColorStateList.valueOf(0x55FFFFFF));
+        bar.addView(seekBar, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
         seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar bar1, int progress, boolean fromUser) {
@@ -282,6 +323,7 @@ public class PlayerActivity extends Activity {
             @Override
             public void onStartTrackingTouch(SeekBar bar1) {
                 dragging = true;
+                handler.removeCallbacks(hideControls);
             }
 
             @Override
@@ -289,17 +331,41 @@ public class PlayerActivity extends Activity {
                 dragging = false;
                 if (prepared) videoView.seekTo(bar1.getProgress());
                 finished = false;
+                handler.postDelayed(hideControls, 2500);
             }
         });
+
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+
+        playButton = roundIcon(R.drawable.ic_play, getString(R.string.player_play));
+        playButton.setOnClickListener(v -> togglePlay());
+        row.addView(playButton, new LinearLayout.LayoutParams(dp(38), dp(38)));
 
         timeView = new TextView(this);
         timeView.setText("00:00 / 00:00");
         timeView.setTextColor(MUTED);
-        timeView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
-        bar.addView(timeView, new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT));
+        timeView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+        LinearLayout.LayoutParams timeParams =
+                new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT);
+        timeParams.setMargins(dp(12), 0, 0, 0);
+        row.addView(timeView, timeParams);
+
+        bar.addView(row, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
         return bar;
+    }
+
+    private ImageView roundIcon(int drawable, String description) {
+        ImageView view = new ImageView(this);
+        view.setImageResource(drawable);
+        view.setColorFilter(TEXT);
+        view.setBackground(round(Color.parseColor("#4D000000"), 19));
+        view.setPadding(dp(8), dp(8), dp(8), dp(8));
+        view.setContentDescription(description);
+        return view;
     }
 
     /**
@@ -333,17 +399,25 @@ public class PlayerActivity extends Activity {
         return getString(R.string.nav_recordings);
     }
 
-    private void togglePlay() {
-        if (!prepared) return;
-        if (videoView.isPlaying()) {
-            videoView.pause();
-            setPlayingIcon(false);
-            setControlsVisible(true);
+    // ---------- Playback ----------
+
+    private void play() {
+        if (!prepared || videoView == null) return;
+        // The ROM mutes an app that starts playing while it is not the app on
+        // screen, and that mute outlasts the app coming back to the front, so
+        // playback only ever starts from the screen the user is looking at.
+        if (!isResumed || !hasWindowFocus()) {
+            pendingPlay = true;
             return;
         }
+        pendingPlay = false;
         if (finished) {
             finished = false;
             videoView.seekTo(0);
+        }
+        if (!requestAudioFocus()) {
+            // The system refused the focus: it will keep this app silent, and
+            // the warning above says so.
         }
         videoView.start();
         setPlayingIcon(true);
@@ -351,11 +425,63 @@ public class PlayerActivity extends Activity {
         handler.postDelayed(hideControls, 3000);
     }
 
+    private void pause() {
+        if (videoView == null) return;
+        videoView.pause();
+        setPlayingIcon(false);
+        setControlsVisible(true);
+    }
+
+    private void togglePlay() {
+        if (!prepared) return;
+        if (videoView.isPlaying()) pause(); else play();
+    }
+
+    private boolean requestAudioFocus() {
+        try {
+            if (audioManager == null) return false;
+            AudioAttributes attributes = new AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_MEDIA)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_MOVIE)
+                    .build();
+            if (Build.VERSION.SDK_INT >= 26) {
+                if (focusRequest == null) {
+                    focusRequest = new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+                            .setAudioAttributes(attributes)
+                            .setOnAudioFocusChangeListener(focusListener)
+                            .build();
+                }
+                return audioManager.requestAudioFocus(focusRequest)
+                        == AudioManager.AUDIOFOCUS_REQUEST_GRANTED;
+            }
+            return audioManager.requestAudioFocus(focusListener,
+                    AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN)
+                    == AudioManager.AUDIOFOCUS_REQUEST_GRANTED;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private void abandonAudioFocus() {
+        try {
+            if (audioManager == null) return;
+            if (Build.VERSION.SDK_INT >= 26) {
+                if (focusRequest != null) audioManager.abandonAudioFocusRequest(focusRequest);
+            } else {
+                audioManager.abandonAudioFocus(focusListener);
+            }
+        } catch (Exception ignored) { }
+    }
+
     private void setPlayingIcon(boolean playing) {
-        if (playButton == null) return;
-        playButton.setImageResource(playing ? R.drawable.ic_pause : R.drawable.ic_play);
-        playButton.setContentDescription(getString(
-                playing ? R.string.player_pause : R.string.player_play));
+        if (playButton != null) {
+            playButton.setImageResource(playing ? R.drawable.ic_pause : R.drawable.ic_play);
+            playButton.setContentDescription(getString(
+                    playing ? R.string.player_pause : R.string.player_play));
+        }
+        if (centerPlay != null) {
+            centerPlay.setVisibility(playing || !prepared ? View.GONE : View.VISIBLE);
+        }
     }
 
     private void setControlsVisible(boolean visible) {
@@ -363,6 +489,12 @@ public class PlayerActivity extends Activity {
         handler.removeCallbacks(hideControls);
         if (topBar != null) animate(topBar, visible);
         if (bottomBar != null) animate(bottomBar, visible);
+        // A paused video always keeps its big play button on screen.
+        if (centerPlay != null) {
+            centerPlay.setVisibility(prepared
+                    && (visible || (videoView != null && !videoView.isPlaying()))
+                    ? View.VISIBLE : View.GONE);
+        }
     }
 
     private void animate(View view, boolean visible) {
@@ -402,28 +534,47 @@ public class PlayerActivity extends Activity {
         return drawable;
     }
 
-    private int statusBarHeight() {
-        int id = getResources().getIdentifier("status_bar_height", "dimen", "android");
-        return id > 0 ? getResources().getDimensionPixelSize(id) : dp(24);
-    }
-
     private int dp(float value) {
         return (int) (value * getResources().getDisplayMetrics().density + 0.5f);
     }
 
     @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (!hasFocus) return;
+        goFullscreen();
+        if (pendingPlay) {
+            pendingPlay = false;
+            play();
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        isResumed = true;
+        if (pendingPlay) {
+            pendingPlay = false;
+            play();
+        }
+    }
+
+    @Override
     protected void onPause() {
         super.onPause();
+        isResumed = false;
         if (videoView != null) {
             try {
                 if (videoView.isPlaying()) videoView.pause();
             } catch (Exception ignored) { }
         }
+        abandonAudioFocus();
     }
 
     @Override
     protected void onDestroy() {
         handler.removeCallbacksAndMessages(null);
+        abandonAudioFocus();
         if (videoView != null) {
             try {
                 videoView.stopPlayback();

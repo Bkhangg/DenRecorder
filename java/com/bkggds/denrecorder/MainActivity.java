@@ -21,8 +21,10 @@ import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
 import android.graphics.drawable.Icon;
 import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.LayerDrawable;
 import android.media.MediaMetadataRetriever;
 import android.media.projection.MediaProjectionConfig;
 import android.media.projection.MediaProjectionManager;
@@ -81,8 +83,9 @@ public class MainActivity extends Activity {
     private static final String SCREEN_RECORDING_PREFIX = "DenRecorder_";
 
     // Shadcn-style palette (zinc scale).
-    // Shadcn palettes. The dark one is the original look; Settings → Theme
-    // switches to the light one or follows the system.
+    // The Sakuga palette: white paper, ink and lavender lines, periwinkle
+    // controls with a hard lavender shadow, and pink for impact. Settings →
+    // Theme switches to the dark paper or follows the system.
     private int BG;
     private int CARD;
     private int BORDER;
@@ -95,6 +98,12 @@ public class MainActivity extends Activity {
     private int GREEN;
     private int NAV;
     private int NAV_ACTIVE;
+    /** The outline of a control: the ink line the whole style is drawn with. */
+    private int INK;
+    /** The hard, blur-less shadow under a control. */
+    private int SOFT;
+    /** The accent that lands with an impact: bursts, the record dot, errors. */
+    private int ACCENT;
     private boolean lightTheme;
 
     private static final int MATCH = LinearLayout.LayoutParams.MATCH_PARENT;
@@ -104,6 +113,8 @@ public class MainActivity extends Activity {
     private Handler handler;
 
     private int screen = 0; // 0 = record, 1 = settings, 2 = recordings
+    private FrameLayout rootView;
+    private Burst burst;
     private TextView screenTitle;
     private ImageView backButton;
     private ImageView settingsButton;
@@ -224,6 +235,9 @@ public class MainActivity extends Activity {
     private boolean dialogShown;
     private long stopDetectedAt;
 
+    /** The "working on it" card, shown while a cut is written. */
+    private Dialog busyDialog;
+
     private final ExecutorService thumbPool = Executors.newFixedThreadPool(2);
     private final LruCache<String, Bitmap> thumbCache = new LruCache<String, Bitmap>(48);
 
@@ -236,29 +250,35 @@ public class MainActivity extends Activity {
         if (light) {
             BG = Color.parseColor("#FFFFFF");
             CARD = Color.parseColor("#FFFFFF");
-            BORDER = Color.parseColor("#E4E4E7");
-            TEXT = Color.parseColor("#09090B");
-            MUTED = Color.parseColor("#52525B");
-            FAINT = Color.parseColor("#71717A");
-            PRIMARY = Color.parseColor("#18181B");
-            PRIMARY_FG = Color.parseColor("#FAFAFA");
-            RED = Color.parseColor("#DC2626");
-            GREEN = Color.parseColor("#16A34A");
+            BORDER = Color.parseColor("#DCDAF0");
+            TEXT = Color.parseColor("#1D1A4A");
+            MUTED = Color.parseColor("#8580B0");
+            FAINT = Color.parseColor("#A29DC7");
+            PRIMARY = Color.parseColor("#8F8DF7");
+            PRIMARY_FG = Color.parseColor("#1D1A4A");
+            RED = Color.parseColor("#F0435E");
+            GREEN = Color.parseColor("#2FA36B");
             NAV = Color.parseColor("#FFFFFF");
-            NAV_ACTIVE = Color.parseColor("#F4F4F5");
+            NAV_ACTIVE = Color.parseColor("#F4F3FC");
+            INK = Color.parseColor("#1D1A4A");
+            SOFT = Color.parseColor("#B8B3FF");
+            ACCENT = Color.parseColor("#FF5FA8");
         } else {
-            BG = Color.parseColor("#09090B");
-            CARD = Color.parseColor("#111113");
-            BORDER = Color.parseColor("#27272A");
-            TEXT = Color.parseColor("#FAFAFA");
-            MUTED = Color.parseColor("#A1A1AA");
-            FAINT = Color.parseColor("#71717A");
-            PRIMARY = Color.parseColor("#FAFAFA");
-            PRIMARY_FG = Color.parseColor("#09090B");
-            RED = Color.parseColor("#EF4444");
-            GREEN = Color.parseColor("#22C55E");
-            NAV = Color.parseColor("#18181B");
-            NAV_ACTIVE = Color.parseColor("#27272A");
+            BG = Color.parseColor("#14122B");
+            CARD = Color.parseColor("#1D1A4A");
+            BORDER = Color.parseColor("#3A3570");
+            TEXT = Color.parseColor("#F4F3FC");
+            MUTED = Color.parseColor("#B8B3FF");
+            FAINT = Color.parseColor("#8580B0");
+            PRIMARY = Color.parseColor("#8F8DF7");
+            PRIMARY_FG = Color.parseColor("#1D1A4A");
+            RED = Color.parseColor("#FF5F7E");
+            GREEN = Color.parseColor("#4ED6A0");
+            NAV = Color.parseColor("#1D1A4A");
+            NAV_ACTIVE = Color.parseColor("#2A2658");
+            INK = Color.parseColor("#8580B0");
+            SOFT = Color.parseColor("#2A2658");
+            ACCENT = Color.parseColor("#FF5FA8");
         }
     }
 
@@ -457,6 +477,7 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        hideBusy();
         try {
             unregisterReceiver(regionSaved);
         } catch (Exception ignored) { }
@@ -507,6 +528,7 @@ public class MainActivity extends Activity {
         FrameLayout root = new FrameLayout(this);
         root.setBackgroundColor(BG);
         setContentView(root);
+        rootView = root;
 
         LinearLayout column = new LinearLayout(this);
         column.setOrientation(LinearLayout.VERTICAL);
@@ -524,7 +546,8 @@ public class MainActivity extends Activity {
         topBar.addView(backButton, new LinearLayout.LayoutParams(dp(40), dp(40)));
         backButton.setVisibility(View.GONE);
 
-        screenTitle = label(getString(R.string.app_name), 21, TEXT, true);
+        screenTitle = label(getString(R.string.app_name), 22, TEXT, true);
+        screenTitle.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD_ITALIC));
         LinearLayout.LayoutParams titleParams =
                 new LinearLayout.LayoutParams(0, WRAP, 1f);
         titleParams.setMargins(dp(8), 0, 0, 0);
@@ -566,31 +589,50 @@ public class MainActivity extends Activity {
         // Floating bottom navigation bar
         LinearLayout nav = new LinearLayout(this);
         nav.setOrientation(LinearLayout.HORIZONTAL);
-        nav.setBackground(round(NAV, 30, BORDER));
+        nav.setBackground(control(NAV, 26, 3f, 5f));
         nav.setPadding(dp(6), dp(6), dp(6), dp(6));
 
         navRecord = navItem(R.drawable.ic_record, getString(R.string.nav_record));
         navRecordIcon = (ImageView) navRecord.getChildAt(0);
         navRecordLabel = (TextView) navRecord.getChildAt(1);
         navRecord.setOnClickListener(v -> showScreen(0));
-        nav.addView(navRecord, new LinearLayout.LayoutParams(0, dp(48), 1f));
+        nav.addView(navRecord, navItemParams());
 
         navRecordings = navItem(R.drawable.ic_video, getString(R.string.nav_recordings));
         navRecordingsIcon = (ImageView) navRecordings.getChildAt(0);
         navRecordingsLabel = (TextView) navRecordings.getChildAt(1);
         navRecordings.setOnClickListener(v -> showScreen(2));
-        nav.addView(navRecordings, new LinearLayout.LayoutParams(0, dp(48), 1f));
+        nav.addView(navRecordings, navItemParams());
 
         navSettings = navItem(R.drawable.ic_settings, getString(R.string.nav_settings));
         navSettingsIcon = (ImageView) navSettings.getChildAt(0);
         navSettingsLabel = (TextView) navSettings.getChildAt(1);
         navSettings.setOnClickListener(v -> showScreen(1));
-        nav.addView(navSettings, new LinearLayout.LayoutParams(0, dp(48), 1f));
+        nav.addView(navSettings, navItemParams());
 
         FrameLayout.LayoutParams navParams =
                 new FrameLayout.LayoutParams(dp(330), WRAP, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL);
         navParams.setMargins(0, 0, 0, dp(18) + barHeight("navigation_bar_height"));
         root.addView(nav, navParams);
+
+        // The impact overlay sits on top of the whole screen and never takes a
+        // touch: it only draws the burst a press throws off.
+        burst = new Burst(this);
+        burst.setColors(INK, SOFT, ACCENT);
+        burst.setClickable(false);
+        burst.setFocusable(false);
+        root.addView(burst, new FrameLayout.LayoutParams(MATCH, MATCH));
+    }
+
+    /** Throws a manga burst out of the middle of a control. */
+    private void fireBurst(View anchor) {
+        if (burst == null || anchor == null || rootView == null) return;
+        int[] point = new int[2];
+        int[] origin = new int[2];
+        anchor.getLocationInWindow(point);
+        rootView.getLocationInWindow(origin);
+        burst.play(point[0] - origin[0] + anchor.getWidth() / 2f,
+                point[1] - origin[1] + anchor.getHeight() / 2f);
     }
 
     private void buildHome() {
@@ -609,13 +651,14 @@ public class MainActivity extends Activity {
         hero.addView(titleRow, lp(MATCH, WRAP, 0, 0, 0, 0));
 
         recordingDot = new View(this);
-        recordingDot.setBackground(round(RED, 6, 0));
+        recordingDot.setBackground(round(ACCENT, 6, 0));
         recordingDot.setVisibility(View.GONE);
         LinearLayout.LayoutParams dotParams = new LinearLayout.LayoutParams(dp(10), dp(10));
         dotParams.setMargins(0, dp(2), dp(12), 0);
         titleRow.addView(recordingDot, dotParams);
 
-        heroTitle = label(getString(R.string.hero_ready_title), 24, TEXT, true);
+        heroTitle = label(getString(R.string.hero_ready_title), 26, TEXT, true);
+        heroTitle.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD_ITALIC));
         titleRow.addView(heroTitle, new LinearLayout.LayoutParams(WRAP, WRAP));
 
         heroBody = label("", 13, MUTED, false);
@@ -836,7 +879,7 @@ public class MainActivity extends Activity {
             section.setVisibility(on ? View.VISIBLE : View.GONE);
             if (i < settingsTabs.size()) {
                 TextView tab = settingsTabs.get(i);
-                tab.setBackground(on ? round(NAV_ACTIVE, 10, 0) : null);
+                tab.setBackground(on ? control(NAV_ACTIVE, 11, 2f, 2f) : null);
                 tab.setTextColor(on ? TEXT : FAINT);
             }
         }
@@ -876,7 +919,7 @@ public class MainActivity extends Activity {
         recordingsSearchField.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
         recordingsSearchField.setSingleLine(true);
         recordingsSearchField.setImeOptions(android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH);
-        recordingsSearchField.setBackground(round(CARD, 12, BORDER));
+        recordingsSearchField.setBackground(control(CARD, 14, 2.5f, 3f));
         recordingsSearchField.setPadding(dp(14), dp(10), dp(14), dp(10));
         list.addView(recordingsSearchField, lp(MATCH, WRAP, 0, 10, 0, 0));
         recordingsSearchField.addTextChangedListener(new android.text.TextWatcher() {
@@ -934,7 +977,7 @@ public class MainActivity extends Activity {
         TextView view = label(text, 12, MUTED, true);
         view.setGravity(Gravity.CENTER);
         view.setPadding(dp(10), dp(9), dp(10), dp(9));
-        view.setBackground(round(CARD, 10, BORDER));
+        view.setBackground(control(CARD, 11, 2f, 2f));
         view.setClickable(true);
         return view;
     }
@@ -1668,12 +1711,32 @@ public class MainActivity extends Activity {
             previewHandler.postDelayed(tick[0], 100);
         };
 
+        // A cut can only start on a key frame of the video, so the handle is
+        // moved to the key frame at or before it once the finger lets go. The
+        // frame shown is then exactly the first frame of the saved cut.
+        final List<Long> keyframes = new ArrayList<>();
+
         bar.setListener(new TrimBar.Listener() {
             @Override public void onRangeChanged(long start, long end) {
                 range[0] = start;
                 range[1] = end;
                 updateLabels.run();
                 if (playing[0]) stopPlayback[0].run();
+            }
+            @Override public void onRangeSettled(long start, long end, boolean startMoved) {
+                if (!startMoved || keyframes.isEmpty()) return;
+                long snapped = 0;
+                for (int i = 0; i < keyframes.size(); i++) {
+                    long at = keyframes.get(i);
+                    if (at <= start + 40) snapped = at; else break;
+                }
+                if (snapped == start) return;
+                range[0] = snapped;
+                bar.setRange(range[0], range[1]);
+                bar.setPlayhead(snapped);
+                position[0] = snapped;
+                updateLabels.run();
+                frames.frame(snapped, frameView);
             }
             @Override public void onScrub(long ms) {
                 position[0] = ms;
@@ -1730,11 +1793,12 @@ public class MainActivity extends Activity {
                         return false;
                     }
                     stopPlayback[0].run();
-                    Toast.makeText(this, R.string.trim_working, Toast.LENGTH_SHORT).show();
+                    showBusy(R.string.trim_working);
                     VideoTrimmer.start(this, item.uri, item.name, item.folder, start, end,
                             new VideoTrimmer.OnTrim() {
                                 @Override
                                 public void done(String fileName, String error) {
+                                    hideBusy();
                                     if (fileName == null) {
                                         Toast.makeText(MainActivity.this,
                                                 R.string.trim_failed, Toast.LENGTH_LONG).show();
@@ -1763,6 +1827,10 @@ public class MainActivity extends Activity {
 
         frames.strip(bar);
         frames.frame(0, frameView);
+        frames.keyframes(list -> {
+            keyframes.clear();
+            keyframes.addAll(list);
+        });
     }
 
     /**
@@ -1770,6 +1838,11 @@ public class MainActivity extends Activity {
      * retriever (opening the video again for every frame is what makes an
      * editor feel slow). Only the newest request is read.
      */
+    /** Receives the key frame times of the video being trimmed. */
+    interface OnKeyframes {
+        void done(List<Long> times);
+    }
+
     private final class TrimFrames {
 
         private final Recording item;
@@ -1793,7 +1866,7 @@ public class MainActivity extends Activity {
                         retriever = new MediaMetadataRetriever();
                         retriever.setDataSource(MainActivity.this, item.uri);
                     }
-                    bitmap = frameAt(retriever, at, item.width, item.height, 480);
+                    bitmap = frameAt(retriever, at, item.width, item.height, 480, true);
                 } catch (Exception ignored) {
                 }
                 if (bitmap == null) return;
@@ -1833,7 +1906,7 @@ public class MainActivity extends Activity {
                     }
                     for (int i = 0; i < count; i++) {
                         long at = (long) ((item.duration - 1L) * (i + 0.5) / count);
-                        Bitmap frame = frameAt(retriever, at, item.width, item.height, 260);
+                        Bitmap frame = frameAt(retriever, at, item.width, item.height, 260, false);
                         // A null keeps its cell, so the frames stay evenly spaced.
                         loaded.add(frame);
                     }
@@ -1842,6 +1915,48 @@ public class MainActivity extends Activity {
                 }
                 main.post(() -> {
                     if (!closed) bar.setFrames(loaded);
+                });
+            });
+        }
+
+        /** The key frames of the video, in ms: a lossless cut can only start on one. */
+        void keyframes(final OnKeyframes callback) {
+            if (closed) return;
+            worker.post(() -> {
+                final List<Long> times = new ArrayList<>();
+                android.media.MediaExtractor extractor = new android.media.MediaExtractor();
+                try {
+                    extractor.setDataSource(MainActivity.this, item.uri, null);
+                    int video = -1;
+                    for (int i = 0; i < extractor.getTrackCount(); i++) {
+                        String mime = extractor.getTrackFormat(i)
+                                .getString(android.media.MediaFormat.KEY_MIME);
+                        if (mime != null && mime.startsWith("video/")) {
+                            video = i;
+                            break;
+                        }
+                    }
+                    if (video >= 0) {
+                        extractor.selectTrack(video);
+                        while (!closed) {
+                            long time = extractor.getSampleTime();
+                            if (time < 0) break;
+                            if ((extractor.getSampleFlags()
+                                    & android.media.MediaExtractor.SAMPLE_FLAG_SYNC) != 0) {
+                                // Rounded up, never down: a time that is a
+                                // fraction of a millisecond before the key
+                                // frame would seek to the previous one.
+                                times.add((time + 999L) / 1000L);
+                            }
+                            if (!extractor.advance()) break;
+                        }
+                    }
+                } catch (Exception ignored) {
+                } finally {
+                    try { extractor.release(); } catch (Exception ignored) { }
+                }
+                main.post(() -> {
+                    if (!closed) callback.done(times);
                 });
             });
         }
@@ -1863,18 +1978,22 @@ public class MainActivity extends Activity {
     /** A frame scaled to about {@code longSide} px on its long side. */
     private static android.graphics.Bitmap frameAt(
             android.media.MediaMetadataRetriever retriever, long ms, int width, int height,
-            int longSide) {
+            int longSide, boolean exact) {
         int w = width > 0 ? width : 16;
         int h = height > 0 ? height : 9;
         int longest = Math.max(w, h);
         int targetW = Math.max(2, longSide * w / longest);
         int targetH = Math.max(2, longSide * h / longest);
+        // The big preview wants the frame at that exact moment: a key frame can
+        // be a second away, and then the picture would not match the cut. The
+        // filmstrip is small and uses key frames, which are much faster to read.
+        int option = exact
+                ? android.media.MediaMetadataRetriever.OPTION_CLOSEST
+                : android.media.MediaMetadataRetriever.OPTION_CLOSEST_SYNC;
         if (Build.VERSION.SDK_INT >= 27) {
-            return retriever.getScaledFrameAtTime(ms * 1000L,
-                    android.media.MediaMetadataRetriever.OPTION_CLOSEST_SYNC, targetW, targetH);
+            return retriever.getScaledFrameAtTime(ms * 1000L, option, targetW, targetH);
         }
-        return retriever.getFrameAtTime(ms * 1000L,
-                android.media.MediaMetadataRetriever.OPTION_CLOSEST_SYNC);
+        return retriever.getFrameAtTime(ms * 1000L, option);
     }
 
     /** Deletes the video a cut came from, once the cut is safely on the card. */
@@ -2182,8 +2301,8 @@ public class MainActivity extends Activity {
     }
 
     private void styleNavItem(LinearLayout item, ImageView icon, TextView label, boolean active) {
-        item.setBackground(active ? round(NAV_ACTIVE, 24, 0) : null);
-        int color = active ? TEXT : FAINT;
+        item.setBackground(active ? round(PRIMARY, 20, 0) : null);
+        int color = active ? PRIMARY_FG : FAINT;
         icon.setColorFilter(color);
         label.setTextColor(color);
         icon.animate().cancel();
@@ -2202,6 +2321,13 @@ public class MainActivity extends Activity {
             icon.setScaleY(1f);
             label.setAlpha(1f);
         }
+    }
+
+    /** A nav item with room around it, so its pill stays inside the bar. */
+    private LinearLayout.LayoutParams navItemParams() {
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, dp(44), 1f);
+        params.setMargins(dp(3), dp(2), dp(3), dp(2));
+        return params;
     }
 
     private LinearLayout navItem(int iconRes, String text) {
@@ -2238,7 +2364,7 @@ public class MainActivity extends Activity {
     private LinearLayout card() {
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
-        card.setBackground(round(CARD, 14, BORDER));
+        card.setBackground(round(CARD, 18, BORDER));
         card.setPadding(dp(16), dp(2), dp(16), dp(2));
         return card;
     }
@@ -2325,15 +2451,16 @@ public class MainActivity extends Activity {
         if (mainButton == null) return;
         boolean changed = mainButton.isSelected() != recording;
         mainButton.setSelected(recording);
-        int background = recording ? RED : PRIMARY;
+        int background = recording ? ACCENT : PRIMARY;
         int foreground = recording ? Color.WHITE : PRIMARY_FG;
-        mainButton.setBackground(round(background, 12, 0));
+        mainButton.setBackground(control(background, 16, 3f, 5f));
         mainLabel.setText(recording ? R.string.stop_recording : R.string.start_recording);
         mainLabel.setTextColor(foreground);
         mainIcon.setImageResource(recording ? R.drawable.ic_stop : R.drawable.ic_record);
         mainIcon.setColorFilter(foreground);
         if (!changed) return;
         // Start and stop get a short pulse, so the switch is felt as well as seen.
+        fireBurst(mainButton);
         mainButton.animate().cancel();
         mainButton.setScaleX(0.97f);
         mainButton.setScaleY(0.97f);
@@ -2349,8 +2476,9 @@ public class MainActivity extends Activity {
     }
 
     private void styleButton(Button button, int background) {
-        button.setBackground(round(background, 12, 0));
+        button.setBackground(control(background, 13, 2.5f, 3f));
         button.setTextColor(background == RED ? Color.WHITE : PRIMARY_FG);
+        button.setAllCaps(false);
     }
 
     private GradientDrawable round(int color, int radius, int stroke) {
@@ -2358,9 +2486,45 @@ public class MainActivity extends Activity {
         drawable.setColor(color);
         drawable.setCornerRadius(dp(radius));
         if (stroke != 0) {
-            drawable.setStroke(dp(1), stroke);
+            drawable.setStroke(dp(1.5f), stroke);
         }
         return drawable;
+    }
+
+    /**
+     * A control in the Sakuga style: a chunky ink outline, a flat fill, and a
+     * hard shadow offset under it like a stamp. Nothing is blurred, so the
+     * control reads as drawn rather than lit.
+     */
+    private Drawable control(int fill, int radius, float lineWidth, float lift) {
+        GradientDrawable shadow = new GradientDrawable();
+        shadow.setColor(SOFT);
+        shadow.setCornerRadius(dp(radius));
+
+        GradientDrawable face = new GradientDrawable();
+        face.setColor(fill);
+        face.setCornerRadius(dp(radius));
+        face.setStroke(dp(lineWidth), INK);
+
+        LayerDrawable drawable = new LayerDrawable(new Drawable[]{shadow, face});
+        drawable.setLayerInset(0, dp(lift), dp(lift), 0, 0);
+        drawable.setLayerInset(1, 0, 0, dp(lift), dp(lift));
+        return drawable;
+    }
+
+    private Drawable control(int fill, int radius) {
+        return control(fill, radius, 3f, 4f);
+    }
+
+    /** The squash and overshoot every control answers a press with. */
+    private void pop(View view) {
+        if (view == null) return;
+        view.animate().cancel();
+        view.setScaleX(0.94f);
+        view.setScaleY(0.94f);
+        view.animate().scaleX(1f).scaleY(1f).setDuration(320)
+                .setInterpolator(new android.view.animation.OvershootInterpolator(3f))
+                .start();
     }
 
     private LinearLayout.LayoutParams lp(int width, int height, int left, int top,
@@ -2731,10 +2895,12 @@ public class MainActivity extends Activity {
 
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
-        card.setBackground(round(CARD, 20, BORDER));
+        card.setBackground(control(CARD, 22, 3f, 6f));
         card.setPadding(dp(20), dp(20), dp(20), dp(14));
 
-        card.addView(label(title, 17, TEXT, true), lp(MATCH, WRAP, 0, 0, 0, 0));
+        TextView dialogTitle = label(title, 18, TEXT, true);
+        dialogTitle.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD_ITALIC));
+        card.addView(dialogTitle, lp(MATCH, WRAP, 0, 0, 0, 0));
 
         TextView bodyView = label(body, 13, MUTED, false);
         bodyView.setLineSpacing(dp(3), 1f);
@@ -2761,8 +2927,8 @@ public class MainActivity extends Activity {
             secondaryButton.setText(secondaryText);
             secondaryButton.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
             secondaryButton.setStateListAnimator(null);
-            secondaryButton.setBackground(round(0x00000000, 12, 0));
-            secondaryButton.setTextColor(MUTED);
+            secondaryButton.setBackground(control(NAV_ACTIVE, 14, 2.5f, 3f));
+            secondaryButton.setTextColor(TEXT);
             secondaryButton.setOnClickListener(v -> {
                 dialog.dismiss();
                 if (secondary != null) secondary.run();
@@ -2797,6 +2963,51 @@ public class MainActivity extends Activity {
         boolean run();
     }
 
+    /** The card shown while a cut is written: nothing else should be touched. */
+    private void showBusy(int textRes) {
+        hideBusy();
+        final Dialog dialog = new Dialog(this);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setGravity(Gravity.CENTER_HORIZONTAL);
+        card.setBackground(control(CARD, 20, 3f, 5f));
+        card.setPadding(dp(30), dp(24), dp(30), dp(24));
+        // The card is as wide as its text; a match-parent child in a wrap
+        // content parent would be measured to nothing and the text clipped.
+        card.setMinimumWidth(dp(150));
+
+        android.widget.ProgressBar spinner = new android.widget.ProgressBar(this);
+        spinner.setIndeterminate(true);
+        spinner.setIndeterminateTintList(android.content.res.ColorStateList.valueOf(PRIMARY));
+        card.addView(spinner, new LinearLayout.LayoutParams(dp(34), dp(34)));
+
+        TextView text = label(getString(textRes), 14, TEXT, true);
+        text.setGravity(Gravity.CENTER);
+        card.addView(text, lp(WRAP, WRAP, 0, 12, 0, 0));
+
+        FrameLayout holder = new FrameLayout(this);
+        holder.setPadding(dp(56), dp(40), dp(56), dp(40));
+        holder.addView(card, new FrameLayout.LayoutParams(MATCH, WRAP));
+        dialog.setContentView(holder);
+        dialog.setCancelable(false);
+        Window window = dialog.getWindow();
+        if (window != null) {
+            window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+            window.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
+            window.setDimAmount(0.55f);
+        }
+        dialog.show();
+        busyDialog = dialog;
+    }
+
+    private void hideBusy() {
+        if (busyDialog == null) return;
+        try { busyDialog.dismiss(); } catch (Exception ignored) { }
+        busyDialog = null;
+    }
+
     /** A card with a custom view inside (the folder name field). */
     private Dialog showCustomCard(CharSequence title, View content, String primaryText,
                                   final OnConfirm primary, String secondaryText,
@@ -2806,10 +3017,12 @@ public class MainActivity extends Activity {
 
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
-        card.setBackground(round(CARD, 20, BORDER));
+        card.setBackground(control(CARD, 22, 3f, 6f));
         card.setPadding(dp(20), dp(20), dp(20), dp(14));
 
-        card.addView(label(title, 17, TEXT, true), lp(MATCH, WRAP, 0, 0, 0, 0));
+        TextView dialogTitle = label(title, 18, TEXT, true);
+        dialogTitle.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD_ITALIC));
+        card.addView(dialogTitle, lp(MATCH, WRAP, 0, 0, 0, 0));
         card.addView(content, lp(MATCH, WRAP, 0, 14, 0, 0));
 
         Button primaryButton = new Button(this);
@@ -2830,8 +3043,8 @@ public class MainActivity extends Activity {
             secondaryButton.setText(secondaryText);
             secondaryButton.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
             secondaryButton.setStateListAnimator(null);
-            secondaryButton.setBackground(round(0x00000000, 12, 0));
-            secondaryButton.setTextColor(MUTED);
+            secondaryButton.setBackground(control(NAV_ACTIVE, 14, 2.5f, 3f));
+            secondaryButton.setTextColor(TEXT);
             secondaryButton.setOnClickListener(v -> {
                 dialog.dismiss();
                 if (secondary != null) secondary.run();
@@ -2865,10 +3078,11 @@ public class MainActivity extends Activity {
 
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
-        card.setBackground(round(CARD, 20, BORDER));
+        card.setBackground(control(CARD, 22, 3f, 6f));
         card.setPadding(dp(8), dp(18), dp(8), dp(8));
 
-        TextView titleView = label(title, 17, TEXT, true);
+        TextView titleView = label(title, 18, TEXT, true);
+        titleView.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD_ITALIC));
         titleView.setPadding(dp(12), 0, dp(12), dp(6));
         card.addView(titleView, lp(MATCH, WRAP, 0, 0, 0, 0));
 
@@ -2883,11 +3097,11 @@ public class MainActivity extends Activity {
             row.setOrientation(LinearLayout.HORIZONTAL);
             row.setGravity(Gravity.CENTER_VERTICAL);
             row.setPadding(dp(12), dp(13), dp(12), dp(13));
-            row.setBackground(round(0x00000000, 10, 0));
+            row.setBackground(i == checked ? round(PRIMARY, 13, 0) : null);
             row.setClickable(true);
             row.setFocusable(true);
 
-            TextView item = label(items[i], 14, i == checked ? TEXT : MUTED, i == checked);
+            TextView item = label(items[i], 14, i == checked ? PRIMARY_FG : MUTED, i == checked);
             // A Latin name in an Arabic screen still reads from the right.
             boolean rtl = getResources().getConfiguration().getLayoutDirection()
                     == View.LAYOUT_DIRECTION_RTL;
@@ -2896,7 +3110,7 @@ public class MainActivity extends Activity {
 
             ImageView check = new ImageView(this);
             check.setImageResource(R.drawable.ic_check);
-            check.setColorFilter(TEXT);
+            check.setColorFilter(i == checked ? PRIMARY_FG : TEXT);
             check.setVisibility(i == checked ? View.VISIBLE : View.INVISIBLE);
             row.addView(check, new LinearLayout.LayoutParams(dp(18), dp(18)));
 
@@ -2919,8 +3133,8 @@ public class MainActivity extends Activity {
         cancel.setText(getString(R.string.dialog_cancel));
         cancel.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
         cancel.setStateListAnimator(null);
-        cancel.setBackground(round(0x00000000, 12, 0));
-        cancel.setTextColor(MUTED);
+        cancel.setBackground(control(NAV_ACTIVE, 14, 2.5f, 3f));
+        cancel.setTextColor(TEXT);
         cancel.setOnClickListener(v -> dialog.dismiss());
         card.addView(cancel, lp(MATCH, dp(44), 0, 6, 0, 0));
 

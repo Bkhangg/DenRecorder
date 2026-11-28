@@ -24,6 +24,9 @@ final class TrimBar extends View {
         /** The handles moved: this is the piece that will be saved. */
         void onRangeChanged(long startMs, long endMs);
 
+        /** The finger left the strip: the range is final. */
+        void onRangeSettled(long startMs, long endMs, boolean startMoved);
+
         /** The playhead moved: the frame under it is the one to show. */
         void onScrub(long positionMs);
     }
@@ -223,9 +226,13 @@ final class TrimBar extends View {
             }
             case MotionEvent.ACTION_UP:
             case MotionEvent.ACTION_CANCEL: {
+                int settled = mode;
                 if (mode != NONE) apply(x);
                 mode = NONE;
                 invalidate();
+                if (listener != null) {
+                    listener.onRangeSettled(startMs, endMs, settled == START);
+                }
                 return true;
             }
             default:
