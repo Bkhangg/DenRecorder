@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/icon.png" width="112" alt="DenRecorder Sakuga-style app icon" />
+</p>
+
 # DenRecorder
 
 **A simple Android screen recorder for games, tutorials and everyday use.**
