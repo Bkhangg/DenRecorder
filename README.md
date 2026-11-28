@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/icon.png" width="112" alt="DenRecorder Sakuga-style app icon" />
+  <img src="docs/denrecorder-sakuga-icon.png" width="112" alt="DenRecorder Sakuga-style app icon" />
 </p>
 
 # DenRecorder
@@ -9,6 +9,8 @@
 Record your screen, capture device audio or your microphone, then find, play and trim videos in the same app. DenRecorder uses Android's screen-capture permission and device video encoders.
 
 🇬🇧 English · [🇻🇳 Tiếng Việt](#tiếng-việt)
+
+**[⬇ Download latest APK](https://github.com/Bkhangg/DenRecorder/releases/latest) · [Tải APK mới nhất](https://github.com/Bkhangg/DenRecorder/releases/latest)**
 
 ## Screenshots
 
